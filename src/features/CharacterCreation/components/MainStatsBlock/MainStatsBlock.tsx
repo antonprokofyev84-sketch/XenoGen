@@ -1,6 +1,8 @@
+import { useCallback } from 'react';
 import { useGameStore, playerSelectors } from '@/state/useGameState';
 import { useShallow } from 'zustand/react/shallow';
 import type { MainStatKey } from '@/state/slices/player';
+import { initiatMainStatValue, mainStatKeys } from '@/state/slices/player';
 import textData from '@/locales/en.json';
 import './MainStatsBlock.scss';
 
@@ -22,20 +24,30 @@ export const MainStatsBlock = ({
   console.log('MainStatsBlock render');
   const mainStats = useGameStore(useShallow(playerSelectors.mainStats));
 
-  const statKeys = Object.keys(mainStats) as MainStatKey[];
+  const statKeys = mainStatKeys;
+
+  console.log(statKeys);
+
+  const getStatValueClass = useCallback((currentValue: number) => {
+    if (currentValue > initiatMainStatValue) return 'increased';
+    if (currentValue < initiatMainStatValue) return 'decreased';
+    return '';
+  }, []);
 
   return (
     <div className="mainStatsBlock">
       <h2 className="mainStatsHeader">{textData.characterCreation.mainStatsTitle}</h2>
       {statKeys.map((statKey) => {
         const currentStatValue = mainStats[statKey];
-        const canAdd = freePoints >= pointStep && currentStatValue < maxStat;
-        const canRemove = currentStatValue > minStat;
+        const canAdd = freePoints >= pointStep && currentStatValue + pointStep <= maxStat;
+        const canRemove = currentStatValue - pointStep >= minStat;
 
         return (
           <div className="statRow" key={statKey}>
             <span className="statName">{textData.stats[statKey]}</span>
-            <span className="statValue">{currentStatValue}</span>
+            <span className={`statValue ${getStatValueClass(currentStatValue)}`}>
+              {currentStatValue}
+            </span>
             <div className="statButtons">
               <button
                 className="statButton remove"

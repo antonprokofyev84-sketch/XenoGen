@@ -35,7 +35,9 @@ export const SkillsBlock = ({
         return (
           <div className="skillRow" key={skillKey}>
             <span className="skillName">{textData.skills[skillKey]}</span>
-            <span className="skillValue">{currentSkillValue}</span>
+            <span className={`skillValue ${canRemove ? 'skillValueAdded' : ''}`}>
+              {currentSkillValue}
+            </span>
             <div className="skillButtons">
               <button
                 className="skillButton remove"

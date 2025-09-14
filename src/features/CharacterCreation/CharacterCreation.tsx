@@ -9,80 +9,87 @@ import { SecondaryStatsBlock } from './components/SecondaryStatsBlock/SecondaryS
 import { SkillsBlock } from './components/SkillsBlock/SkillsBlock';
 
 const INITIAL_CREATION_POINTS = 150;
-const MIN_STAT = 30;
-const MAX_STAT = 70;
+const MIN_STAT = 15;
+const MAX_STAT = 50;
 const MIN_SKILL = 0;
 const MAX_SKILL = 50;
 
+const STEP_OPTIONS = [1, 5, 10] as const;
+
 export const CharacterCreation = () => {
   const [creationPoints, setCreationPoints] = useState(INITIAL_CREATION_POINTS);
-  const [pointStep, setPointStep] = useState(5);
+  const [pointStep, setPointStep] = useState<number>(5);
 
-  const { changeMainStat, changeSkill, resetMainStats, goToScreen } = useGameStore(
+  const { changeMainStat, changeSkill, resetMainStats, resetSkills, goToScreen } = useGameStore(
     useShallow((state) => ({
       changeMainStat: state.player.actions.changeMainStat,
       changeSkill: state.player.actions.changeSkill,
       resetMainStats: state.player.actions.resetMainStats,
+      resetSkills: state.player.actions.resetSkills,
       goToScreen: state.ui.goToScreen,
     })),
   );
 
   const handleStatChange = (statKey: MainStatKey, delta: number) => {
     changeMainStat(statKey, delta);
-    setCreationPoints((currentPoints) => currentPoints - delta);
+    setCreationPoints((p) => p - delta);
   };
 
   const handleSkillChange = (skillKey: SkillKey, delta: number) => {
     changeSkill(skillKey, delta);
-    setCreationPoints((currentPoints) => currentPoints - delta);
+    setCreationPoints((p) => p - delta);
   };
 
-  const handleBackButtonClick = () => {
+  const handleBack = () => {
     resetMainStats();
+    resetSkills();
     setCreationPoints(INITIAL_CREATION_POINTS);
     goToScreen('mainMenu');
   };
 
-  const handleStartGameClick = () => {
+  const handleStart = () => {
     console.log('Start Game button clicked!');
   };
 
   return (
-    <div className="characterCreationContainer">
-      <div className="statsContainer">
-        <div className="header">
-          <div className="freePoints">
-            <h2>{textData.characterCreation.freePoints}: </h2>
-            <span className="pointsValue">{creationPoints}</span>
+    <div className="characterCreation">
+      <section className="characterCreationPanel">
+        <header className="characterCreationHeader">
+          <div className="characterCreationSummary">
+            <h2 className="characterCreationSummaryTitle">
+              {textData.characterCreation.freePoints}:
+            </h2>
+            <span className="characterCreationSummaryValue" data-tid="creation-points">
+              {creationPoints}
+            </span>
           </div>
 
-          <h1>{textData.characterCreation.title}</h1>
+          <h1 className="characterCreationTitle">{textData.characterCreation.title}</h1>
 
-          <div className="pointStepSelector">
-            <h2>Step:</h2>
-            <button
-              className={`stepButton ${pointStep === 1 ? 'active' : ''}`}
-              onClick={() => setPointStep(1)}
-            >
-              x1
-            </button>
-            <button
-              className={`stepButton ${pointStep === 5 ? 'active' : ''}`}
-              onClick={() => setPointStep(5)}
-            >
-              x5
-            </button>
+          <fieldset className="characterCreationStepGroup" aria-label="Point step">
+            <h2 className="characterCreationStepTitle">Step:</h2>
+            <div className="characterCreationStepOptions">
+              {STEP_OPTIONS.map((value) => (
+                <label
+                  key={value}
+                  className={`characterCreationStep ${pointStep === value ? 'active' : ''}`}
+                >
+                  <input
+                    type="radio"
+                    name="point-step"
+                    value={value}
+                    checked={pointStep === value}
+                    onChange={() => setPointStep(value)}
+                    className="characterCreationStepInput"
+                  />
+                  <span className="characterCreationStepLabel">x{value}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        </header>
 
-            <button
-              className={`stepButton ${pointStep === 10 ? 'active' : ''}`}
-              onClick={() => setPointStep(10)}
-            >
-              x10
-            </button>
-          </div>
-        </div>
-
-        <div className="statsSections">
+        <div className="characterCreationSections">
           <MainStatsBlock
             freePoints={creationPoints}
             onStatChange={handleStatChange}
@@ -99,16 +106,16 @@ export const CharacterCreation = () => {
             maxSkill={MAX_SKILL}
           />
         </div>
-      </div>
+      </section>
 
-      <div className="footerButtons">
-        <button className="backButton" onClick={handleBackButtonClick}>
+      <footer className="characterCreationFooter">
+        <button type="button" className="characterCreationBtn ghost" onClick={handleBack}>
           {textData.characterCreation.backButton}
         </button>
-        <button className="startButton" onClick={handleStartGameClick}>
+        <button type="button" className="characterCreationBtn primary" onClick={handleStart}>
           {textData.characterCreation.startButton}
         </button>
-      </div>
+      </footer>
     </div>
   );
 };

@@ -2,6 +2,7 @@ import type { GameSlice } from '../types';
 import type { StoreState } from '@/state/useGameState';
 
 export type MainStatKey = 'str' | 'dex' | 'con' | 'per' | 'int' | 'will';
+export const mainStatKeys: MainStatKey[] = ['str', 'dex', 'con', 'per', 'int', 'will'];
 export type MainStats = Record<MainStatKey, number>;
 export type SkillKey =
   | 'melee'
@@ -70,13 +71,15 @@ const calculateEvasion = (mainStats: MainStats): number => {
   return Math.floor(mainStats.dex / 2) + Math.floor(mainStats.per / 10);
 };
 
+export const initiatMainStatValue = 30;
+
 const initialMainStats: MainStats = {
-  str: 30,
-  dex: 30,
-  con: 30,
-  per: 30,
-  int: 30,
-  will: 30,
+  str: initiatMainStatValue,
+  dex: initiatMainStatValue,
+  con: initiatMainStatValue,
+  per: initiatMainStatValue,
+  int: initiatMainStatValue,
+  will: initiatMainStatValue,
 };
 
 const initialSkills: Skills = {

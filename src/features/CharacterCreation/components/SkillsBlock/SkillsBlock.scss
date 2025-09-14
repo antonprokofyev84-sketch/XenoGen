@@ -38,7 +38,10 @@
     text-align: center;
     font-size: 1.4rem;
     font-weight: bold;
-    color: #4caf50; // Зеленый для навыков
+    color: #e0e0e0;
+    &.skillValueAdded {
+      color: #4caf50;
+    }
   }
 
   .skillButtons {
@@ -48,7 +51,12 @@
   }
 
   .skillButton {
-    padding: 0.3rem 0.8rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 3.5rem;
+    height: 2rem;
+    padding: 0;
     font-size: 1rem;
     font-weight: bold;
     background-color: #383838;
@@ -58,8 +66,14 @@
     cursor: pointer;
     transition: all 0.2s ease;
 
-    &:hover:not(:disabled) {
+    &.add:hover:not(:disabled) {
       background-color: #4caf50;
+      color: white;
+      border-color: #e0e0e0;
+    }
+
+    &.remove:hover:not(:disabled) {
+      background-color: #c53d3d;
       color: white;
       border-color: #e0e0e0;
     }
