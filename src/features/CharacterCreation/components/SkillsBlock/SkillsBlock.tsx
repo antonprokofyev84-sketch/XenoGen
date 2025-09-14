@@ -16,7 +16,7 @@ export const SkillsBlock = ({
   freePoints,
   onSkillChange,
   pointStep = 5,
-  minSkill = 0,
+  // minSkill = 0,
   maxSkill = 50,
 }: SkillsBlockProps) => {
   console.log('SkillsBlock render');
