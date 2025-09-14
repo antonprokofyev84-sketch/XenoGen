@@ -1,0 +1,41 @@
+.secondaryStatsBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 2rem;
+  border: 1px solid #444;
+  border-radius: 8px;
+  background-color: #2a2a2a;
+  width: 350px;
+  max-width: 350px;
+
+  h2 {
+    padding-top: 0;
+    margin-top: 0;
+    text-align: center;
+    margin-bottom: 1rem;
+    color: #e0e0e0;
+    font-size: 1.5rem;
+  }
+
+  .statRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.1rem;
+    height: 2rem;
+  }
+
+  .statName {
+    font-weight: bold;
+    text-transform: uppercase;
+    text-align: start;
+    color: #a0a0a0;
+  }
+
+  .statValue {
+    font-weight: bold;
+    font-size: 1.3rem;
+    color: #c53d3d; // Зеленый для производных статов
+  }
+}

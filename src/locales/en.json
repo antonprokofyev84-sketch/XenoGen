@@ -1,0 +1,37 @@
+{
+  "characterCreation": {
+    "title": "Character Creation",
+    "mainStatsTitle": "Main Stats",
+    "secondaryStatsTitle": "Secondary Stats",
+    "skillsTitle": "Skills",
+    "freePoints": "Creation Points",
+    "backButton": "Back",
+    "startButton": "Start Game"
+  },
+  "stats": {
+    "str": "Strength",
+    "dex": "Dexterity",
+    "con": "Constitution",
+    "per": "Perception",
+    "int": "Intelligence",
+    "will": "Willpower"
+  },
+  "skills": {
+    "melee": "Melee",
+    "range": "Ranged",
+    "crafting": "Crafting",
+    "science": "Science",
+    "medicine": "Medicine",
+    "charisma": "Charisma",
+    "survival": "Survival"
+  },
+  "secondaryStats": {
+    "maxHp": "Max HP",
+    "initiative": "Initiative",
+    "armor": "Armor",
+    "critChance": "Crit Chance",
+    "damageModifier": "Damage Modifier",
+    "evasion": "Evasion"
+  }
+}
+

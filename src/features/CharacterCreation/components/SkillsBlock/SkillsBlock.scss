@@ -1,0 +1,74 @@
+// Стили почти идентичны MainStatsBlock для консистентности
+.skillsBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 2rem;
+  border: 1px solid #444;
+  border-radius: 8px;
+  background-color: #2a2a2a;
+  width: 350px;
+  max-width: 350px;
+
+  .skillsHeader {
+    margin-top: 0;
+    padding-top: 0;
+    text-align: center;
+    margin-bottom: 1rem;
+    color: #e0e0e0;
+  }
+
+  .skillRow {
+    display: grid;
+    grid-template-columns: 1fr 50px auto;
+    align-items: center;
+    gap: 1rem;
+    font-size: 1.2rem;
+    height: 2rem;
+  }
+
+  .skillName {
+    font-weight: bold;
+    text-align: start;
+    text-transform: uppercase;
+    color: #a0a0a0;
+  }
+
+  .skillValue {
+    text-align: center;
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #4caf50; // Зеленый для навыков
+  }
+
+  .skillButtons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+  }
+
+  .skillButton {
+    padding: 0.3rem 0.8rem;
+    font-size: 1rem;
+    font-weight: bold;
+    background-color: #383838;
+    color: #ccc;
+    border: 1px solid #555;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+      background-color: #4caf50;
+      color: white;
+      border-color: #e0e0e0;
+    }
+
+    &:disabled {
+      background-color: #222;
+      color: #555;
+      border-color: #333;
+      cursor: not-allowed;
+    }
+  }
+}
