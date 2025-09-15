@@ -32,6 +32,32 @@
     "critChance": "Crit Chance",
     "damageModifier": "Damage Modifier",
     "evasion": "Evasion"
+  },
+  "traits": {
+    "alcoholic1": {
+      "name": "Alcoholic",
+      "desc": "Starts dependent on alcohol. Suffers withdrawal without it, but gets a bonus when drinking."
+    },
+    "buzzed": {
+      "name": "Buzzed",
+      "desc": "Slightly intoxicated. Willpower is up, but Perception is slightly lowered."
+    },
+    "hangover": {
+      "name": "Hangover",
+      "desc": "The morning after. Willpower and Dexterity are temporarily reduced."
+    },
+    "medic1": {
+      "name": "Field Medic",
+      "desc": "Basic medical training. Provides a significant starting bonus to the Medicine skill."
+    },
+    "hunter1": {
+      "name": "Hunter",
+      "desc": "Skilled in tracking and stalking prey. Provides bonuses to Survival and Ranged skills."
+    },
+    "artificer1": {
+      "name": "Artificer",
+      "desc": "A tinkerer and inventor. Provides bonuses to Crafting and Science skills."
+    }
   }
 }
 
