@@ -8,6 +8,9 @@ import { MainStatsBlock } from './components/MainStatsBlock/MainStatsBlock';
 import { SecondaryStatsBlock } from './components/SecondaryStatsBlock/SecondaryStatsBlock';
 import { SkillsBlock } from './components/SkillsBlock/SkillsBlock';
 
+import { TraitsRegistry } from '@/lib/traitsRegistry';
+import { traitsSelectors } from '@/state/slices/traits';
+
 const INITIAL_CREATION_POINTS = 150;
 const MIN_STAT = 15;
 const MAX_STAT = 50;
@@ -29,6 +32,23 @@ export const CharacterCreation = () => {
       goToScreen: state.ui.goToScreen,
     })),
   );
+
+  const PLAYER_ID = 'player';
+
+  const { addTrait } = useGameStore(
+    useShallow((state) => ({
+      addTrait: state.traits.actions.addTraitToCharacter,
+    })),
+  );
+
+  const playerTraitIds = useGameStore(traitsSelectors.selectTraitsByCharacterId('player')) ?? [];
+
+  const startingTraits = TraitsRegistry.listStartingChoices();
+
+  const handleAddTrait = (traitId: string) => {
+    const ok = addTrait(PLAYER_ID, traitId);
+    // если нужно — дать тост/сообщение, если ok === false (например, лимит профессий)
+  };
 
   const handleStatChange = (statKey: MainStatKey, delta: number) => {
     changeMainStat(statKey, delta);
@@ -105,6 +125,42 @@ export const CharacterCreation = () => {
             minSkill={MIN_SKILL}
             maxSkill={MAX_SKILL}
           />
+        </div>
+      </section>
+
+      <section className="characterCreationPanel">
+        <h2 className="characterCreationSectionTitle">Starting Traits</h2>
+
+        <div className="startingTraitsGrid">
+          {startingTraits.map((t) => {
+            const picked = playerTraitIds.includes(t.id);
+            return (
+              <div key={t.id} className={`startingTraitCard ${picked ? 'picked' : ''}`}>
+                <div className="startingTraitHeader">
+                  <strong>{t.nameKey}</strong>
+                  {t.tags?.includes('profession') && <span className="tag">Profession</span>}
+                </div>
+                <p className="startingTraitDesc">{t.descriptionKey}</p>
+                <div className="startingTraitMeta">
+                  {t.group && <span className="meta">group: {t.group}</span>}
+                  {t.category && (
+                    <span className="meta">
+                      {t.category}
+                      {t.maxCategoryCount ? ` (max ${t.maxCategoryCount})` : ''}
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="characterCreationBtn small"
+                  onClick={() => handleAddTrait(t.id)}
+                  disabled={picked}
+                >
+                  {picked ? 'Added' : 'Add'}
+                </button>
+              </div>
+            );
+          })}
         </div>
       </section>
 

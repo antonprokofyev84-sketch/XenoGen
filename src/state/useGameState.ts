@@ -7,12 +7,16 @@ import type { PlayerSlice } from './slices/player';
 import { createUISlice } from './slices/ui';
 import type { UISlice } from './slices/ui';
 
-export type StoreState = { player: PlayerSlice; ui: UISlice };
+import { createTraitsSlice } from './slices/traits';
+import type { TraitsSlice } from './slices/traits';
+
+export type StoreState = { player: PlayerSlice; ui: UISlice; traits: TraitsSlice };
 
 export const useGameStore = create<StoreState>()(
   immer((set, get, api) => ({
     player: createPlayerSlice(set, get, api),
     ui: createUISlice(set, get, api),
+    traits: createTraitsSlice(set, get, api),
   })),
 );
 
