@@ -16,7 +16,7 @@ export type Trait = {
   cost?: number; // Cost in creation points (for professions, etc.)
   // --- Duration ---
   // A simple number implies days. For other units, use the object form.
-  duration?: number | { value: number; unit: 'days' | 'battles' | 'turns' };
+  duration?: number; // | { value: number; unit: 'days' | 'battles' | 'turns' };
 
   // --- Static Modifiers ---
   // For permanent effects that are always active as long as the trait exists.
@@ -78,4 +78,23 @@ type Action = ActionCore & ActionHelper;
 type AddTraitParams = {
   duration?: number | { value: number; unit: 'days' | 'battles' };
   // ... other parameters to pass when creating a new trait instance
+};
+
+export type TraitId = string;
+
+export type ActiveTrait = {
+  id: TraitId;
+  duration?: number;
+  progress?: number;
+
+  // денормализованные инварианты из дефиниции (для быстрых проверок/сейва)
+  group?: string | null;
+  category?: string | null;
+  maxCategoryCount?: number | null;
+  progressMax?: number | null;
+
+  // кастомное локальное состояние по необходимости (редко)
+  // state?: Record<string, any>;
+  // на будущее
+  // stacks?: number;
 };

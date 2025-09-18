@@ -1,15 +1,12 @@
 import { useState } from 'react';
-import { useGameStore } from '@/state/useGameState';
-import { useShallow } from 'zustand/react/shallow';
+import { useGameStore, playerSelectors } from '@/state/useGameState';
 import './CharacterCreation.scss';
-import type { MainStatKey, SkillKey } from '@/state/slices/player';
+import type { MainStatKey, SkillKey } from '@/types/character.types';
 import textData from '@/locales/en.json';
 import { MainStatsBlock } from './components/MainStatsBlock/MainStatsBlock';
 import { SecondaryStatsBlock } from './components/SecondaryStatsBlock/SecondaryStatsBlock';
 import { SkillsBlock } from './components/SkillsBlock/SkillsBlock';
-
-import { TraitsRegistry } from '@/lib/traitsRegistry';
-import { traitsSelectors } from '@/state/slices/traits';
+import { TraitBlock } from './components/TraitBlock/TraitBlock';
 
 const INITIAL_CREATION_POINTS = 150;
 const MIN_STAT = 15;
@@ -23,32 +20,17 @@ export const CharacterCreation = () => {
   const [creationPoints, setCreationPoints] = useState(INITIAL_CREATION_POINTS);
   const [pointStep, setPointStep] = useState<number>(5);
 
-  const { changeMainStat, changeSkill, resetMainStats, resetSkills, goToScreen } = useGameStore(
-    useShallow((state) => ({
-      changeMainStat: state.player.actions.changeMainStat,
-      changeSkill: state.player.actions.changeSkill,
-      resetMainStats: state.player.actions.resetMainStats,
-      resetSkills: state.player.actions.resetSkills,
-      goToScreen: state.ui.goToScreen,
-    })),
+  const { changeMainStat, changeSkill, resetMainStats, resetSkills } = useGameStore(
+    (state) => state.player.actions,
   );
 
-  const PLAYER_ID = 'player';
-
-  const { addTrait } = useGameStore(
-    useShallow((state) => ({
-      addTrait: state.traits.actions.addTraitToCharacter,
-    })),
+  const { addTraitToCharacter: addTrait, removeTraitFromCharacter: removeTrait } = useGameStore(
+    (state) => state.traits.actions,
   );
 
-  const playerTraitIds = useGameStore(traitsSelectors.selectTraitsByCharacterId('player')) ?? [];
+  const goToScreen = useGameStore((state) => state.ui.goToScreen);
 
-  const startingTraits = TraitsRegistry.listStartingChoices();
-
-  const handleAddTrait = (traitId: string) => {
-    const ok = addTrait(PLAYER_ID, traitId);
-    // если нужно — дать тост/сообщение, если ok === false (например, лимит профессий)
-  };
+  const heroId = useGameStore(playerSelectors.id);
 
   const handleStatChange = (statKey: MainStatKey, delta: number) => {
     changeMainStat(statKey, delta);
@@ -58,6 +40,16 @@ export const CharacterCreation = () => {
   const handleSkillChange = (skillKey: SkillKey, delta: number) => {
     changeSkill(skillKey, delta);
     setCreationPoints((p) => p - delta);
+  };
+
+  const handleTraitAdd = (traitId: string, traitCost?: number) => {
+    addTrait(heroId, traitId);
+    setCreationPoints((p) => p - (traitCost ?? 0));
+  };
+
+  const handleTraitRemove = (traitId: string, traitCost?: number) => {
+    removeTrait(heroId, traitId);
+    setCreationPoints((p) => p + (traitCost ?? 0));
   };
 
   const handleBack = () => {
@@ -110,57 +102,29 @@ export const CharacterCreation = () => {
         </header>
 
         <div className="characterCreationSections">
-          <MainStatsBlock
+          <div className="characterCreationTopBlock">
+            <MainStatsBlock
+              freePoints={creationPoints}
+              onStatChange={handleStatChange}
+              pointStep={pointStep}
+              minStat={MIN_STAT}
+              maxStat={MAX_STAT}
+            />
+            <SecondaryStatsBlock />
+            <SkillsBlock
+              freePoints={creationPoints}
+              onSkillChange={handleSkillChange}
+              pointStep={pointStep}
+              minSkill={MIN_SKILL}
+              maxSkill={MAX_SKILL}
+            />
+          </div>
+          <TraitBlock
+            heroId={heroId}
             freePoints={creationPoints}
-            onStatChange={handleStatChange}
-            pointStep={pointStep}
-            minStat={MIN_STAT}
-            maxStat={MAX_STAT}
+            onTraitAdd={handleTraitAdd}
+            onTraitRemove={handleTraitRemove}
           />
-          <SecondaryStatsBlock />
-          <SkillsBlock
-            freePoints={creationPoints}
-            onSkillChange={handleSkillChange}
-            pointStep={pointStep}
-            minSkill={MIN_SKILL}
-            maxSkill={MAX_SKILL}
-          />
-        </div>
-      </section>
-
-      <section className="characterCreationPanel">
-        <h2 className="characterCreationSectionTitle">Starting Traits</h2>
-
-        <div className="startingTraitsGrid">
-          {startingTraits.map((t) => {
-            const picked = playerTraitIds.includes(t.id);
-            return (
-              <div key={t.id} className={`startingTraitCard ${picked ? 'picked' : ''}`}>
-                <div className="startingTraitHeader">
-                  <strong>{t.nameKey}</strong>
-                  {t.tags?.includes('profession') && <span className="tag">Profession</span>}
-                </div>
-                <p className="startingTraitDesc">{t.descriptionKey}</p>
-                <div className="startingTraitMeta">
-                  {t.group && <span className="meta">group: {t.group}</span>}
-                  {t.category && (
-                    <span className="meta">
-                      {t.category}
-                      {t.maxCategoryCount ? ` (max ${t.maxCategoryCount})` : ''}
-                    </span>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  className="characterCreationBtn small"
-                  onClick={() => handleAddTrait(t.id)}
-                  disabled={picked}
-                >
-                  {picked ? 'Added' : 'Add'}
-                </button>
-              </div>
-            );
-          })}
         </div>
       </section>
 

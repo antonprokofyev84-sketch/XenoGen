@@ -1,43 +1,12 @@
 import type { GameSlice } from '../types';
 import type { StoreState } from '@/state/useGameState';
-
-export type MainStatKey = 'str' | 'dex' | 'con' | 'per' | 'int' | 'will';
-export const mainStatKeys: MainStatKey[] = ['str', 'dex', 'con', 'per', 'int', 'will'];
-export type MainStats = Record<MainStatKey, number>;
-export type SkillKey =
-  | 'melee'
-  | 'range'
-  | 'crafting'
-  | 'science'
-  | 'medicine'
-  | 'charisma'
-  | 'survival';
-export type Skills = Record<SkillKey, number>;
-
-interface BaseStats {
-  age: number;
-  gameAge: number;
-  beauty: number;
-  fame: number;
-  baseHp: number;
-  baseInitiative: number;
-  baseArmor: number;
-  baseCritChance: number;
-  baseDamage: number;
-  baseAccuracy: number;
-}
-
-export interface SecondaryStats {
-  maxHp: number;
-  armor: number;
-  evasion: number;
-  damageModifier: number;
-  critChance: number;
-  initiative: number;
-}
+import type { MainStatKey, MainStats, SkillKey, Skills, BaseStats } from '@/types/character.types';
+import { traitsSelectors } from './traits';
+import { initiatMainStatValue } from '@/state/constants';
 
 export interface PlayerSlice {
   name: string;
+  id: string;
   hp: number;
   baseStats: BaseStats;
   mainStats: MainStats;
@@ -51,6 +20,16 @@ export interface PlayerSlice {
     resetHpToMax: () => void;
   };
 }
+
+const applyMods = <T extends Record<string, number>>(base: T, mods: Record<string, number>): T => {
+  const result = { ...base };
+  for (const key in mods) {
+    if (key in result) {
+      result[key as keyof T] = ((result[key as keyof T] || 0) + mods[key]) as T[keyof T];
+    }
+  }
+  return result;
+};
 
 const calculateMaxHp = (mainStats: MainStats, baseStats: BaseStats): number => {
   return baseStats.baseHp + mainStats.con + Math.floor(mainStats.str / 5);
@@ -70,8 +49,6 @@ const calculateDamageModifier = (mainStats: MainStats, baseStats: BaseStats): nu
 const calculateEvasion = (mainStats: MainStats): number => {
   return Math.floor(mainStats.dex / 2) + Math.floor(mainStats.per / 10);
 };
-
-export const initiatMainStatValue = 30;
 
 const initialMainStats: MainStats = {
   str: initiatMainStatValue,
@@ -94,6 +71,7 @@ const initialSkills: Skills = {
 
 export const playerSelectors = {
   name: (state: StoreState) => state.player.name,
+  id: (state: StoreState) => state.player.id,
   hp: (state: StoreState) => state.player.hp,
   mainStats: (state: StoreState) => state.player.mainStats,
   baseStats: (state: StoreState) => state.player.baseStats,
@@ -124,10 +102,29 @@ export const playerSelectors = {
       initiative: calculateInitiative(mainStats, baseStats),
     };
   },
+
+  effectiveMainStats: (state: StoreState): MainStats => {
+    const base = playerSelectors.mainStats(state);
+    const mods = traitsSelectors.selectMainStatMods(state.player.id)(state);
+    return applyMods(base, mods);
+  },
+
+  effectiveSkills: (state: StoreState): Skills => {
+    const base = playerSelectors.skills(state);
+    const mods = traitsSelectors.selectSkillMods(state.player.id)(state);
+    return applyMods(base, mods);
+  },
+
+  effectiveSecondaryStats: (state: StoreState) => {
+    const base = playerSelectors.secondaryStats(state);
+    const mods = traitsSelectors.selectSecondaryStatMods(state.player.id)(state);
+    return applyMods(base, mods);
+  },
 };
 
 export const createPlayerSlice: GameSlice<PlayerSlice> = (set, get) => ({
   name: 'Hero',
+  id: 'Hero',
   hp: 1,
   baseStats: {
     age: 30,

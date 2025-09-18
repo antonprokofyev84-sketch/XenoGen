@@ -110,13 +110,14 @@ export const TRAITS_DB: Trait[] = [
     group: 'hunter',
     category: 'profession',
     maxCategoryCount: 2,
-    cost: 20,
+    cost: 30,
     progress: 0,
     progressMax: 100,
     visible: true,
     mods: {
       survival: 15,
       range: 10,
+      dex: 5,
     },
     triggers: {
       onAction: [

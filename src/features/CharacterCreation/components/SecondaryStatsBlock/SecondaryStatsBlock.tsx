@@ -5,7 +5,7 @@ import './SecondaryStatsBlock.scss';
 
 export const SecondaryStatsBlock = () => {
   console.log('SecondaryStatsBlock render');
-  const stats = useGameStore(useShallow(playerSelectors.secondaryStats));
+  const stats = useGameStore(useShallow(playerSelectors.effectiveSecondaryStats));
 
   return (
     <div className="secondaryStatsBlock">
