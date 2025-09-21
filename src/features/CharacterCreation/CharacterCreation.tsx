@@ -20,6 +20,8 @@ export const CharacterCreation = () => {
   const [creationPoints, setCreationPoints] = useState(INITIAL_CREATION_POINTS);
   const [pointStep, setPointStep] = useState<number>(5);
 
+  const goToScreen = useGameStore((state) => state.ui.goToScreen);
+
   const { changeMainStat, changeSkill, resetMainStats, resetSkills } = useGameStore(
     (state) => state.player.actions,
   );
@@ -27,8 +29,6 @@ export const CharacterCreation = () => {
   const { addTraitToCharacter: addTrait, removeTraitFromCharacter: removeTrait } = useGameStore(
     (state) => state.traits.actions,
   );
-
-  const goToScreen = useGameStore((state) => state.ui.goToScreen);
 
   const heroId = useGameStore(playerSelectors.id);
 
@@ -60,7 +60,7 @@ export const CharacterCreation = () => {
   };
 
   const handleStart = () => {
-    console.log('Start Game button clicked!');
+    goToScreen('strategicMap');
   };
 
   return (

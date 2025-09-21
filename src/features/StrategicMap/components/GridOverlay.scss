@@ -1,0 +1,18 @@
+.gridOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  cursor: pointer;
+}
+
+.gridCell {
+  fill: rgba(128, 128, 128, 0);
+  stroke: rgba(255, 255, 255, 0.1);
+  stroke-width: 1px;
+  transition: fill 0.1s ease-in-out;
+
+  &:hover {
+    stroke: rgba(255, 255, 255, 0.7);
+    stroke-width: 2px;
+  }
+}

@@ -1,6 +1,7 @@
 import { useGameStore } from '@/state/useGameState';
 import { MainMenu } from '@/features/MainMenu/MainMenu';
 import { CharacterCreation } from '@/features/CharacterCreation/CharacterCreation';
+import { StrategicMap } from '@/features/StrategicMap/StrategicMap';
 import './App.scss';
 
 function App() {
@@ -12,6 +13,8 @@ function App() {
         return <MainMenu />;
       case 'characterCreation':
         return <CharacterCreation />;
+      case 'strategicMap':
+        return <StrategicMap />;
       default:
         return <MainMenu />;
     }
