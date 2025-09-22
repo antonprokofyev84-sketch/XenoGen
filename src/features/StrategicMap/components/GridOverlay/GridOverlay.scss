@@ -16,3 +16,15 @@
     stroke-width: 2px;
   }
 }
+
+.unexplored {
+  fill: rgba(12, 14, 16, 0.8);
+}
+
+.visited {
+  fill: url(#scoutHatch);
+}
+
+.explored {
+  fill: transparent;
+}

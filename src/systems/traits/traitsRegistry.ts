@@ -1,4 +1,4 @@
-import { TRAITS_DB } from '@/data/traits';
+import { TRAITS_DB } from '@/data/traits.data';
 import type { Trait } from '@/types/traits.types';
 
 const traitsById: Record<string, Trait> = {};

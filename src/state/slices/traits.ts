@@ -25,6 +25,7 @@ export interface TraitsSlice {
     addTraitToCharacter: (characterId: string, traitId: TraitId) => boolean;
     removeTraitFromCharacter: (characterId: string, traitId: TraitId) => void;
     resetCharacterTraits: (characterId: string) => void;
+    processDayEnd: () => void;
   };
 }
 
@@ -114,5 +115,24 @@ export const createTraitsSlice: GameSlice<TraitsSlice> = (set) => ({
         state.traits.traitsByCharacterId[characterId] = [];
       });
     },
+
+    processDayEnd: () =>
+      set((state) => {
+        const allCharacterIds = Object.keys(state.traits.traitsByCharacterId);
+        for (const charId of allCharacterIds) {
+          const currentTraits = state.traits.traitsByCharacterId[charId];
+
+          const updatedTraits = currentTraits
+            .map((trait) => {
+              if (trait.duration && trait.duration > 0) {
+                return { ...trait, duration: trait.duration - 1 };
+              }
+              return trait;
+            })
+            .filter((trait) => trait.duration === undefined || trait.duration > 0);
+
+          state.traits.traitsByCharacterId[charId] = updatedTraits;
+        }
+      }),
   },
 });

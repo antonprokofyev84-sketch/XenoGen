@@ -1,5 +1,6 @@
 import { useGameStore } from '@/state/useGameState';
-import { GridOverlay } from './components/GridOverlay';
+import { GridOverlay } from './components/GridOverlay/GridOverlay';
+import { BottomBar } from './components/BottomBar/BottomBar';
 import './StrategicMap.scss';
 
 export const StrategicMap = () => {
@@ -25,10 +26,7 @@ export const StrategicMap = () => {
         </div>
       </main>
 
-      {/* Нижняя область для UI */}
-      <footer className="bottomBar">
-        <div className="barContent">BOTTOM BAR (Party Portraits, UI Controls, etc.)</div>
-      </footer>
+      <BottomBar />
     </div>
   );
 };
