@@ -1,6 +1,6 @@
 import React from 'react';
 import './GridOverlay.scss';
-import { MAP_DB } from '@/data/map.data';
+import { GridCell } from '../GridCell/GridCell';
 
 const GRID_COLS = 10;
 const GRID_ROWS = 10;
@@ -21,17 +21,6 @@ export const GridOverlay = () => {
     console.log(`Clicked sector coordinates: (${col}, ${row})`);
   };
 
-  const getCellClass = (col: number, row: number) => {
-    const cellId = `${col}-${row}`;
-    const cellData = MAP_DB[cellId];
-    if (!cellData.visited) {
-      return 'gridCell unexplored';
-    } else if (cellData.explorationDaysLeft === null || cellData.explorationDaysLeft > 0) {
-      return 'gridCell explored';
-    }
-    return 'gridCell visited';
-  };
-
   return (
     <svg className="gridOverlay" width={mapWidth} height={mapHeight} onClick={handleMapClick}>
       <defs>
@@ -43,21 +32,13 @@ export const GridOverlay = () => {
           patternTransform="rotate(45)"
         >
           <rect width="8" height="8" fill="transparent" />
-
           <rect x="0" y="0" width="2" height="8" fill="rgba(255,255,255,0.15)" />
         </pattern>
       </defs>
 
       {Array.from({ length: GRID_ROWS }).map((_, row) =>
         Array.from({ length: GRID_COLS }).map((_, col) => (
-          <rect
-            key={`${row}-${col}`}
-            className={getCellClass(col, row)}
-            x={col * CELL_SIZE}
-            y={row * CELL_SIZE}
-            width={CELL_SIZE}
-            height={CELL_SIZE}
-          />
+          <GridCell key={`${row}-${col}`} row={row} col={col} cellSize={CELL_SIZE} />
         )),
       )}
     </svg>

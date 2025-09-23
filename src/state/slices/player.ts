@@ -14,8 +14,10 @@ export interface PlayerSlice {
   actions: {
     setName: (name: string) => void;
     changeMainStat: (stat: MainStatKey, delta: number) => void;
+    setMainStat: (stat: MainStatKey, value: number) => void;
     resetMainStats: () => void;
     changeSkill: (skill: SkillKey, delta: number) => void;
+    setSkill: (skill: SkillKey, value: number) => void;
     resetSkills: () => void;
     resetHpToMax: () => void;
   };
@@ -153,6 +155,11 @@ export const createPlayerSlice: GameSlice<PlayerSlice> = (set, get) => ({
         state.player.mainStats[stat] = Math.max(0, currentVal + delta);
       }),
 
+    setMainStat: (stat, value) =>
+      set((state) => {
+        state.player.mainStats[stat] = value;
+      }),
+
     resetMainStats: () =>
       set((state) => {
         state.player.mainStats = { ...initialMainStats };
@@ -162,6 +169,11 @@ export const createPlayerSlice: GameSlice<PlayerSlice> = (set, get) => ({
       set((state) => {
         const currentVal = state.player.skills[skill];
         state.player.skills[skill] = Math.max(0, currentVal + delta);
+      }),
+
+    setSkill: (skill, value) =>
+      set((state) => {
+        state.player.skills[skill] = value;
       }),
 
     resetSkills: () =>

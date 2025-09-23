@@ -42,13 +42,13 @@ export type Trait = {
 };
 
 // A rule consists of optional conditions and mandatory actions.
-type TriggerRule = {
+export type TriggerRule = {
   if?: Condition[]; // All conditions must be met (AND logic)
   do: Action[]; // Executed in order
 };
 
 // A condition checks the game state.
-type Condition =
+export type Condition =
   | { kind: 'hasTag'; tag: string }
   | { kind: 'hasTrait'; id: string }
   | { kind: 'randomChance'; chance: number } // e.g., 0.25 for 25%
@@ -58,22 +58,21 @@ type Condition =
 type ActionHelper = { chance?: number }; // Optional chance to perform the action
 // An action modifies the game state.
 type ActionCore =
-  | { kind: 'modifyProgress'; delta: number }
-  | { kind: 'setProgress'; value: number }
+  | { kind: 'modifyProgress'; id: string; delta: number }
+  | { kind: 'setProgress'; id: string; value: number }
   | { kind: 'modifyMainStat'; stat: string; delta: number }
   | { kind: 'setMainStat'; stat: string; value: number }
   | { kind: 'modifySkill'; skill: string; delta: number }
   | { kind: 'setSkill'; skill: string; value: number }
-  | { kind: 'replaceSelf'; toId: string }
-  | { kind: 'removeSelf' }
   | { kind: 'addTrait'; id: string; params?: AddTraitParams }
   | { kind: 'removeTrait'; id: string }
+  | { kind: 'replaceTrait'; id: string; toId: string }
   | { kind: 'removeGroup'; group: string }
-  | { kind: 'setDuration'; value: number }
+  | { kind: 'setDuration'; id: string; value: number }
   | { kind: 'showToast'; textKey: string } // Uses localization key
   | { kind: 'emitEvent'; event: { type: string; [k: string]: any } }; // For advanced, decoupled logic
 
-type Action = ActionCore & ActionHelper;
+export type Action = ActionCore & ActionHelper;
 
 type AddTraitParams = {
   duration?: number | { value: number; unit: 'days' | 'battles' };

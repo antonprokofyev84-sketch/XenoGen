@@ -23,7 +23,7 @@ export const MAP_DB: Record<string, MapCellState> = {
     prosperity: 15,
     poi: [],
     visited: true,
-    explorationDaysLeft: 0,
+    explorationDaysLeft: 3,
   },
   '2-0': {
     id: '2-0',
@@ -71,7 +71,7 @@ export const MAP_DB: Record<string, MapCellState> = {
     prosperity: 15,
     poi: [],
     visited: true,
-    explorationDaysLeft: 0,
+    explorationDaysLeft: 3,
   },
   '6-0': {
     id: '6-0',
@@ -143,7 +143,7 @@ export const MAP_DB: Record<string, MapCellState> = {
     prosperity: 15,
     poi: [],
     visited: true,
-    explorationDaysLeft: 0,
+    explorationDaysLeft: 3,
   },
   '2-1': {
     id: '2-1',
@@ -191,7 +191,7 @@ export const MAP_DB: Record<string, MapCellState> = {
     prosperity: 15,
     poi: [],
     visited: true,
-    explorationDaysLeft: 0,
+    explorationDaysLeft: 3,
   },
   '6-1': {
     id: '6-1',
@@ -275,7 +275,7 @@ export const MAP_DB: Record<string, MapCellState> = {
     prosperity: 15,
     poi: [],
     visited: true,
-    explorationDaysLeft: 0,
+    explorationDaysLeft: 3,
   },
   '3-2': {
     id: '3-2',
@@ -287,7 +287,7 @@ export const MAP_DB: Record<string, MapCellState> = {
     prosperity: 15,
     poi: [],
     visited: true,
-    explorationDaysLeft: 0,
+    explorationDaysLeft: 3,
   },
   '4-2': {
     id: '4-2',
@@ -299,7 +299,7 @@ export const MAP_DB: Record<string, MapCellState> = {
     prosperity: 15,
     poi: [],
     visited: true,
-    explorationDaysLeft: 0,
+    explorationDaysLeft: 3,
   },
   '5-2': {
     id: '5-2',

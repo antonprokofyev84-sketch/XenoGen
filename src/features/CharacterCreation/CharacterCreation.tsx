@@ -7,6 +7,7 @@ import { MainStatsBlock } from './components/MainStatsBlock/MainStatsBlock';
 import { SecondaryStatsBlock } from './components/SecondaryStatsBlock/SecondaryStatsBlock';
 import { SkillsBlock } from './components/SkillsBlock/SkillsBlock';
 import { TraitBlock } from './components/TraitBlock/TraitBlock';
+import { MAP_DB } from '@/data/map.data';
 
 const INITIAL_CREATION_POINTS = 150;
 const MIN_STAT = 15;
@@ -29,6 +30,8 @@ export const CharacterCreation = () => {
   const { addTraitToCharacter: addTrait, removeTraitFromCharacter: removeTrait } = useGameStore(
     (state) => state.traits.actions,
   );
+
+  const { initializeMap } = useGameStore((state) => state.map.actions);
 
   const heroId = useGameStore(playerSelectors.id);
 
@@ -60,6 +63,7 @@ export const CharacterCreation = () => {
   };
 
   const handleStart = () => {
+    initializeMap(MAP_DB);
     goToScreen('strategicMap');
   };
 

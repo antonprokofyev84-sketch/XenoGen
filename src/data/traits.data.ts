@@ -20,15 +20,16 @@ export const TRAITS_DB: Trait[] = [
           do: [
             { kind: 'addTrait', id: 'buzzed', params: { duration: 1 } },
             { kind: 'removeTrait', id: 'withdrawal' },
-            { kind: 'modifyProgress', delta: 1, chance: 0.5 },
-            { kind: 'setDuration', value: 30 },
+            { kind: 'modifyProgress', id: 'alcoholic1', delta: 1, chance: 0.5 },
+            { kind: 'setDuration', id: 'alcoholic1', value: 30 },
           ],
         },
         {
           if: [{ kind: 'hasTag', tag: 'alcoHeal' }],
           do: [
             {
-              kind: 'removeSelf',
+              kind: 'removeTrait',
+              id: 'alcoholic1',
             },
           ],
         },
@@ -40,7 +41,26 @@ export const TRAITS_DB: Trait[] = [
       ],
       onProgressMax: [
         {
-          do: [{ kind: 'replaceSelf', toId: 'alcoholic2' }],
+          do: [{ kind: 'replaceTrait', id: 'alcoholic1', toId: 'alcoholic2' }],
+        },
+      ],
+    },
+  },
+
+  {
+    id: 'testTrait1',
+    nameKey: 'testTrait1Name',
+    descriptionKey: 'testTrait1Desc',
+    tags: ['addiction', 'quirk', 'startingChoice'],
+    group: '',
+    visible: true,
+    cost: 0,
+    duration: 5,
+    triggers: {
+      onDayPass: [
+        {
+          if: [{ kind: 'mainStatCheck', stat: 'str', comparison: 'lte', value: 60 }],
+          do: [{ kind: 'modifyMainStat', stat: 'str', delta: 1 }],
         },
       ],
     },
@@ -92,12 +112,12 @@ export const TRAITS_DB: Trait[] = [
       onAction: [
         {
           if: [{ kind: 'hasTag', tag: 'heal' }],
-          do: [{ kind: 'modifyProgress', delta: 1 }],
+          do: [{ kind: 'modifyProgress', id: 'medic1', delta: 1 }],
         },
       ],
       onProgressMax: [
         {
-          do: [{ kind: 'replaceSelf', toId: 'medic2' }],
+          do: [{ kind: 'replaceTrait', id: 'medic1', toId: 'medic2' }],
         },
       ],
     },
@@ -123,12 +143,12 @@ export const TRAITS_DB: Trait[] = [
       onAction: [
         {
           if: [{ kind: 'hasTag', tag: 'hunt' }],
-          do: [{ kind: 'modifyProgress', delta: 1 }],
+          do: [{ kind: 'modifyProgress', id: 'hunter1', delta: 1 }],
         },
       ],
       onProgressMax: [
         {
-          do: [{ kind: 'replaceSelf', toId: 'hunter2' }],
+          do: [{ kind: 'replaceTrait', id: 'hunter1', toId: 'hunter2' }],
         },
       ],
     },
@@ -153,12 +173,12 @@ export const TRAITS_DB: Trait[] = [
       onAction: [
         {
           if: [{ kind: 'hasTag', tag: 'craft' }],
-          do: [{ kind: 'modifyProgress', delta: 1 }],
+          do: [{ kind: 'modifyProgress', id: 'artificer1', delta: 1 }],
         },
       ],
       onProgressMax: [
         {
-          do: [{ kind: 'replaceSelf', toId: 'artificer2' }],
+          do: [{ kind: 'replaceTrait', id: 'artificer1', toId: 'artificer2' }],
         },
       ],
     },

@@ -2,7 +2,7 @@ import type { GameSlice } from '../types';
 import type { StoreState } from '@/state/useGameState';
 import { TraitsManager } from '@/systems/traits/traitsManager';
 import { TraitsRegistry } from '@/systems/traits/traitsRegistry';
-import type { TraitId, ActiveTrait } from '@/types/traits.types';
+import type { TraitId, ActiveTrait, TriggerRule } from '@/types/traits.types';
 import { mainStatKeys, skillKeys, secondaryStatsKeys } from '@/state/constants';
 
 const filterModsByKeys = (
@@ -25,7 +25,8 @@ export interface TraitsSlice {
     addTraitToCharacter: (characterId: string, traitId: TraitId) => boolean;
     removeTraitFromCharacter: (characterId: string, traitId: TraitId) => void;
     resetCharacterTraits: (characterId: string) => void;
-    processDayEnd: () => void;
+    modifyTrait: (characterId: string, traitId: TraitId, props: Partial<ActiveTrait>) => void;
+    processDayEnd: () => Record<string, TriggerRule[]>;
   };
 }
 
@@ -70,7 +71,7 @@ export const traitsSelectors = {
   },
 };
 
-export const createTraitsSlice: GameSlice<TraitsSlice> = (set) => ({
+export const createTraitsSlice: GameSlice<TraitsSlice> = (set, get) => ({
   traitsByCharacterId: {},
 
   actions: {
@@ -116,23 +117,32 @@ export const createTraitsSlice: GameSlice<TraitsSlice> = (set) => ({
       });
     },
 
-    processDayEnd: () =>
+    modifyTrait: (characterId, traitId, props) => {
       set((state) => {
-        const allCharacterIds = Object.keys(state.traits.traitsByCharacterId);
-        for (const charId of allCharacterIds) {
-          const currentTraits = state.traits.traitsByCharacterId[charId];
+        const list = state.traits.traitsByCharacterId[characterId] ?? [];
+        const trait = list.find((t) => t.id === traitId);
+        if (!trait) return;
 
-          const updatedTraits = currentTraits
-            .map((trait) => {
-              if (trait.duration && trait.duration > 0) {
-                return { ...trait, duration: trait.duration - 1 };
-              }
-              return trait;
-            })
-            .filter((trait) => trait.duration === undefined || trait.duration > 0);
+        Object.assign(trait, props);
+      });
+    },
 
-          state.traits.traitsByCharacterId[charId] = updatedTraits;
+    processDayEnd: (): Record<string, TriggerRule[]> => {
+      const { traitsByCharacterId } = get().traits;
+      const charIds = Object.keys(traitsByCharacterId); //change this to direct character ids from character slice in future
+      const allEffects: Record<string, TriggerRule[]> = {};
+
+      set((state) => {
+        for (const id of charIds) {
+          const currentTraits = state.traits.traitsByCharacterId[id] ?? [];
+          const { updatedTraits, effects } = TraitsManager.computeOnDayPassForActor(currentTraits);
+
+          state.traits.traitsByCharacterId[id] = updatedTraits;
+          allEffects[id] = effects;
         }
-      }),
+      });
+
+      return allEffects;
+    },
   },
 });

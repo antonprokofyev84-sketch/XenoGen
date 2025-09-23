@@ -7,8 +7,6 @@ export const BottomBar = () => {
   const heroId = useGameStore(playerSelectors.id);
   const traits = useGameStore((state) => state.traits.traitsByCharacterId[heroId]);
 
-  console.log(traits);
-
   const handleEndDayClick = () => {
     endDay();
   };

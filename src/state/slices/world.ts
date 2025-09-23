@@ -1,3 +1,4 @@
+import { EffectManager } from '@/systems/effects/effectManager';
 import type { GameSlice } from '../types';
 
 export interface WorldSlice {
@@ -16,8 +17,16 @@ export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
       });
 
       console.log(`--- Day ${get().world.currentDay} has begun ---`);
+      // get one snapshot for all effects checks
+      const stateSnapshot = get();
 
-      get().traits.actions.processDayEnd();
+      const traitsEffects = get().traits.actions.processDayEnd();
+      get().map.actions.processDayEnd();
+
+      EffectManager.processEffects(traitsEffects, { state: stateSnapshot });
+      console.log('---');
+      console.log(get().traits.traitsByCharacterId);
+      console.log(get().player.mainStats);
     },
   },
 });

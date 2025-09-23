@@ -4,6 +4,7 @@ import { BottomBar } from './components/BottomBar/BottomBar';
 import './StrategicMap.scss';
 
 export const StrategicMap = () => {
+  console.log('Rendering StrategicMap');
   const goToScreen = useGameStore((state) => state.ui.goToScreen);
 
   return (

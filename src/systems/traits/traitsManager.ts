@@ -1,5 +1,5 @@
 import { TraitsRegistry } from './traitsRegistry';
-import type { TraitId, ActiveTrait } from '@/types/traits.types';
+import type { TraitId, ActiveTrait, TriggerRule } from '@/types/traits.types';
 
 export const TraitsManager = {
   canAddTrait: (newTraitId: TraitId, currentTraits: ActiveTrait[]): boolean => {
@@ -23,5 +23,30 @@ export const TraitsManager = {
     }
 
     return true;
+  },
+
+  computeOnDayPassForActor: (
+    currentTraits: ActiveTrait[],
+  ): { updatedTraits: ActiveTrait[]; effects: TriggerRule[] } => {
+    // reduse duration, remove expired
+    const updatedTraits: ActiveTrait[] = [];
+    const effects: TriggerRule[] = [];
+
+    for (const trait of currentTraits) {
+      const nextTrait =
+        typeof trait.duration === 'number' ? { ...trait, duration: trait.duration - 1 } : trait;
+
+      //check if trait is still active
+      if (!(nextTrait.duration === undefined || nextTrait.duration > 0)) continue;
+
+      updatedTraits.push(nextTrait);
+
+      const baseTrait = TraitsRegistry.getById(nextTrait.id);
+      if (baseTrait?.triggers?.onDayPass) {
+        effects.push(...baseTrait.triggers.onDayPass);
+      }
+    }
+
+    return { updatedTraits, effects };
   },
 };
