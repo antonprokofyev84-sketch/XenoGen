@@ -1,11 +1,11 @@
-import { useGameStore } from '@/state/useGameState';
+// import { useGameStore } from '@/state/useGameState';
 import { GridOverlay } from './components/GridOverlay/GridOverlay';
 import { BottomBar } from './components/BottomBar/BottomBar';
 import './StrategicMap.scss';
 
 export const StrategicMap = () => {
   console.log('Rendering StrategicMap');
-  const goToScreen = useGameStore((state) => state.ui.goToScreen);
+  // const goToScreen = useGameStore((state) => state.ui.goToScreen);
 
   return (
     <div className="strategicMapContainer">
