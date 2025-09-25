@@ -26,7 +26,7 @@ export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
       EffectManager.processEffects(traitsEffects, { state: stateSnapshot });
       console.log('---');
       console.log(get().traits.traitsByCharacterId);
-      console.log(get().player.mainStats);
+      console.log(get().characters.byId['protagonist'].mainStats);
     },
   },
 });

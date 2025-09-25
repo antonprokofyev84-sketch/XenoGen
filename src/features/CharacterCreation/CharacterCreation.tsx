@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useGameStore, playerSelectors } from '@/state/useGameState';
+import { useGameStore } from '@/state/useGameState';
+import { useShallow } from 'zustand/react/shallow';
 import './CharacterCreation.scss';
 import type { MainStatKey, SkillKey } from '@/types/character.types';
 import textData from '@/locales/en.json';
@@ -18,52 +19,50 @@ const MAX_SKILL = 50;
 const STEP_OPTIONS = [1, 5, 10] as const;
 
 export const CharacterCreation = () => {
+  console.log('Render CharacterCreation');
   const [creationPoints, setCreationPoints] = useState(INITIAL_CREATION_POINTS);
   const [pointStep, setPointStep] = useState<number>(5);
 
-  const goToScreen = useGameStore((state) => state.ui.goToScreen);
-
-  const { changeMainStat, changeSkill, resetMainStats, resetSkills } = useGameStore(
-    (state) => state.player.actions,
+  const { protagonistId, characterActions, goToScreen, traitActions, mapActions } = useGameStore(
+    useShallow((state) => ({
+      protagonistId: state.characters.protagonistId,
+      characterActions: state.characters.actions,
+      goToScreen: state.ui.goToScreen,
+      traitActions: state.traits.actions,
+      mapActions: state.map.actions,
+    })),
   );
-
-  const { addTraitToCharacter: addTrait, removeTraitFromCharacter: removeTrait } = useGameStore(
-    (state) => state.traits.actions,
-  );
-
-  const { initializeMap } = useGameStore((state) => state.map.actions);
-
-  const heroId = useGameStore(playerSelectors.id);
 
   const handleStatChange = (statKey: MainStatKey, delta: number) => {
-    changeMainStat(statKey, delta);
+    characterActions.changeMainStat(protagonistId, statKey, delta);
     setCreationPoints((p) => p - delta);
   };
 
   const handleSkillChange = (skillKey: SkillKey, delta: number) => {
-    changeSkill(skillKey, delta);
+    characterActions.changeSkill(protagonistId, skillKey, delta);
     setCreationPoints((p) => p - delta);
   };
 
   const handleTraitAdd = (traitId: string, traitCost?: number) => {
-    addTrait(heroId, traitId);
+    traitActions.addTraitToCharacter(protagonistId, traitId);
     setCreationPoints((p) => p - (traitCost ?? 0));
   };
 
   const handleTraitRemove = (traitId: string, traitCost?: number) => {
-    removeTrait(heroId, traitId);
+    traitActions.removeTraitFromCharacter(protagonistId, traitId);
     setCreationPoints((p) => p + (traitCost ?? 0));
   };
 
   const handleBack = () => {
-    resetMainStats();
-    resetSkills();
+    // Используем единый экшен сброса
+    characterActions.resetProtagonist();
+    traitActions.resetCharacterTraits(protagonistId);
     setCreationPoints(INITIAL_CREATION_POINTS);
     goToScreen('mainMenu');
   };
 
   const handleStart = () => {
-    initializeMap(MAP_DB);
+    mapActions.initializeMap(MAP_DB);
     goToScreen('strategicMap');
   };
 
@@ -107,6 +106,7 @@ export const CharacterCreation = () => {
 
         <div className="characterCreationSections">
           <div className="characterCreationTopBlock">
+            {/* 2. Контракты дочерних компонентов теперь не содержат лишних props */}
             <MainStatsBlock
               freePoints={creationPoints}
               onStatChange={handleStatChange}
@@ -114,21 +114,20 @@ export const CharacterCreation = () => {
               minStat={MIN_STAT}
               maxStat={MAX_STAT}
             />
-            <SecondaryStatsBlock />
+            {/* <SecondaryStatsBlock />
             <SkillsBlock
               freePoints={creationPoints}
               onSkillChange={handleSkillChange}
               pointStep={pointStep}
               minSkill={MIN_SKILL}
               maxSkill={MAX_SKILL}
-            />
+            /> */}
           </div>
-          <TraitBlock
-            heroId={heroId}
+          {/* <TraitBlock
             freePoints={creationPoints}
             onTraitAdd={handleTraitAdd}
             onTraitRemove={handleTraitRemove}
-          />
+          /> */}
         </div>
       </section>
 

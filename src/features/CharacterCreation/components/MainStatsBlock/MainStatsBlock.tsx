@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useGameStore, playerSelectors } from '@/state/useGameState';
+import { useGameStore, characterSelectors } from '@/state/useGameState';
 import { useShallow } from 'zustand/react/shallow';
 import type { MainStatKey } from '@/types/character.types';
 import { mainStatKeys, initiatMainStatValue } from '@/state/constants';
@@ -23,8 +23,11 @@ export const MainStatsBlock = ({
   maxStat = 70,
 }: MainStatsBlockProps) => {
   console.log('MainStatsBlock render');
-  const mainStats = useGameStore(useShallow(playerSelectors.mainStats));
-  const mainStatsEffective = useGameStore(useShallow(playerSelectors.effectiveMainStats));
+  const protagonistId = useGameStore(useShallow((state) => state.characters.protagonistId));
+  const mainStats = useGameStore(useShallow(characterSelectors.selectMainStats(protagonistId)));
+  const mainStatsEffective = useGameStore(
+    useShallow(characterSelectors.selectEffectiveMainStats(protagonistId)),
+  );
 
   const statKeys = mainStatKeys;
 

@@ -3,16 +3,18 @@ import { TraitsRegistry } from '@/systems/traits/traitsRegistry';
 import textData from '@/locales/en.json';
 import './TraitBlock.scss';
 import { TraitsManager } from '@/systems/traits/traitsManager';
+import { useShallow } from 'zustand/react/shallow';
 
 interface TraitBlockProps {
-  heroId: string;
   freePoints: number;
   onTraitAdd: (traitId: string, cost?: number) => void;
   onTraitRemove: (traitId: string, cost?: number) => void;
 }
 
-export const TraitBlock = ({ heroId, freePoints, onTraitAdd, onTraitRemove }: TraitBlockProps) => {
-  const heroTraits = useGameStore(traitsSelectors.selectTraitsByCharacterId(heroId)) ?? [];
+export const TraitBlock = ({ freePoints, onTraitAdd, onTraitRemove }: TraitBlockProps) => {
+  const protagonistId = useGameStore(useShallow((state) => state.characters.protagonistId));
+  const protagonistTraits =
+    useGameStore(traitsSelectors.selectTraitsByCharacterId(protagonistId)) ?? [];
   const startingTraits = TraitsRegistry.getStartingChoices();
 
   const handleTraitToggle = (
@@ -32,14 +34,14 @@ export const TraitBlock = ({ heroId, freePoints, onTraitAdd, onTraitRemove }: Tr
       <h2 className="traitBlockTitle">{textData.characterCreation.traitsTitle}</h2>
       <div className="traitGrid">
         {startingTraits.map((trait) => {
-          const isPicked = heroTraits.some((t) => t.id === trait.id);
+          const isPicked = protagonistTraits.some((t) => t.id === trait.id);
           const traitCost = trait.cost ?? 0;
 
           let isDisabled = false;
           if (!isPicked) {
             const hasEnoughPoints = freePoints >= traitCost;
             isDisabled =
-              !hasEnoughPoints || TraitsManager.canAddTrait(trait.id, heroTraits) === false;
+              !hasEnoughPoints || TraitsManager.canAddTrait(trait.id, protagonistTraits) === false;
           }
 
           return (

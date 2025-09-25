@@ -1,5 +1,6 @@
 import type { StoreState } from '@/state/useGameState';
 import type { Action, TriggerRule, Condition } from '@/types/traits.types';
+import type { MainStatKey, SkillKey } from '@/types/character.types';
 
 type EffectContext = {
   state: StoreState;
@@ -49,7 +50,7 @@ function evaluateConditions(
       }
       case 'mainStatCheck': {
         // const val = state.characters.byId[actorId]?.mainStats?.[c.stat] ?? 0;
-        const stateVal = state.player.mainStats?.[c.stat as keyof typeof state.player.mainStats];
+        const stateVal = state.characters.byId[actorId]?.mainStats?.[c.stat as MainStatKey];
         return c.comparison === 'gte' ? stateVal >= c.value : stateVal <= c.value;
       }
       default:
@@ -74,27 +75,34 @@ function applyAction(action: Action, characterId: string, state: StoreState) {
     //   return;
     // }
     case 'setDuration': {
-      if (!state.traits.traitsByCharacterId[characterId].filter((t) => t.id === action.id).length)
-        return;
+      const isExisting = state.traits.traitsByCharacterId[characterId].some(
+        (t) => t.id === action.id,
+      );
+      if (!isExisting) return;
+
       state.traits.actions.modifyTrait(characterId, action.id, { duration: action.value });
       return;
     }
 
     // ——— статы/навыки персонажа ———
     case 'modifyMainStat': {
-      state.player.actions.changeMainStat(action.stat as any, action.delta);
+      state.characters.actions.changeMainStat(
+        characterId,
+        action.stat as MainStatKey,
+        action.delta,
+      );
       return;
     }
     case 'setMainStat': {
-      state.player.actions.setMainStat(action.stat as any, action.value);
+      state.characters.actions.setMainStat(characterId, action.stat as MainStatKey, action.value);
       return;
     }
     case 'modifySkill': {
-      state.player.actions.changeSkill(action.skill as any, action.delta);
+      state.characters.actions.changeSkill(characterId, action.skill as SkillKey, action.delta);
       return;
     }
     case 'setSkill': {
-      state.player.actions.setSkill(action.skill as any, action.value);
+      state.characters.actions.setSkill(characterId, action.skill as SkillKey, action.value);
       return;
     }
 
@@ -108,8 +116,11 @@ function applyAction(action: Action, characterId: string, state: StoreState) {
       return;
     }
     case 'replaceTrait': {
-      if (!state.traits.traitsByCharacterId[characterId].filter((t) => t.id === action.id).length)
-        return;
+      const isExisting = state.traits.traitsByCharacterId[characterId].some(
+        (t) => t.id === action.id,
+      );
+      if (!isExisting) return;
+
       state.traits.actions.removeTraitFromCharacter(characterId, action.id);
       state.traits.actions.addTraitToCharacter(characterId, action.toId);
       return;

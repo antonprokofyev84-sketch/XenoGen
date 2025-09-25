@@ -1,10 +1,17 @@
 import { useGameStore } from '@/state/useGameState.ts';
+import { useShallow } from 'zustand/react/shallow';
 import './MainMenu.scss';
 
 export const MainMenu = () => {
-  const goToScreen = useGameStore((state) => state.ui.goToScreen);
+  const { characterActions, goToScreen } = useGameStore(
+    useShallow((state) => ({
+      characterActions: state.characters.actions,
+      goToScreen: state.ui.goToScreen,
+    })),
+  );
 
   const handleNewGame = () => {
+    characterActions.resetProtagonist();
     goToScreen('characterCreation');
   };
 
