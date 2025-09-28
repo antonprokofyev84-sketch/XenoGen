@@ -1,4 +1,4 @@
-import type { MainStatKey, SkillKey, SecondaryStatKey } from '@/types/character.types';
+import type { MainStatKey, SecondaryStatKey, SkillKey } from '@/types/character.types';
 
 export const mainStatKeys: MainStatKey[] = ['str', 'dex', 'con', 'per', 'int', 'will'] as const;
 

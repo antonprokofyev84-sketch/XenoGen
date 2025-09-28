@@ -1,4 +1,5 @@
 import { useGameStore } from '@/state/useGameState';
+
 import './BottomBat.scss';
 
 export const BottomBar = () => {

@@ -1,5 +1,5 @@
-import type { CharacterTemplate, Character } from '@/types/character.types';
 import { initiatMainStatValue } from '@/state/constants';
+import type { Character, CharacterTemplate } from '@/types/character.types';
 
 export const PROTAGONIST_TEMPLATE: Character = {
   id: 'protagonist',

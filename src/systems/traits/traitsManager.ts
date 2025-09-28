@@ -1,5 +1,6 @@
+import type { ActiveTrait, TraitId, TriggerRule } from '@/types/traits.types';
+
 import { TraitsRegistry } from './traitsRegistry';
-import type { TraitId, ActiveTrait, TriggerRule } from '@/types/traits.types';
 
 export const TraitsManager = {
   canAddTrait: (newTraitId: TraitId, currentTraits: ActiveTrait[]): boolean => {

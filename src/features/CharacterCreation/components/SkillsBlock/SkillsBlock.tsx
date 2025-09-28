@@ -1,7 +1,9 @@
-import type { SkillKey } from '@/types/character.types';
 import { useShallow } from 'zustand/react/shallow';
-import { useGameStore, characterSelectors } from '@/state/useGameState';
+
 import textData from '@/locales/en.json';
+import { characterSelectors, useGameStore } from '@/state/useGameState';
+import type { SkillKey } from '@/types/character.types';
+
 import './SkillsBlock.scss';
 
 interface SkillsBlockProps {

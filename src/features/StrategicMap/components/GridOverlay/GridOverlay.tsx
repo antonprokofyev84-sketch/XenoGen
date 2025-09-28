@@ -1,6 +1,9 @@
 import React from 'react';
-import './GridOverlay.scss';
+
 import { GridCell } from '../GridCell/GridCell';
+import { MapIconDefs } from '../MapIconDefs/MapIconDefs';
+
+import './GridOverlay.scss';
 
 const GRID_COLS = 10;
 const GRID_ROWS = 10;
@@ -35,6 +38,7 @@ export const GridOverlay = () => {
           <rect x="0" y="0" width="2" height="8" fill="rgba(255,255,255,0.15)" />
         </pattern>
       </defs>
+      <MapIconDefs />
 
       {Array.from({ length: GRID_ROWS }).map((_, row) =>
         Array.from({ length: GRID_COLS }).map((_, col) => (

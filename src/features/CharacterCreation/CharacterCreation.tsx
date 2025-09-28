@@ -1,14 +1,19 @@
 import { useState } from 'react';
-import { useGameStore } from '@/state/useGameState';
+
 import { useShallow } from 'zustand/react/shallow';
-import './CharacterCreation.scss';
-import type { MainStatKey, SkillKey } from '@/types/character.types';
+
+import { MAP_DB } from '@/data/map.data';
+import { POI_DB } from '@/data/poi.data';
 import textData from '@/locales/en.json';
+import { useGameStore } from '@/state/useGameState';
+import type { MainStatKey, SkillKey } from '@/types/character.types';
+
 import { MainStatsBlock } from './components/MainStatsBlock/MainStatsBlock';
 import { SecondaryStatsBlock } from './components/SecondaryStatsBlock/SecondaryStatsBlock';
 import { SkillsBlock } from './components/SkillsBlock/SkillsBlock';
 import { TraitBlock } from './components/TraitBlock/TraitBlock';
-import { MAP_DB } from '@/data/map.data';
+
+import './CharacterCreation.scss';
 
 const INITIAL_CREATION_POINTS = 150;
 const MIN_STAT = 15;
@@ -19,19 +24,20 @@ const MAX_SKILL = 50;
 const STEP_OPTIONS = [1, 5, 10] as const;
 
 export const CharacterCreation = () => {
-  console.log('Render CharacterCreation');
   const [creationPoints, setCreationPoints] = useState(INITIAL_CREATION_POINTS);
   const [pointStep, setPointStep] = useState<number>(5);
 
-  const { protagonistId, characterActions, goToScreen, traitActions, mapActions } = useGameStore(
-    useShallow((state) => ({
-      protagonistId: state.characters.protagonistId,
-      characterActions: state.characters.actions,
-      goToScreen: state.ui.goToScreen,
-      traitActions: state.traits.actions,
-      mapActions: state.map.actions,
-    })),
-  );
+  const { protagonistId, characterActions, goToScreen, traitActions, mapActions, poiAction } =
+    useGameStore(
+      useShallow((state) => ({
+        protagonistId: state.characters.protagonistId,
+        characterActions: state.characters.actions,
+        goToScreen: state.ui.goToScreen,
+        traitActions: state.traits.actions,
+        mapActions: state.map.actions,
+        poiAction: state.pois.actions,
+      })),
+    );
 
   const handleStatChange = (statKey: MainStatKey, delta: number) => {
     characterActions.changeMainStat(protagonistId, statKey, delta);
@@ -63,6 +69,7 @@ export const CharacterCreation = () => {
 
   const handleStart = () => {
     mapActions.initializeMap(MAP_DB);
+    poiAction.initializePois(POI_DB);
     goToScreen('strategicMap');
   };
 
@@ -114,20 +121,20 @@ export const CharacterCreation = () => {
               minStat={MIN_STAT}
               maxStat={MAX_STAT}
             />
-            {/* <SecondaryStatsBlock />
+            <SecondaryStatsBlock />
             <SkillsBlock
               freePoints={creationPoints}
               onSkillChange={handleSkillChange}
               pointStep={pointStep}
               minSkill={MIN_SKILL}
               maxSkill={MAX_SKILL}
-            /> */}
+            />
           </div>
-          {/* <TraitBlock
+          <TraitBlock
             freePoints={creationPoints}
             onTraitAdd={handleTraitAdd}
             onTraitRemove={handleTraitRemove}
-          /> */}
+          />
         </div>
       </section>
 

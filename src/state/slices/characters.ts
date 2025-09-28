@@ -1,16 +1,17 @@
-import type { GameSlice } from '../types';
+import { PROTAGONIST_TEMPLATE } from '@/data/characterTemplates';
 import type { StoreState } from '@/state/useGameState';
 import type {
-  MainStatKey,
-  MainStats,
-  SkillKey,
-  Skills,
   BaseStats,
   Character,
+  MainStatKey,
+  MainStats,
   SecondaryStats,
+  SkillKey,
+  Skills,
 } from '@/types/character.types';
+
+import type { GameSlice } from '../types';
 import { traitsSelectors } from './traits';
-import { PROTAGONIST_TEMPLATE } from '@/data/characterTemplates';
 
 /**
  * The core slice for managing all characters in the game, including the protagonist and NPCs.

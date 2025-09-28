@@ -1,5 +1,5 @@
-import type { StoreState } from '../useGameState.ts';
 import type { GameSlice } from '../types.ts';
+import type { StoreState } from '../useGameState.ts';
 
 export type UIScreen = 'mainMenu' | 'characterCreation' | 'strategicMap';
 

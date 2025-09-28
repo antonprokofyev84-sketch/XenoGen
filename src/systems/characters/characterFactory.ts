@@ -1,15 +1,15 @@
+import { ARCHETYPES_BY_RARITY, ARCHETYPES_TEMPLATES_DB } from '@/data/archetypeTemplates';
 import { CHARACTER_TEMPLATES_DB } from '@/data/characterTemplates';
-import { ARCHETYPES_TEMPLATES_DB, ARCHETYPES_BY_RARITY } from '@/data/archetypeTemplates';
 import type {
-  CharacterTemplate,
-  Rarity,
-  TemplateStat,
-  MainStats,
-  Skills,
-  MainStatKey,
-  SkillKey,
   BaseStats,
   BaseStatsKey,
+  CharacterTemplate,
+  MainStatKey,
+  MainStats,
+  Rarity,
+  SkillKey,
+  Skills,
+  TemplateStat,
 } from '@/types/character.types';
 
 /**

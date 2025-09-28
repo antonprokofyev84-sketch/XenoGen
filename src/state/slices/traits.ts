@@ -1,9 +1,10 @@
-import type { GameSlice } from '../types';
+import { mainStatKeys, secondaryStatsKeys, skillKeys } from '@/state/constants';
 import type { StoreState } from '@/state/useGameState';
 import { TraitsManager } from '@/systems/traits/traitsManager';
 import { TraitsRegistry } from '@/systems/traits/traitsRegistry';
-import type { TraitId, ActiveTrait, TriggerRule } from '@/types/traits.types';
-import { mainStatKeys, skillKeys, secondaryStatsKeys } from '@/state/constants';
+import type { ActiveTrait, TraitId, TriggerRule } from '@/types/traits.types';
+
+import type { GameSlice } from '../types';
 
 const filterModsByKeys = (
   totalMods: Record<string, number>,

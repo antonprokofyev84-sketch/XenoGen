@@ -1,6 +1,6 @@
 import type { StoreState } from '@/state/useGameState';
-import type { Action, TriggerRule, Condition } from '@/types/traits.types';
 import type { MainStatKey, SkillKey } from '@/types/character.types';
+import type { Action, Condition, TriggerRule } from '@/types/traits.types';
 
 type EffectContext = {
   state: StoreState;

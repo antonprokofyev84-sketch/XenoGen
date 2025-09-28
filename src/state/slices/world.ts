@@ -1,4 +1,5 @@
 import { EffectManager } from '@/systems/effects/effectManager';
+
 import type { GameSlice } from '../types';
 
 export interface WorldSlice {

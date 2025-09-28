@@ -1,9 +1,11 @@
-import { useGameStore, traitsSelectors } from '@/state/useGameState';
-import { TraitsRegistry } from '@/systems/traits/traitsRegistry';
-import textData from '@/locales/en.json';
-import './TraitBlock.scss';
-import { TraitsManager } from '@/systems/traits/traitsManager';
 import { useShallow } from 'zustand/react/shallow';
+
+import textData from '@/locales/en.json';
+import { traitsSelectors, useGameStore } from '@/state/useGameState';
+import { TraitsManager } from '@/systems/traits/traitsManager';
+import { TraitsRegistry } from '@/systems/traits/traitsRegistry';
+
+import './TraitBlock.scss';
 
 interface TraitBlockProps {
   freePoints: number;

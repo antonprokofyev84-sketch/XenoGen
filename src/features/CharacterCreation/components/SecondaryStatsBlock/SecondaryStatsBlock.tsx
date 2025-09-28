@@ -1,6 +1,8 @@
-import { useGameStore, characterSelectors } from '@/state/useGameState';
 import { useShallow } from 'zustand/react/shallow';
+
 import textData from '@/locales/en.json';
+import { characterSelectors, useGameStore } from '@/state/useGameState';
+
 import './SecondaryStatsBlock.scss';
 
 export const SecondaryStatsBlock = () => {

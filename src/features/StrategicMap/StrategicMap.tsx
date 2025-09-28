@@ -1,6 +1,7 @@
 // import { useGameStore } from '@/state/useGameState';
-import { GridOverlay } from './components/GridOverlay/GridOverlay';
 import { BottomBar } from './components/BottomBar/BottomBar';
+import { GridOverlay } from './components/GridOverlay/GridOverlay';
+
 import './StrategicMap.scss';
 
 export const StrategicMap = () => {

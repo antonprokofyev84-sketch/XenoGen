@@ -1,20 +1,23 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
-import { createUISlice } from './slices/ui';
-import type { UISlice } from './slices/ui';
-
-import { createTraitsSlice, traitsSelectors } from './slices/traits';
-import type { TraitsSlice } from './slices/traits';
-
+import { createMapSlice, mapSelectors } from '@/state/slices/map';
+import type { MapSlice } from '@/state/slices/map';
 import { createWorldSlice } from '@/state/slices/world';
 import type { WorldSlice } from '@/state/slices/world';
 
-import { createMapSlice, mapSelectors } from '@/state/slices/map';
-import type { MapSlice } from '@/state/slices/map';
-
-import { createCharactersSlice, characterSelectors } from './slices/characters';
+import { characterSelectors, createCharactersSlice } from './slices/characters';
 import type { CharactersSlice } from './slices/characters';
+import { createPartySlice, partySelectors } from './slices/party';
+import type { PartySlice } from './slices/party';
+import { createPoiSlice, poiSelectors } from './slices/poi';
+import type { PoiSlice } from './slices/poi';
+import { createShelterSlice, shelterSelectors } from './slices/shelter';
+import type { ShelterSlice } from './slices/shelter';
+import { createTraitsSlice, traitsSelectors } from './slices/traits';
+import type { TraitsSlice } from './slices/traits';
+import { createUISlice } from './slices/ui';
+import type { UISlice } from './slices/ui';
 
 export type StoreState = {
   characters: CharactersSlice;
@@ -22,6 +25,9 @@ export type StoreState = {
   traits: TraitsSlice;
   world: WorldSlice;
   map: MapSlice;
+  party: PartySlice;
+  shelter: ShelterSlice;
+  pois: PoiSlice;
 };
 
 export const useGameStore = create<StoreState>()(
@@ -31,7 +37,17 @@ export const useGameStore = create<StoreState>()(
     traits: createTraitsSlice(set, get, api),
     map: createMapSlice(set, get, api),
     characters: createCharactersSlice(set, get, api),
+    party: createPartySlice(set, get, api),
+    shelter: createShelterSlice(set, get, api),
+    pois: createPoiSlice(set, get, api),
   })),
 );
 
-export { traitsSelectors, mapSelectors, characterSelectors };
+export {
+  traitsSelectors,
+  mapSelectors,
+  characterSelectors,
+  partySelectors,
+  shelterSelectors,
+  poiSelectors,
+};

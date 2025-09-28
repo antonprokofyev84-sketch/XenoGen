@@ -1,7 +1,8 @@
-import { useGameStore } from '@/state/useGameState';
-import { MainMenu } from '@/features/MainMenu/MainMenu';
 import { CharacterCreation } from '@/features/CharacterCreation/CharacterCreation';
+import { MainMenu } from '@/features/MainMenu/MainMenu';
 import { StrategicMap } from '@/features/StrategicMap/StrategicMap';
+import { useGameStore } from '@/state/useGameState';
+
 import './App.scss';
 
 function App() {

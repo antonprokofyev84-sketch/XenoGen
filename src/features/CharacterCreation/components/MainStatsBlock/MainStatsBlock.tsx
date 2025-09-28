@@ -1,10 +1,12 @@
 import { useCallback } from 'react';
-import { useGameStore, characterSelectors } from '@/state/useGameState';
+
 import { useShallow } from 'zustand/react/shallow';
-import type { MainStatKey } from '@/types/character.types';
-import { mainStatKeys, initiatMainStatValue } from '@/state/constants';
 
 import textData from '@/locales/en.json';
+import { initiatMainStatValue, mainStatKeys } from '@/state/constants';
+import { characterSelectors, useGameStore } from '@/state/useGameState';
+import type { MainStatKey } from '@/types/character.types';
+
 import './MainStatsBlock.scss';
 
 interface MainStatsBlockProps {
