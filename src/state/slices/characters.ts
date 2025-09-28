@@ -1,4 +1,4 @@
-import { PROTAGONIST_TEMPLATE } from '@/data/characterTemplates';
+import { PROTAGONIST_TEMPLATE } from '@/data/character.templates';
 import type { StoreState } from '@/state/useGameState';
 import type {
   BaseStats,

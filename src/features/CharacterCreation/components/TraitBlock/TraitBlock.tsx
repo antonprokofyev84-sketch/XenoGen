@@ -2,8 +2,8 @@ import { useShallow } from 'zustand/react/shallow';
 
 import textData from '@/locales/en.json';
 import { traitsSelectors, useGameStore } from '@/state/useGameState';
-import { TraitsManager } from '@/systems/traits/traitsManager';
-import { TraitsRegistry } from '@/systems/traits/traitsRegistry';
+import { traitsManager } from '@/systems/traits/traitsManager';
+import { traitsRegistry } from '@/systems/traits/traitsRegistry';
 
 import './TraitBlock.scss';
 
@@ -17,7 +17,7 @@ export const TraitBlock = ({ freePoints, onTraitAdd, onTraitRemove }: TraitBlock
   const protagonistId = useGameStore(useShallow((state) => state.characters.protagonistId));
   const protagonistTraits =
     useGameStore(traitsSelectors.selectTraitsByCharacterId(protagonistId)) ?? [];
-  const startingTraits = TraitsRegistry.getStartingChoices();
+  const startingTraits = traitsRegistry.getStartingChoices();
 
   const handleTraitToggle = (
     traitId: string,
@@ -43,7 +43,7 @@ export const TraitBlock = ({ freePoints, onTraitAdd, onTraitRemove }: TraitBlock
           if (!isPicked) {
             const hasEnoughPoints = freePoints >= traitCost;
             isDisabled =
-              !hasEnoughPoints || TraitsManager.canAddTrait(trait.id, protagonistTraits) === false;
+              !hasEnoughPoints || traitsManager.canAddTrait(trait.id, protagonistTraits) === false;
           }
 
           return (

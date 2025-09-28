@@ -1,6 +1,6 @@
 import type { StoreState } from '@/state/useGameState';
-import type { MapCellState } from '@/types/map.types';
-import type { PoiType } from '@/types/poi.type';
+import type { MapCell } from '@/types/map.types';
+import type { PoiType } from '@/types/poi.types';
 
 import type { GameSlice } from '../types';
 
@@ -12,15 +12,19 @@ const POI_ICON_PRIORITY: Partial<Record<PoiType, number>> = {
 };
 
 export interface MapSlice {
-  cells: Record<string, MapCellState>;
+  selectedCellId: string | null;
+  cells: Record<string, MapCell>;
   actions: {
-    initializeMap: (initialData: Record<string, MapCellState>) => void;
-    updateCell: (cellId: string, updates: Partial<MapCellState>) => void;
+    initializeMap: (initialData: Record<string, MapCell>) => void;
+    updateCell: (cellId: string, updates: Partial<MapCell>) => void;
+    updateSelectedCellId: (cellId: string | null) => void;
+    clearSelectedCellId: () => void;
     processDayEnd: () => void;
   };
 }
 
 export const mapSelectors = {
+  selectSelectedCellId: (state: StoreState) => state.map.selectedCellId,
   selectCells: (state: StoreState) => state.map.cells,
   selectCellById: (cellId: string) => (state: StoreState) => state.map.cells[cellId],
   selectCellIcon: (cellId: string) => (state: StoreState) => {
@@ -29,11 +33,6 @@ export const mapSelectors = {
     let best = 0;
     let icon = null;
     const cellPois = state.pois.poisByCellId[cellId];
-
-    if (cellId === '0-3') {
-      console.log('---');
-      console.log(cellPois);
-    }
 
     if (cellPois?.length) {
       for (const poi of cellPois) {
@@ -50,18 +49,26 @@ export const mapSelectors = {
 };
 
 export const createMapSlice: GameSlice<MapSlice> = (set) => ({
+  selectedCellId: null,
   cells: {},
   actions: {
     initializeMap: (initialData) =>
       set((state) => {
         state.map.cells = initialData;
       }),
-
     updateCell: (cellId, updates) =>
       set((state) => {
         if (state.map.cells[cellId]) {
           state.map.cells[cellId] = { ...state.map.cells[cellId], ...updates };
         }
+      }),
+    updateSelectedCellId: (cellId) =>
+      set((state) => {
+        state.map.selectedCellId = cellId;
+      }),
+    clearSelectedCellId: () =>
+      set((state) => {
+        state.map.selectedCellId = null;
       }),
     processDayEnd: () => {
       set((state) => {

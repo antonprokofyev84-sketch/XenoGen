@@ -28,3 +28,10 @@
 .explored {
   fill: transparent;
 }
+
+.selectionFrame {
+  fill: transparent;
+  stroke: #4caf50;
+  stroke-width: 3px;
+  pointer-events: none;
+}

@@ -59,5 +59,26 @@
       "name": "Artificer",
       "desc": "A tinkerer and inventor. Provides bonuses to Crafting and Science skills."
     }
+  },
+  "strategicMap": {
+    "sectorInfo": "Sector Info",
+    "selectSector": "Select a sector on the map to see details."
+  },
+  "mapCellTypes": {
+    "forest": "Forest",
+    "mountain": "Mountain",
+    "plain": "Plains",
+    "desert": "Desert",
+    "water": "Water",
+    "ruins": "Ruins"
+  },
+  "poi": {
+    "scavenger_base": { "name": "Scavenger Base", "desc": "A well-established outpost for a group of scavengers." },
+    "scavenger_camp": { "name": "Scavenger Camp", "desc": "A small camp. They might not be here for long, aren't they?" },
+    "scavenger_group": { "name": "Scavenger Group", "desc": "A group of scavengers. Did they find something valuable?" },
+    "scavenger_patrol": { "name": "Scavenger Patrol", "desc": "A small, mobile group of scavengers." },
+    "abandoned_car": { "name": "Abandoned Car", "desc": "A rusted-out husk of a vehicle. Might be something inside." },
+    "crashed_drone": { "name": "Crashed Drone", "desc": "A military-grade drone, half-buried in the dirt. Its cargo might still be intact." },
+    "makeshift_cache": { "name": "Makeshift Cache", "desc": "A cleverly hidden stash of supplies." }
   }
 }

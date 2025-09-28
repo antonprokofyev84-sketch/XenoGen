@@ -1,10 +1,10 @@
 import type { ActiveTrait, TraitId, TriggerRule } from '@/types/traits.types';
 
-import { TraitsRegistry } from './traitsRegistry';
+import { traitsRegistry } from './traitsRegistry';
 
-export const TraitsManager = {
+export const traitsManager = {
   canAddTrait: (newTraitId: TraitId, currentTraits: ActiveTrait[]): boolean => {
-    const newTrait = TraitsRegistry.getById(newTraitId);
+    const newTrait = traitsRegistry.getById(newTraitId);
     if (!newTrait) return false;
 
     // 1) Взаимоисключение по group (например, alcoholism уровнями)
@@ -26,7 +26,7 @@ export const TraitsManager = {
     return true;
   },
 
-  computeOnDayPassForActor: (
+  computeOnDayPassForCharacter: (
     currentTraits: ActiveTrait[],
   ): { updatedTraits: ActiveTrait[]; effects: TriggerRule[] } => {
     // reduse duration, remove expired
@@ -42,7 +42,7 @@ export const TraitsManager = {
 
       updatedTraits.push(nextTrait);
 
-      const baseTrait = TraitsRegistry.getById(nextTrait.id);
+      const baseTrait = traitsRegistry.getById(nextTrait.id);
       if (baseTrait?.triggers?.onDayPass) {
         effects.push(...baseTrait.triggers.onDayPass);
       }

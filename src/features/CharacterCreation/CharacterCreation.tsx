@@ -2,8 +2,8 @@ import { useState } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
 
-import { MAP_DB } from '@/data/map.data';
-import { POI_DB } from '@/data/poi.data';
+import { INITIAL_MAP } from '@/data/initialMap';
+import { INITIAL_POI } from '@/data/initialPoi';
 import textData from '@/locales/en.json';
 import { useGameStore } from '@/state/useGameState';
 import type { MainStatKey, SkillKey } from '@/types/character.types';
@@ -68,8 +68,8 @@ export const CharacterCreation = () => {
   };
 
   const handleStart = () => {
-    mapActions.initializeMap(MAP_DB);
-    poiAction.initializePois(POI_DB);
+    mapActions.initializeMap(INITIAL_MAP);
+    poiAction.initializePois(INITIAL_POI);
     goToScreen('strategicMap');
   };
 

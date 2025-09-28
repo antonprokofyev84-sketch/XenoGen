@@ -1,3 +1,5 @@
+import React from 'react';
+
 import { useShallow } from 'zustand/react/shallow';
 
 import { mapSelectors } from '@/state/slices/map';
@@ -9,7 +11,7 @@ interface GridCellProps {
   cellSize: number;
 }
 
-export const GridCell = ({ col, row, cellSize }: GridCellProps) => {
+export const GridCell = React.memo(function GridCell({ col, row, cellSize }: GridCellProps) {
   const cellId = `${col}-${row}`;
 
   const cellData = useGameStore(useShallow(mapSelectors.selectCellById(cellId)));
@@ -51,4 +53,4 @@ export const GridCell = ({ col, row, cellSize }: GridCellProps) => {
       )}
     </>
   );
-};
+});

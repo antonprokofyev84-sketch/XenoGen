@@ -1,5 +1,5 @@
-import { ARCHETYPES_BY_RARITY, ARCHETYPES_TEMPLATES_DB } from '@/data/archetypeTemplates';
-import { CHARACTER_TEMPLATES_DB } from '@/data/characterTemplates';
+import { ARCHETYPES_BY_RARITY, ARCHETYPE_TEMPLATES_DB } from '@/data/archetype.templates';
+import { CHARACTER_TEMPLATES_DB } from '@/data/character.templates';
 import type {
   BaseStats,
   BaseStatsKey,
@@ -64,7 +64,7 @@ export const CharacterFactory = {
 
     // 3. Select one random archetype
     const selectedArchetypeId = archetypePool[Math.floor(Math.random() * archetypePool.length)];
-    const selectedArchetype = ARCHETYPES_TEMPLATES_DB[selectedArchetypeId];
+    const selectedArchetype = ARCHETYPE_TEMPLATES_DB[selectedArchetypeId];
     if (!selectedArchetype) {
       console.warn(`No archetype found for template "${templateId}".`);
     }

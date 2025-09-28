@@ -2,7 +2,7 @@ import type { ArchetypeTemplate } from '@/types/character.types';
 
 export type StatDefinition = number | [base: number, random: number];
 
-export const ARCHETYPES_TEMPLATES_DB: Record<string, ArchetypeTemplate> = {
+export const ARCHETYPE_TEMPLATES_DB: Record<string, ArchetypeTemplate> = {
   // --- COMMON ARCHETYPES ---
   raider_brawler: {
     id: 'raider_brawler',

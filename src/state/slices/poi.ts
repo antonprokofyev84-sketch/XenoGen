@@ -1,6 +1,6 @@
 import type { StoreState } from '@/state/useGameState';
 //import { PoisManager } from '@/systems/pois/poisManager';
-import type { Poi } from '@/types/poi.type';
+import type { Poi } from '@/types/poi.types';
 
 import type { GameSlice } from '../types';
 
@@ -46,5 +46,7 @@ export const createPoiSlice: GameSlice<PoiSlice> = (set, get) => ({
         const currentPois = state.pois.poisByCellId[cellId] ?? [];
         state.pois.poisByCellId[cellId] = currentPois.filter((poi) => poi.id !== poiId);
       }),
+
+    processDayEnd: () => {},
   },
 });

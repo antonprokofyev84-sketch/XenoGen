@@ -1,6 +1,6 @@
 import type { Trait } from '@/types/traits.types';
 
-export const TRAITS_DB: Trait[] = [
+export const TRAIT_TEMPLATES_DB: Trait[] = [
   // --- ADDICTIONS ---
   {
     id: 'alcoholic1',

@@ -1,7 +1,7 @@
 import { mainStatKeys, secondaryStatsKeys, skillKeys } from '@/state/constants';
 import type { StoreState } from '@/state/useGameState';
-import { TraitsManager } from '@/systems/traits/traitsManager';
-import { TraitsRegistry } from '@/systems/traits/traitsRegistry';
+import { traitsManager } from '@/systems/traits/traitsManager';
+import { traitsRegistry } from '@/systems/traits/traitsRegistry';
 import type { ActiveTrait, TraitId, TriggerRule } from '@/types/traits.types';
 
 import type { GameSlice } from '../types';
@@ -45,7 +45,7 @@ export const traitsSelectors = {
       const total: Record<string, number> = {};
 
       for (const inst of active) {
-        const def = TraitsRegistry.getById(inst.id);
+        const def = traitsRegistry.getById(inst.id);
         if (!def?.mods) continue;
 
         for (const [key, val] of Object.entries(def.mods)) {
@@ -77,12 +77,12 @@ export const createTraitsSlice: GameSlice<TraitsSlice> = (set, get) => ({
 
   actions: {
     addTraitToCharacter: (characterId, traitId) => {
-      const def = TraitsRegistry.getById(traitId);
+      const def = traitsRegistry.getById(traitId);
       if (!def) return false;
 
       set((state) => {
         const currentTraits = state.traits.traitsByCharacterId[characterId] ?? [];
-        if (!TraitsManager.canAddTrait(traitId, currentTraits)) {
+        if (!traitsManager.canAddTrait(traitId, currentTraits)) {
           return false;
         }
 
@@ -136,7 +136,8 @@ export const createTraitsSlice: GameSlice<TraitsSlice> = (set, get) => ({
       set((state) => {
         for (const id of charIds) {
           const currentTraits = state.traits.traitsByCharacterId[id] ?? [];
-          const { updatedTraits, effects } = TraitsManager.computeOnDayPassForActor(currentTraits);
+          const { updatedTraits, effects } =
+            traitsManager.computeOnDayPassForCharacter(currentTraits);
 
           state.traits.traitsByCharacterId[id] = updatedTraits;
           allEffects[id] = effects;

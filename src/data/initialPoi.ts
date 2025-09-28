@@ -1,6 +1,6 @@
-import type { Poi } from '@/types/poi.type';
+import type { Poi } from '@/types/poi.types';
 
-export const POI_DB: Record<string, Poi[]> = {
+export const INITIAL_POI: Record<string, Poi[]> = {
   '0-0': [],
   '0-1': [],
   '0-2': [],
@@ -22,7 +22,43 @@ export const POI_DB: Record<string, Poi[]> = {
   '1-8': [],
   '1-9': [],
   '2-0': [],
-  '2-1': [],
+  '2-1': [
+    {
+      id: 'scavenger_camp_000',
+      poiTemplateId: 'scavenger_camp',
+      nameKey: 'poi.scavenger_camp.name',
+      descriptionKey: 'poi.scavenger_camp.desc',
+      type: 'settlement',
+      faction: 'scavengers',
+      progress: 0,
+      progressMax: 15,
+      perceptionThreshold: 15,
+      discovered: true,
+      difficulty: 2,
+    },
+    {
+      id: 'scavenger_patrol_000',
+      poiTemplateId: 'scavenger_patrol',
+      nameKey: 'poi.scavenger_patrol.name',
+      descriptionKey: 'poi.scavenger_patrol.desc',
+      type: 'battle',
+      faction: 'scavengers',
+      perceptionThreshold: 15,
+      discovered: true,
+      difficulty: 1,
+    },
+    {
+      id: 'scavenger_patrol_001',
+      poiTemplateId: 'scavenger_patrol',
+      nameKey: 'poi.scavenger_patrol.name',
+      descriptionKey: 'poi.scavenger_patrol.desc',
+      type: 'battle',
+      faction: 'scavengers',
+      perceptionThreshold: 15,
+      discovered: false,
+      difficulty: 1,
+    },
+  ],
   '2-2': [],
   '2-3': [],
   '2-4': [],
@@ -34,12 +70,24 @@ export const POI_DB: Record<string, Poi[]> = {
   '3-0': [
     {
       id: 'shelter',
+      poiTemplateId: 'shelter', // no template
       nameKey: 'poi.shelter.name',
       descriptionKey: 'poi.shelter.description',
       type: 'settlement',
       faction: 'player',
       discovered: true,
       perceptionThreshold: 0,
+    },
+    {
+      id: 'scavenger_group_3-0_000',
+      poiTemplateId: 'scavenger_group',
+      nameKey: 'poi.scavenger_group.name',
+      descriptionKey: 'poi.scavenger_group.desc',
+      type: 'battle',
+      faction: 'scavengers',
+      perceptionThreshold: 25,
+      discovered: true,
+      difficulty: 1,
     },
   ],
   '3-1': [],
