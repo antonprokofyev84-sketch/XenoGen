@@ -13,7 +13,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '1-0': {
@@ -28,7 +28,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: true,
+    isVisited: true,
     explorationDaysLeft: 3,
   },
   '2-0': {
@@ -43,7 +43,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: true,
+    isVisited: true,
     explorationDaysLeft: null,
   },
   '3-0': {
@@ -58,7 +58,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: true,
+    isVisited: true,
     explorationDaysLeft: null,
   },
   '4-0': {
@@ -73,7 +73,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: true,
+    isVisited: true,
     explorationDaysLeft: null,
   },
   '5-0': {
@@ -88,7 +88,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: true,
+    isVisited: true,
     explorationDaysLeft: 3,
   },
   '6-0': {
@@ -103,7 +103,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '7-0': {
@@ -118,7 +118,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '8-0': {
@@ -133,7 +133,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '9-0': {
@@ -148,7 +148,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '0-1': {
@@ -163,7 +163,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '1-1': {
@@ -178,7 +178,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: true,
+    isVisited: true,
     explorationDaysLeft: 3,
   },
   '2-1': {
@@ -189,11 +189,11 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     threatLevel: 1,
     contaminationLevel: 0,
     prosperityLevel: 1,
-    threatProgress: 5,
+    threatProgress: 35,
     contaminationProgress: 5,
-    prosperityProgress: 5,
+    prosperityProgress: 15,
     poi: [],
-    visited: true,
+    isVisited: true,
     explorationDaysLeft: null,
   },
   '3-1': {
@@ -204,11 +204,11 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     threatLevel: 1,
     contaminationLevel: 0,
     prosperityLevel: 1,
-    threatProgress: 5,
+    threatProgress: 25,
     contaminationProgress: 5,
-    prosperityProgress: 5,
+    prosperityProgress: 65,
     poi: [],
-    visited: true,
+    isVisited: true,
     explorationDaysLeft: null,
   },
   '4-1': {
@@ -223,7 +223,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: true,
+    isVisited: true,
     explorationDaysLeft: null,
   },
   '5-1': {
@@ -238,7 +238,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: true,
+    isVisited: true,
     explorationDaysLeft: 3,
   },
   '6-1': {
@@ -253,7 +253,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '7-1': {
@@ -268,7 +268,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '8-1': {
@@ -283,7 +283,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '9-1': {
@@ -298,7 +298,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '0-2': {
@@ -313,7 +313,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '1-2': {
@@ -328,7 +328,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '2-2': {
@@ -343,7 +343,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: true,
+    isVisited: true,
     explorationDaysLeft: 3,
   },
   '3-2': {
@@ -358,7 +358,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: true,
+    isVisited: true,
     explorationDaysLeft: 3,
   },
   '4-2': {
@@ -373,7 +373,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: true,
+    isVisited: true,
     explorationDaysLeft: 3,
   },
   '5-2': {
@@ -388,7 +388,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '6-2': {
@@ -403,7 +403,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '7-2': {
@@ -418,7 +418,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '8-2': {
@@ -433,7 +433,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '9-2': {
@@ -448,7 +448,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '0-3': {
@@ -463,7 +463,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '1-3': {
@@ -478,7 +478,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '2-3': {
@@ -493,7 +493,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '3-3': {
@@ -508,7 +508,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '4-3': {
@@ -523,7 +523,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '5-3': {
@@ -538,7 +538,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '6-3': {
@@ -553,7 +553,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '7-3': {
@@ -568,7 +568,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '8-3': {
@@ -583,7 +583,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '9-3': {
@@ -598,7 +598,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '0-4': {
@@ -613,7 +613,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '1-4': {
@@ -628,7 +628,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '2-4': {
@@ -643,7 +643,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '3-4': {
@@ -658,7 +658,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '4-4': {
@@ -673,7 +673,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '5-4': {
@@ -688,7 +688,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '6-4': {
@@ -703,7 +703,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '7-4': {
@@ -718,7 +718,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '8-4': {
@@ -733,7 +733,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '9-4': {
@@ -748,7 +748,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '0-5': {
@@ -763,7 +763,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '1-5': {
@@ -778,7 +778,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '2-5': {
@@ -793,7 +793,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '3-5': {
@@ -808,7 +808,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '4-5': {
@@ -823,7 +823,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '5-5': {
@@ -838,7 +838,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '6-5': {
@@ -853,7 +853,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '7-5': {
@@ -868,7 +868,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '8-5': {
@@ -883,7 +883,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '9-5': {
@@ -898,7 +898,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '0-6': {
@@ -913,7 +913,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '1-6': {
@@ -928,7 +928,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '2-6': {
@@ -943,7 +943,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '3-6': {
@@ -958,7 +958,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '4-6': {
@@ -973,7 +973,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '5-6': {
@@ -988,7 +988,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '6-6': {
@@ -1003,7 +1003,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '7-6': {
@@ -1018,7 +1018,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '8-6': {
@@ -1033,7 +1033,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '9-6': {
@@ -1048,7 +1048,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '0-7': {
@@ -1063,7 +1063,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '1-7': {
@@ -1078,7 +1078,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '2-7': {
@@ -1093,7 +1093,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '3-7': {
@@ -1108,7 +1108,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '4-7': {
@@ -1123,7 +1123,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '5-7': {
@@ -1138,7 +1138,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '6-7': {
@@ -1153,7 +1153,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '7-7': {
@@ -1168,7 +1168,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '8-7': {
@@ -1183,7 +1183,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '9-7': {
@@ -1198,7 +1198,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '0-8': {
@@ -1213,7 +1213,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '1-8': {
@@ -1228,7 +1228,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '2-8': {
@@ -1243,7 +1243,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '3-8': {
@@ -1258,7 +1258,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '4-8': {
@@ -1273,7 +1273,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '5-8': {
@@ -1288,7 +1288,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '6-8': {
@@ -1303,7 +1303,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '7-8': {
@@ -1318,7 +1318,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '8-8': {
@@ -1333,7 +1333,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '9-8': {
@@ -1348,7 +1348,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '0-9': {
@@ -1363,7 +1363,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '1-9': {
@@ -1378,7 +1378,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '2-9': {
@@ -1393,7 +1393,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '3-9': {
@@ -1408,7 +1408,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '4-9': {
@@ -1423,7 +1423,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '5-9': {
@@ -1438,7 +1438,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '6-9': {
@@ -1453,7 +1453,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '7-9': {
@@ -1468,7 +1468,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '8-9': {
@@ -1483,7 +1483,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
   '9-9': {
@@ -1498,7 +1498,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     contaminationProgress: 5,
     prosperityProgress: 5,
     poi: [],
-    visited: false,
+    isVisited: false,
     explorationDaysLeft: 0,
   },
 };

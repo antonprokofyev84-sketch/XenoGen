@@ -17,6 +17,6 @@ export interface MapCell {
 
   poi: string[];
 
-  visited: boolean;
+  isVisited: boolean;
   explorationDaysLeft: number | null; // null = explored
 }

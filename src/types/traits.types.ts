@@ -12,7 +12,7 @@ export type Trait = {
   category?: string | null; // Used for limiting the number of traits from a category e.g. "profession"
   maxCategoryCount?: number; // e.g., 2 (allows having a maximum of 2 professions)
 
-  visible?: boolean; // Should this trait be visible to the player in the UI?
+  isVisible?: boolean; // Should this trait be visible to the player in the UI?
   cost?: number; // Cost in creation points (for professions, etc.)
   // --- Duration ---
   // A simple number implies days. For other units, use the object form.

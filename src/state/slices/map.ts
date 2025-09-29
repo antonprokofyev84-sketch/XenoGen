@@ -3,6 +3,7 @@ import type { MapCell } from '@/types/map.types';
 import type { PoiType } from '@/types/poi.types';
 
 import type { GameSlice } from '../types';
+import { poiSelectors } from './poi';
 
 const POI_ICON_PRIORITY: Partial<Record<PoiType, number>> = {
   boss: 100,
@@ -28,11 +29,11 @@ export const mapSelectors = {
   selectCells: (state: StoreState) => state.map.cells,
   selectCellById: (cellId: string) => (state: StoreState) => state.map.cells[cellId],
   selectCellIcon: (cellId: string) => (state: StoreState) => {
-    if (state.party.currentCellId === cellId) return 'party';
+    if (state.party.currentCellId === cellId) return { icon: 'party', faction: 'player' };
 
     let best = 0;
-    let icon = null;
-    const cellPois = state.pois.poisByCellId[cellId];
+    let iconData = null;
+    const cellPois = poiSelectors.selectVisiblePoisByCellId(cellId)(state);
 
     if (cellPois?.length) {
       for (const poi of cellPois) {
@@ -40,11 +41,11 @@ export const mapSelectors = {
         if (!priority) continue;
         if (priority > best) {
           best = priority;
-          icon = poi.type;
+          iconData = { icon: poi.type, faction: poi.faction };
         }
       }
     }
-    return icon;
+    return iconData;
   },
 };
 

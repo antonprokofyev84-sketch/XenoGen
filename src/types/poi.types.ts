@@ -23,7 +23,7 @@ export interface Poi {
   progressMax?: number;
   faction: string; // faction id
 
-  discovered: boolean;
+  isDiscovered: boolean;
   perceptionThreshold: number; // минимальное значение восприятия для обнаружения
 
   triggers?: {

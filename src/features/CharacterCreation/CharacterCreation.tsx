@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
 
+import { INITIAL_FACTIONS } from '@/data/initialFaction';
 import { INITIAL_MAP } from '@/data/initialMap';
 import { INITIAL_POI } from '@/data/initialPoi';
 import textData from '@/locales/en.json';
@@ -27,17 +28,25 @@ export const CharacterCreation = () => {
   const [creationPoints, setCreationPoints] = useState(INITIAL_CREATION_POINTS);
   const [pointStep, setPointStep] = useState<number>(5);
 
-  const { protagonistId, characterActions, goToScreen, traitActions, mapActions, poiAction } =
-    useGameStore(
-      useShallow((state) => ({
-        protagonistId: state.characters.protagonistId,
-        characterActions: state.characters.actions,
-        goToScreen: state.ui.goToScreen,
-        traitActions: state.traits.actions,
-        mapActions: state.map.actions,
-        poiAction: state.pois.actions,
-      })),
-    );
+  const {
+    protagonistId,
+    characterActions,
+    goToScreen,
+    traitActions,
+    initializeMap,
+    initializePois,
+    initializeFactions,
+  } = useGameStore(
+    useShallow((state) => ({
+      protagonistId: state.characters.protagonistId,
+      characterActions: state.characters.actions,
+      goToScreen: state.ui.goToScreen,
+      traitActions: state.traits.actions,
+      initializeMap: state.map.actions.initializeMap,
+      initializePois: state.pois.actions.initializePois,
+      initializeFactions: state.factions.actions.initializeFactions,
+    })),
+  );
 
   const handleStatChange = (statKey: MainStatKey, delta: number) => {
     characterActions.changeMainStat(protagonistId, statKey, delta);
@@ -60,7 +69,6 @@ export const CharacterCreation = () => {
   };
 
   const handleBack = () => {
-    // Используем единый экшен сброса
     characterActions.resetProtagonist();
     traitActions.resetCharacterTraits(protagonistId);
     setCreationPoints(INITIAL_CREATION_POINTS);
@@ -68,8 +76,9 @@ export const CharacterCreation = () => {
   };
 
   const handleStart = () => {
-    mapActions.initializeMap(INITIAL_MAP);
-    poiAction.initializePois(INITIAL_POI);
+    initializeFactions(INITIAL_FACTIONS);
+    initializeMap(INITIAL_MAP);
+    initializePois(INITIAL_POI);
     goToScreen('strategicMap');
   };
 
@@ -113,7 +122,6 @@ export const CharacterCreation = () => {
 
         <div className="characterCreationSections">
           <div className="characterCreationTopBlock">
-            {/* 2. Контракты дочерних компонентов теперь не содержат лишних props */}
             <MainStatsBlock
               freePoints={creationPoints}
               onStatChange={handleStatChange}

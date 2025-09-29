@@ -7,33 +7,44 @@ import { useGameStore } from '@/state/useGameState';
 
 import './LeftPanel.scss';
 
-// Простой внутренний компонент для отображения прогресс-баров
+// Внутренний компонент для прогресс-баров теперь принимает флаг isIntelOutdated
 const StatProgressBar = ({
   label,
   level,
   progress,
+  isIntelOutdated,
 }: {
   label: string;
   level: number;
   progress: number;
+  isIntelOutdated: boolean;
 }) => (
   <div className="statProgressBar">
     <div className="labels">
-      <span>{label}</span>
+      <span>{label}:</span>
       <span>Lvl {level}</span>
     </div>
-    <div className="bar">
-      <div className="progress" style={{ width: `${progress}%` }} />
+    {/* Добавляем класс 'outdated', если данные устарели */}
+    <div className={`bar ${isIntelOutdated ? 'outdated' : ''}`}>
+      {/* Прогресс и значение показываем только если данные актуальны */}
+      {!isIntelOutdated && (
+        <>
+          <div className="progress" style={{ width: `${progress}%` }} />
+          <div className="progressValue">{progress}%</div>
+        </>
+      )}
     </div>
   </div>
 );
 
 export const LeftPanel = () => {
-  const selectedCellId = useGameStore(useShallow((state) => state.map.selectedCellId));
+  const partyPosition = useGameStore((state) => state.party.currentCellId);
+  const selectedCellId = useGameStore((state) => state.map.selectedCellId);
   const cellData = useGameStore(useShallow(mapSelectors.selectCellById(selectedCellId!)));
-  const poisInCell = useGameStore(useShallow(poiSelectors.selectPoisByCellId(selectedCellId!)));
+  const poisToDisplay = useGameStore(
+    useShallow(poiSelectors.selectVisiblePoisByCellId(selectedCellId!)),
+  );
 
-  // Если ячейка не выбрана или по ней нет данных, показываем заглушку
   if (!cellData) {
     return (
       <aside className="leftPanel">
@@ -47,45 +58,62 @@ export const LeftPanel = () => {
     );
   }
 
+  // Определяем, актуальны ли разведданные
+  const isCellExplored =
+    cellData.explorationDaysLeft === null ||
+    (cellData.explorationDaysLeft && cellData.explorationDaysLeft > 0);
+
   return (
     <aside className="leftPanel">
       <div className="panelHeader">
-        <h3>{textData.mapCellTypes[cellData.type]}</h3>
-        <span className="cellCoords">
-          ({cellData.col}, {cellData.row})
-        </span>
+        <h3>
+          {textData.mapCellTypes[cellData.type]} ({cellData.col}, {cellData.row})
+        </h3>
       </div>
       <div className="panelContent">
-        <div className="statsSection">
-          <StatProgressBar
-            label="Threat"
-            level={cellData.threatLevel}
-            progress={cellData.threatProgress}
-          />
-          <StatProgressBar
-            label="Prosperity"
-            level={cellData.prosperityLevel}
-            progress={cellData.prosperityProgress}
-          />
-          <StatProgressBar
-            label="Contamination"
-            level={cellData.contaminationLevel}
-            progress={cellData.contaminationProgress}
-          />
-        </div>
+        {/* Показываем блок статов только если ячейка была посещена */}
+        {cellData.isVisited ? (
+          <div className="statsSection">
+            <StatProgressBar
+              label="Threat"
+              level={cellData.threatLevel}
+              progress={cellData.threatProgress}
+              isIntelOutdated={!isCellExplored}
+            />
+            <StatProgressBar
+              label="Prosperity"
+              level={cellData.prosperityLevel}
+              progress={cellData.prosperityProgress}
+              isIntelOutdated={!isCellExplored}
+            />
+            <StatProgressBar
+              label="Contamination"
+              level={cellData.contaminationLevel}
+              progress={cellData.contaminationProgress}
+              isIntelOutdated={!isCellExplored}
+            />
+          </div>
+        ) : (
+          // Если ячейка не посещалась, показываем заглушку
+          <div className="statsSection placeholder">
+            <p>Detailed stats are unavailable for unvisited sectors.</p>
+          </div>
+        )}
 
         <div className="poiSection">
           <h4>Points of Interest</h4>
           <div className="poiList">
-            {poisInCell.length > 0 ? (
-              poisInCell.map((poi) => {
-                return (
-                  <button key={poi.id} className="poiButton">
-                    {textData.poi[poi.poiTemplateId as keyof typeof textData.poi]?.name ||
-                      'Unknown POI'}
-                  </button>
-                );
-              })
+            {poisToDisplay.length > 0 ? (
+              poisToDisplay.map((poi) => (
+                <button
+                  key={poi.id}
+                  className="poiButton"
+                  disabled={partyPosition !== selectedCellId}
+                >
+                  {textData.poi[poi.poiTemplateId as keyof typeof textData.poi]?.name ||
+                    'Unknown POI'}
+                </button>
+              ))
             ) : (
               <p className="noPoisText">No points of interest discovered.</p>
             )}

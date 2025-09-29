@@ -3,7 +3,7 @@ import React from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
 import { mapSelectors } from '@/state/slices/map';
-import { useGameStore } from '@/state/useGameState';
+import { factionsSelectors, useGameStore } from '@/state/useGameState';
 
 interface GridCellProps {
   col: number;
@@ -16,9 +16,12 @@ export const GridCell = React.memo(function GridCell({ col, row, cellSize }: Gri
 
   const cellData = useGameStore(useShallow(mapSelectors.selectCellById(cellId)));
   const cellIcon = useGameStore(useShallow(mapSelectors.selectCellIcon(cellId)));
+  const icontatus = useGameStore(
+    useShallow(factionsSelectors.selectStatus(cellIcon?.faction || 'neutral')),
+  );
 
   const getCellClass = () => {
-    if (!cellData || !cellData.visited) {
+    if (!cellData || !cellData.isVisited) {
       return 'gridCell unexplored';
     }
 
@@ -43,11 +46,12 @@ export const GridCell = React.memo(function GridCell({ col, row, cellSize }: Gri
       />
       {cellIcon && (
         <use
-          href={`#icon-${cellIcon}`}
+          href={`#icon-${cellIcon.icon}`}
           x={col * cellSize + cellSize / 4}
           y={row * cellSize + cellSize / 4}
           width={cellSize / 2}
           height={cellSize / 2}
+          className={`${icontatus}`}
           fill="currentColor"
         />
       )}

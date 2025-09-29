@@ -35,3 +35,24 @@
   stroke-width: 3px;
   pointer-events: none;
 }
+
+.enemy {
+  opacity: 0.8;
+  color: #c53d3d;
+  fill: #c53d3d;
+}
+.neutral {
+  opacity: 0.8;
+  color: #bdbdbd;
+  fill: #bdbdbd;
+}
+.ally {
+  opacity: 0.8;
+  color: #4caf50;
+  fill: #4caf50;
+}
+.player {
+  opacity: 0.8;
+  color: #2196f3;
+  fill: #2196f3;
+}

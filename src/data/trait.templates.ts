@@ -8,7 +8,7 @@ export const TRAIT_TEMPLATES_DB: Trait[] = [
     descriptionKey: 'traits.alcoholic1.desc',
     tags: ['addiction', 'quirk', 'startingChoice'],
     group: 'alcoholic',
-    visible: true,
+    isVisible: true,
     cost: -50,
     duration: 30,
     progress: 0,
@@ -53,7 +53,7 @@ export const TRAIT_TEMPLATES_DB: Trait[] = [
     descriptionKey: 'testTrait1Desc',
     tags: ['addiction', 'quirk', 'startingChoice'],
     group: '',
-    visible: true,
+    isVisible: true,
     cost: 0,
     duration: 5,
     triggers: {
@@ -72,7 +72,7 @@ export const TRAIT_TEMPLATES_DB: Trait[] = [
     nameKey: 'traits.buzzed.name',
     descriptionKey: 'traits.buzzed.desc',
     tags: ['status', 'temporary'],
-    visible: true,
+    isVisible: true,
     duration: 1,
     mods: {
       will: 10,
@@ -84,7 +84,7 @@ export const TRAIT_TEMPLATES_DB: Trait[] = [
     nameKey: 'traits.hangover.name',
     descriptionKey: 'traits.hangover.desc',
     tags: ['status', 'temporary'],
-    visible: true,
+    isVisible: true,
     duration: 1,
     mods: {
       will: -10,
@@ -104,7 +104,7 @@ export const TRAIT_TEMPLATES_DB: Trait[] = [
     cost: 20,
     progress: 0,
     progressMax: 100,
-    visible: true,
+    isVisible: true,
     mods: {
       medicine: 15,
     },
@@ -133,7 +133,7 @@ export const TRAIT_TEMPLATES_DB: Trait[] = [
     cost: 30,
     progress: 0,
     progressMax: 100,
-    visible: true,
+    isVisible: true,
     mods: {
       survival: 15,
       range: 10,
@@ -164,7 +164,7 @@ export const TRAIT_TEMPLATES_DB: Trait[] = [
     cost: 20,
     progress: 0,
     progressMax: 100,
-    visible: true,
+    isVisible: true,
     mods: {
       crafting: 15,
       science: 10,

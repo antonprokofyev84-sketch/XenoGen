@@ -1,8 +1,9 @@
 import type { StoreState } from '@/state/useGameState';
 //import { PoisManager } from '@/systems/pois/poisManager';
-import type { Poi } from '@/types/poi.types';
+import type { Poi, PoiType } from '@/types/poi.types';
 
 import type { GameSlice } from '../types';
+import { mapSelectors } from './map';
 
 export interface PoiSlice {
   poisByCellId: Record<string, Poi[]>;
@@ -19,6 +20,26 @@ export const poiSelectors = {
     (cellId: string) =>
     (state: StoreState): Poi[] => {
       return state.pois.poisByCellId[cellId] ?? [];
+    },
+
+  selectVisiblePoisByCellId:
+    (cellId: string) =>
+    (state: StoreState): Poi[] => {
+      if (!cellId) return [];
+
+      const cellData = mapSelectors.selectCellById(cellId)(state);
+      const allPoisInCell = poiSelectors.selectPoisByCellId(cellId)(state);
+
+      const isCellExplored =
+        cellData.explorationDaysLeft === null ||
+        (cellData.explorationDaysLeft && cellData.explorationDaysLeft > 0);
+
+      if (isCellExplored) {
+        return allPoisInCell.filter((poi) => poi.isDiscovered);
+      } else {
+        const keyTypes: PoiType[] = ['settlement', 'base', 'quest'];
+        return allPoisInCell.filter((poi) => poi.isDiscovered && keyTypes.includes(poi.type));
+      }
     },
 };
 

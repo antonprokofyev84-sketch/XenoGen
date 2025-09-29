@@ -8,6 +8,8 @@ import type { WorldSlice } from '@/state/slices/world';
 
 import { characterSelectors, createCharactersSlice } from './slices/characters';
 import type { CharactersSlice } from './slices/characters';
+import { createFactionsSlice, factionsSelectors } from './slices/factions';
+import type { FactionsSlice } from './slices/factions';
 import { createPartySlice, partySelectors } from './slices/party';
 import type { PartySlice } from './slices/party';
 import { createPoiSlice, poiSelectors } from './slices/poi';
@@ -28,6 +30,7 @@ export type StoreState = {
   party: PartySlice;
   shelter: ShelterSlice;
   pois: PoiSlice;
+  factions: FactionsSlice;
 };
 
 export const useGameStore = create<StoreState>()(
@@ -40,6 +43,7 @@ export const useGameStore = create<StoreState>()(
     party: createPartySlice(set, get, api),
     shelter: createShelterSlice(set, get, api),
     pois: createPoiSlice(set, get, api),
+    factions: createFactionsSlice(set, get, api),
   })),
 );
 
@@ -50,4 +54,5 @@ export {
   partySelectors,
   shelterSelectors,
   poiSelectors,
+  factionsSelectors,
 };
