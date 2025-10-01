@@ -1,9 +1,18 @@
 import type { StoreState } from '@/state/useGameState';
-import type { MapCell } from '@/types/map.types';
+import type { CellLevelKey, CellProgressKey, MapCell } from '@/types/map.types';
 import type { PoiType } from '@/types/poi.types';
 
 import type { GameSlice } from '../types';
 import { poiSelectors } from './poi';
+
+export const CELL_LEVEL_KEYS: Record<CellProgressKey, CellLevelKey> = {
+  threatProgress: 'threatLevel',
+  contaminationProgress: 'contaminationLevel',
+  prosperityProgress: 'prosperityLevel',
+} as const;
+
+const MAX_LEVEL = 9;
+const MIN_LEVEL = 0;
 
 const POI_ICON_PRIORITY: Partial<Record<PoiType, number>> = {
   boss: 100,
@@ -18,8 +27,9 @@ export interface MapSlice {
   actions: {
     initializeMap: (initialData: Record<string, MapCell>) => void;
     updateCell: (cellId: string, updates: Partial<MapCell>) => void;
-    updateSelectedCellId: (cellId: string | null) => void;
+    updateSelectedCell: (cellId: string | null) => void;
     clearSelectedCellId: () => void;
+    modifyCellStatus: (cellId: string, progressKey: CellProgressKey, delta: number) => void;
     processDayEnd: () => void;
   };
 }
@@ -63,13 +73,29 @@ export const createMapSlice: GameSlice<MapSlice> = (set) => ({
           state.map.cells[cellId] = { ...state.map.cells[cellId], ...updates };
         }
       }),
-    updateSelectedCellId: (cellId) =>
+    updateSelectedCell: (cellId) =>
       set((state) => {
         state.map.selectedCellId = cellId;
       }),
     clearSelectedCellId: () =>
       set((state) => {
         state.map.selectedCellId = null;
+      }),
+    modifyCellStatus: (cellId, progressKey: CellProgressKey, delta: number) =>
+      set((state) => {
+        const cell = state.map.cells[cellId];
+        // if (!cell) return; пусть пока падает
+
+        const levelKey = CELL_LEVEL_KEYS[progressKey];
+
+        const curLevel = cell[levelKey] as number;
+        const curProgress = cell[progressKey] as number;
+
+        const abs = curLevel * 100 + curProgress + delta;
+        const absClamped = Math.min(MAX_LEVEL * 100 + 99, Math.max(MIN_LEVEL * 100, abs));
+
+        cell[levelKey] = Math.floor(absClamped / 100) as any;
+        cell[progressKey] = (absClamped % 100) as any;
       }),
     processDayEnd: () => {
       set((state) => {

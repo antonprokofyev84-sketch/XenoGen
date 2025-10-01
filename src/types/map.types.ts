@@ -20,3 +20,6 @@ export interface MapCell {
   isVisited: boolean;
   explorationDaysLeft: number | null; // null = explored
 }
+
+export type CellProgressKey = 'threatProgress' | 'contaminationProgress' | 'prosperityProgress';
+export type CellLevelKey = 'threatLevel' | 'contaminationLevel' | 'prosperityLevel';

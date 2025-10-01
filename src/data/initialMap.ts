@@ -179,7 +179,7 @@ export const INITIAL_MAP: Record<string, MapCell> = {
     prosperityProgress: 5,
     poi: [],
     isVisited: true,
-    explorationDaysLeft: 3,
+    explorationDaysLeft: 30,
   },
   '2-1': {
     id: '2-1',

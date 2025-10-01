@@ -7,7 +7,7 @@ import './SecondaryStatsBlock.scss';
 
 export const SecondaryStatsBlock = () => {
   console.log('SecondaryStatsBlock render');
-  const protagonistId = useGameStore(useShallow((state) => state.characters.protagonistId));
+  const protagonistId = useGameStore((state) => state.characters.protagonistId);
   const stats = useGameStore(useShallow(characterSelectors.selectSecondaryStats(protagonistId)));
 
   return (

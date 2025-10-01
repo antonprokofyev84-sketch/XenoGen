@@ -1,4 +1,4 @@
-import { initiatMainStatValue } from '@/state/constants';
+import { initialMainStatValue } from '@/state/constants';
 import type { Character, CharacterTemplate } from '@/types/character.types';
 
 export const PROTAGONIST_TEMPLATE: Character = {
@@ -18,12 +18,12 @@ export const PROTAGONIST_TEMPLATE: Character = {
     baseAccuracy: 30,
   },
   mainStats: {
-    str: initiatMainStatValue,
-    dex: initiatMainStatValue,
-    con: initiatMainStatValue,
-    per: initiatMainStatValue,
-    int: initiatMainStatValue,
-    will: initiatMainStatValue,
+    str: initialMainStatValue,
+    dex: initialMainStatValue,
+    con: initialMainStatValue,
+    per: initialMainStatValue,
+    int: initialMainStatValue,
+    will: initialMainStatValue,
   },
   skills: {
     melee: 0,
@@ -53,12 +53,12 @@ export const CHARACTER_TEMPLATES_DB: Record<string, CharacterTemplate> = {
       baseAccuracy: 30,
     },
     mainStats: {
-      str: initiatMainStatValue,
-      dex: initiatMainStatValue,
-      con: initiatMainStatValue,
-      per: initiatMainStatValue,
-      int: initiatMainStatValue,
-      will: initiatMainStatValue,
+      str: initialMainStatValue,
+      dex: initialMainStatValue,
+      con: initialMainStatValue,
+      per: initialMainStatValue,
+      int: initialMainStatValue,
+      will: initialMainStatValue,
     },
     skills: {
       melee: 0,

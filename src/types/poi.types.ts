@@ -8,45 +8,59 @@ export type PoiType =
   | 'boss'
   | 'quest';
 
-export interface Poi {
-  id: string;
-  parentId?: string; // id of the parent poi (e.g., settlement for a battle poi)
-  poiTemplateId: string;
+export interface Poi extends ActivePoi {
   nameKey: string;
   descriptionKey: string;
-  type: PoiType;
-
-  rarity?: 'common' | 'rare' | 'unique';
-  difficulty?: number; // 1-10
-  duration?: number; // in days
-  progress?: number;
-  progressMax?: number;
-  faction: string; // faction id
-
-  isDiscovered: boolean;
-  perceptionThreshold: number; // минимальное значение восприятия для обнаружения
 
   triggers?: {
-    onDayPass?: TriggerRule[];
-    onProgressMax?: TriggerRule[];
+    onDayPass?: PoiTriggerRule[];
+    onProgressMax?: PoiTriggerRule[];
   };
 }
 
-export type TriggerRule = {
+export interface ActivePoi {
+  id: string;
+  poiTemplateId: string;
+  type: PoiType;
+  rarity?: 'common' | 'rare' | 'unique';
+  difficulty?: number;
+  duration?: number;
+  progress?: number;
+  progressMax?: number;
+  faction: string;
+  isDiscovered: boolean;
+  perceptionThreshold: number;
+}
+
+export type PoiTriggerRule = {
   // if?: Condition[]; // All conditions must be met (AND logic)
-  do: Action[]; // Executed in order
+  do: PoiAction[]; // Executed in order
 };
 
 type ActionHelper = { chance?: number }; // Optional chance to perform the action
-// An action modifies the game state.
-type ActionCore =
-  | { kind: 'modifyProgress'; poiId: string; delta: number }
-  | { kind: 'changeCellParam'; cellParam: string; delta: number }
-  | { kind: 'changeCellParamInRadius'; cellParam: string; radius: number; delta: number }
-  | { kind: 'setProgress'; poiId: string; value: number }
-  | { kind: 'replacePoi'; poiId: string; toPoiId: string }
-  | { kind: 'addPoi'; poiId: string; params?: Record<string, any> }
-  | { kind: 'addPoisInRadius'; poiId: string; radius: number; params?: Record<string, any> }
-  | { kind: 'removePoi'; poiId: string };
 
-export type Action = ActionCore & ActionHelper;
+type ActionCore =
+  | { kind: 'modifySelfProgress'; delta: number }
+  | { kind: 'setSelfProgress'; value: number }
+  | { kind: 'changeCurrentCellParam'; cellParam: string; delta: number }
+  | {
+      kind: 'changeCellParamInRadius';
+      cellParam: string;
+      delta: number;
+      radius: number;
+      perCellChance?: number;
+    }
+  | { kind: 'replaceSelf'; toPoiId: string }
+  | { kind: 'addPoiToCurrentCell'; poiId: string; params?: Record<string, any> }
+  | {
+      kind: 'addPoisInRadius';
+      poiId: string;
+      params?: Record<string, any>;
+      radius: number;
+      perCellChance?: number;
+    };
+// | { kind: 'removePoi'; poiId: string };
+
+export type PoiAction = ActionCore & ActionHelper;
+
+export type EffectsMap = Record<string, PoiTriggerRule[]>;

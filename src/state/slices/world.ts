@@ -21,13 +21,14 @@ export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
       // get one snapshot for all effects checks
       const stateSnapshot = get();
 
-      const traitsEffects = get().traits.actions.processDayEnd();
+      const traitEffects = get().traits.actions.processDayEnd();
       get().map.actions.processDayEnd();
+      const poiEffects = get().pois.actions.processDayEnd();
 
-      EffectManager.processEffects(traitsEffects, { state: stateSnapshot });
-      console.log('---');
-      console.log(get().traits.traitsByCharacterId);
-      console.log(get().characters.byId['protagonist'].mainStats);
+      EffectManager.processTraitEffects(traitEffects, { state: stateSnapshot });
+      EffectManager.processPoiEffects(poiEffects, { state: stateSnapshot });
+      // console.log('---');
+      // console.log(get().pois.poisByCellId['1-1']);
     },
   },
 });

@@ -1,24 +1,44 @@
 import type { StoreState } from '@/state/useGameState';
 import type { MainStatKey, SkillKey } from '@/types/character.types';
+import type { CellProgressKey } from '@/types/map.types';
+import type { EffectsMap, PoiAction } from '@/types/poi.types';
 import type { Action, Condition, TriggerRule } from '@/types/traits.types';
 
 type EffectContext = {
   state: StoreState;
 };
 
-export const EffectManager = {
-  processEffects(effectsByActor: Record<string, TriggerRule[]>, ctx: EffectContext) {
-    const rng = Math.random;
+const rng = Math.random;
 
+export const EffectManager = {
+  processTraitEffects(effectsByActor: Record<string, TriggerRule[]>, ctx: EffectContext) {
     for (const characterId of Object.keys(effectsByActor)) {
       const rules = effectsByActor[characterId] ?? [];
 
       for (const rule of rules) {
-        if (!evaluateConditions(rule.if, characterId, ctx.state, rng)) continue;
+        if (!evaluateTraitConditions(rule.if, characterId, ctx.state, rng)) continue;
         for (const action of rule.do ?? []) {
           // chance check
           if (action.chance !== undefined && rng() > action.chance) continue;
-          applyAction(action, characterId, ctx.state);
+          applyTraitAction(action, characterId, ctx.state);
+        }
+      }
+    }
+  },
+
+  processPoiEffects(effectsByCell: Record<string, EffectsMap>, ctx: EffectContext) {
+    for (const cellId of Object.keys(effectsByCell)) {
+      const cellPois = effectsByCell[cellId];
+      for (const poiId of Object.keys(cellPois)) {
+        const rules = cellPois[poiId] ?? [];
+        for (const rule of rules) {
+          // if i will add conditions later
+          // if (!evaluatePoiConditions(rule.if, cellId, poiId, ctx.state, rng)) continue;
+          for (const action of rule.do ?? []) {
+            // chance check
+            if (action.chance !== undefined && rng() > action.chance) continue;
+            applyPoiAction(action, cellId, poiId, ctx.state);
+          }
         }
       }
     }
@@ -27,7 +47,7 @@ export const EffectManager = {
 
 // === Conditions ===
 
-function evaluateConditions(
+function evaluateTraitConditions(
   conds: Condition[] | undefined,
   actorId: string,
   state: StoreState,
@@ -59,7 +79,7 @@ function evaluateConditions(
   });
 }
 
-function applyAction(action: Action, characterId: string, state: StoreState) {
+function applyTraitAction(action: Action, characterId: string, state: StoreState) {
   switch (action.kind) {
     // ——— прогресс/длительность активного трейта (нужен sourceTraitId) ———
     // case 'modifyProgress': {
@@ -141,5 +161,58 @@ function applyAction(action: Action, characterId: string, state: StoreState) {
     //   logs.push({ t: 'event', ...a.event, actorId });
     //   return;
     // }
+  }
+}
+
+function applyPoiAction(action: PoiAction, cellId: string, poiId: string, state: StoreState) {
+  switch (action.kind) {
+    // ——— прогресс/длительность активного пои (нужен sourcePoiId) ———
+    case 'modifySelfProgress': {
+      const poisInCell = state.pois.poisByCellId[cellId] ?? [];
+      const poi = poisInCell.find((p) => p.id === poiId);
+      if (!poi) return;
+
+      state.pois.actions.modifyPoiProgress(cellId, poiId, action.delta);
+      return;
+    }
+    // case 'setProgress': {
+    //   const poisInCell = state.pois.poisByCellId[cellId] ?? [];
+    //   const poi = poisInCell.find((p) => p.id === poiId);
+    //   if (!poi) return;
+
+    //   state.pois.actions.modifyPoiProgress(cellId, poiId, action.value - (poi.progress ?? 0));
+    //   return;
+    // }
+
+    // ——— статы/навыки персонажа ———
+    case 'changeCurrentCellParam': {
+      state.map.actions.modifyCellStatus(cellId, action.cellParam as CellProgressKey, action.delta);
+      return;
+    }
+    // case 'changeCellParamInRadius': {
+    //   state.map.actions.modifyCellParamInRadius(cellId, action.cellParam, action.delta, action.radius);
+    //   return;
+    // }
+    case 'replaceSelf': {
+      const isExisting = state.pois.poisByCellId[cellId]?.some((p) => p.id === poiId);
+      if (!isExisting) return;
+
+      state.pois.actions.removePoiFromCell(cellId, poiId);
+      state.pois.actions.addPoiToCell(cellId, action.toPoiId);
+      return;
+    }
+    case 'addPoiToCurrentCell': {
+      state.pois.actions.addPoiToCell(cellId, action.poiId);
+      return;
+    }
+    case 'addPoisInRadius': {
+      state.pois.actions.addPoiInRadius(
+        cellId,
+        action.poiId,
+        action.radius,
+        action.perCellChance ?? 1,
+      );
+      return;
+    }
   }
 }

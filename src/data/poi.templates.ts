@@ -16,17 +16,22 @@ export const POI_TEMPLATES_DB: Record<string, Partial<Poi>> = {
       onDayPass: [
         {
           do: [
-            { kind: 'modifyProgress', poiId: 'scavenger_camp', delta: 1 },
-            { kind: 'addPoi', poiId: 'scavenger_group', chance: 0.4 },
-            { kind: 'changeCellParam', cellParam: 'threatProgress', delta: 1, chance: 0.3 },
-            { kind: 'changeCellParam', cellParam: 'prosperityProgress', delta: -2, chance: 0.8 },
+            { kind: 'modifySelfProgress', delta: 1 },
+            { kind: 'addPoiToCurrentCell', poiId: 'scavenger_group', chance: 0.4 },
+            { kind: 'changeCurrentCellParam', cellParam: 'threatProgress', delta: 1, chance: 0.3 },
+            {
+              kind: 'changeCurrentCellParam',
+              cellParam: 'prosperityProgress',
+              delta: -2,
+              chance: 0.8,
+            },
           ],
         },
       ],
 
       onProgressMax: [
         {
-          do: [{ kind: 'replacePoi', poiId: 'scavenger_camp', toPoiId: 'scavenger_base' }],
+          do: [{ kind: 'replaceSelf', toPoiId: 'scavenger_base' }],
         },
       ],
     },
@@ -43,23 +48,28 @@ export const POI_TEMPLATES_DB: Record<string, Partial<Poi>> = {
       onDayPass: [
         {
           do: [
-            { kind: 'addPoi', poiId: 'scavenger_patrol', chance: 0.2 },
-            { kind: 'addPoisInRadius', poiId: 'scavenger_group', radius: 1, chance: 0.3 },
-            { kind: 'changeCellParam', cellParam: 'threatProgress', delta: 2, chance: 0.5 },
-            { kind: 'changeCellParam', cellParam: 'prosperityProgress', delta: -4, chance: 0.8 },
+            { kind: 'addPoiToCurrentCell', poiId: 'scavenger_patrol', chance: 0.2 },
+            { kind: 'addPoisInRadius', poiId: 'scavenger_group', radius: 1, perCellChance: 0.3 },
+            { kind: 'changeCurrentCellParam', cellParam: 'threatProgress', delta: 2, chance: 0.5 },
+            {
+              kind: 'changeCurrentCellParam',
+              cellParam: 'prosperityProgress',
+              delta: -4,
+              chance: 0.8,
+            },
             {
               kind: 'changeCellParamInRadius',
               cellParam: 'threatProgress',
               radius: 1,
               delta: 1,
-              chance: 0.3,
+              perCellChance: 0.3,
             },
             {
               kind: 'changeCellParamInRadius',
               cellParam: 'prosperityProgress',
               radius: 1,
               delta: -1,
-              chance: 0.6,
+              perCellChance: 0.6,
             },
           ],
         },

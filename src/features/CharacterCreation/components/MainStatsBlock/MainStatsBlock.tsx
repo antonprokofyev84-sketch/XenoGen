@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
 import textData from '@/locales/en.json';
-import { initiatMainStatValue, mainStatKeys } from '@/state/constants';
+import { initialMainStatValue, mainStatKeys } from '@/state/constants';
 import { characterSelectors, useGameStore } from '@/state/useGameState';
 import type { MainStatKey } from '@/types/character.types';
 
@@ -25,7 +25,7 @@ export const MainStatsBlock = ({
   maxStat = 70,
 }: MainStatsBlockProps) => {
   console.log('MainStatsBlock render');
-  const protagonistId = useGameStore(useShallow((state) => state.characters.protagonistId));
+  const protagonistId = useGameStore((state) => state.characters.protagonistId);
   const mainStats = useGameStore(useShallow(characterSelectors.selectMainStats(protagonistId)));
   const mainStatsEffective = useGameStore(
     useShallow(characterSelectors.selectEffectiveMainStats(protagonistId)),
@@ -34,8 +34,8 @@ export const MainStatsBlock = ({
   const statKeys = mainStatKeys;
 
   const getStatValueClass = useCallback((currentValue: number) => {
-    if (currentValue > initiatMainStatValue) return 'increased';
-    if (currentValue < initiatMainStatValue) return 'decreased';
+    if (currentValue > initialMainStatValue) return 'increased';
+    if (currentValue < initialMainStatValue) return 'decreased';
     return '';
   }, []);
 

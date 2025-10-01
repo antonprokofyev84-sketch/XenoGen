@@ -21,4 +21,4 @@ export const skillKeys: SkillKey[] = [
   'survival',
 ] as const;
 
-export const initiatMainStatValue = 30;
+export const initialMainStatValue = 30;

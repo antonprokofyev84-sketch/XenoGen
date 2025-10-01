@@ -1,5 +1,3 @@
-import { useState } from 'react';
-
 import { BottomBar } from './components/BottomBar/BottomBar';
 import { GridOverlay } from './components/GridOverlay/GridOverlay';
 import { LeftPanel } from './components/LeftPanel/LeftPanel';
