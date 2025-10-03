@@ -1,0 +1,26 @@
+.explorationStatus {
+  font-size: 0.9rem;
+  font-weight: bold;
+  margin-top: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  display: inline-block;
+
+  // Цветовое кодирование статусов
+  &.unexplored {
+    color: #888;
+    background-color: #333;
+  }
+  &.permanent {
+    color: #64b5f6; // Синий
+    background-color: rgba(33, 150, 243, 0.15);
+  }
+  &.active {
+    color: #81c784; // Зеленый
+    background-color: rgba(76, 175, 80, 0.15);
+  }
+  &.outdated {
+    color: #e57373; // Красный
+    background-color: rgba(197, 61, 61, 0.15);
+  }
+}

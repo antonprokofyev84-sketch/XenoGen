@@ -23,8 +23,7 @@ export const poiManager = {
       progress: template.progress ?? 0,
       progressMax: template.progressMax,
 
-      // isDiscovered: false,
-      isDiscovered: true,
+      isDiscovered: false,
     };
 
     return newPoiInstance;

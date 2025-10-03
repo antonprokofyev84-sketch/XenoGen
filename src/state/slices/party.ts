@@ -19,8 +19,8 @@ export interface PartySlice {
   memberIds: string[];
   reserveIds: string[];
   captives: Captive[];
-  currentCellId: string;
-  previousCellId: string | null;
+  currentPartyPosition: string;
+  previousPartyPosition: string | null;
   travelMode: TravelMode;
   morale: number;
 
@@ -36,7 +36,7 @@ export interface PartySlice {
 
 // --- Вспомогательные функции ---
 
-const areCellsAdjacent = (cellId1: string, cellId2: string): boolean => {
+export const areCellsAdjacent = (cellId1: string, cellId2: string): boolean => {
   const [col1, row1] = cellId1.split('-').map(Number);
   const [col2, row2] = cellId2.split('-').map(Number);
   const dx = Math.abs(col1 - col2);
@@ -101,8 +101,8 @@ export const createPartySlice: GameSlice<PartySlice> = (set, get) => ({
   leaderId: 'protagonist',
   reserveIds: [],
   captives: [],
-  currentCellId: '3-1',
-  previousCellId: null,
+  currentPartyPosition: '3-1',
+  previousPartyPosition: null,
   travelMode: 'normal',
   morale: 75,
   actions: {
@@ -120,12 +120,14 @@ export const createPartySlice: GameSlice<PartySlice> = (set, get) => ({
       }),
     moveToCell: (targetCellId) =>
       set((state) => {
-        if (areCellsAdjacent(state.party.currentCellId, targetCellId)) {
-          state.party.previousCellId = state.party.currentCellId;
-          state.party.currentCellId = targetCellId;
+        if (areCellsAdjacent(state.party.currentPartyPosition, targetCellId)) {
+          state.party.previousPartyPosition = state.party.currentPartyPosition;
+          state.party.currentPartyPosition = targetCellId;
         } else {
           console.warn(
-            `Cannot move from ${state.party.currentCellId} to ${targetCellId}: not adjacent.`,
+            `Cannot move from ${
+              state.party.currentPartyPosition
+            } to ${targetCellId}: not adjacent.`,
           );
         }
       }),

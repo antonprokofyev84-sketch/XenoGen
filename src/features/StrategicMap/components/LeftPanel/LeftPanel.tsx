@@ -5,6 +5,9 @@ import { mapSelectors } from '@/state/slices/map';
 import { poiSelectors } from '@/state/slices/poi';
 import { useGameStore } from '@/state/useGameState';
 
+import { ExplorationStatus } from '../ExplorationStatus/ExplorationStatus';
+import { LeftPanelFooter } from '../LeftPanelFooter/LeftPanelFooter';
+
 import './LeftPanel.scss';
 
 // Внутренний компонент для прогресс-баров теперь принимает флаг isIntelOutdated
@@ -38,7 +41,7 @@ const StatProgressBar = ({
 );
 
 export const LeftPanel = () => {
-  const partyPosition = useGameStore((state) => state.party.currentCellId);
+  const partyPosition = useGameStore((state) => state.party.currentPartyPosition);
   const selectedCellId = useGameStore((state) => state.map.selectedCellId);
   const cellData = useGameStore(useShallow(mapSelectors.selectCellById(selectedCellId!)));
   const poisToDisplay = useGameStore(
@@ -69,6 +72,7 @@ export const LeftPanel = () => {
         <h3>
           {textData.mapCellTypes[cellData.type]} ({cellData.col}, {cellData.row})
         </h3>
+        <ExplorationStatus />
       </div>
       <div className="panelContent">
         {/* Показываем блок статов только если ячейка была посещена */}
@@ -120,6 +124,7 @@ export const LeftPanel = () => {
           </div>
         </div>
       </div>
+      <LeftPanelFooter />
     </aside>
   );
 };

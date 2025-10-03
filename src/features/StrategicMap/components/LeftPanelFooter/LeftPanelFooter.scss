@@ -1,0 +1,44 @@
+.panelFooter {
+  margin-top: auto; // "Прижимаем" футер к низу flex-контейнера
+  padding-top: 1.5rem;
+  padding-right: 0.75rem;
+  border-top: 1px solid #444;
+}
+
+.actionButton {
+  width: 100%;
+  padding: 0.7rem 1.5rem;
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    background-color: #333;
+    border-color: #555;
+    color: #888;
+    cursor: not-allowed;
+  }
+}
+
+.scoutButton {
+  background-color: #3e4b86;
+  border: 2px solid #5a6ab8;
+  &:hover:not(:disabled) {
+    background-color: #5a6ab8;
+  }
+}
+
+.moveButton {
+  background-color: #385a3a;
+  border: 2px solid #4caf50;
+  &:hover:not(:disabled) {
+    background-color: #4caf50;
+  }
+}

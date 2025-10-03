@@ -26,20 +26,23 @@ export interface MapSlice {
   cells: Record<string, MapCell>;
   actions: {
     initializeMap: (initialData: Record<string, MapCell>) => void;
-    updateCell: (cellId: string, updates: Partial<MapCell>) => void;
-    updateSelectedCell: (cellId: string | null) => void;
+    updateSelectedCellId: (cellId: string | null) => void;
     clearSelectedCellId: () => void;
+    exploreCell: (
+      cellId: string,
+      explorationLevel: number,
+      explorationDaysLeft: number | null,
+    ) => void;
     modifyCellStatus: (cellId: string, progressKey: CellProgressKey, delta: number) => void;
     processDayEnd: () => void;
   };
 }
 
 export const mapSelectors = {
-  selectSelectedCellId: (state: StoreState) => state.map.selectedCellId,
   selectCells: (state: StoreState) => state.map.cells,
   selectCellById: (cellId: string) => (state: StoreState) => state.map.cells[cellId],
   selectCellIcon: (cellId: string) => (state: StoreState) => {
-    if (state.party.currentCellId === cellId) return { icon: 'party', faction: 'player' };
+    if (state.party.currentPartyPosition === cellId) return { icon: 'party', faction: 'player' };
 
     let best = 0;
     let iconData = null;
@@ -59,7 +62,7 @@ export const mapSelectors = {
   },
 };
 
-export const createMapSlice: GameSlice<MapSlice> = (set) => ({
+export const createMapSlice: GameSlice<MapSlice> = (set, get) => ({
   selectedCellId: null,
   cells: {},
   actions: {
@@ -67,13 +70,7 @@ export const createMapSlice: GameSlice<MapSlice> = (set) => ({
       set((state) => {
         state.map.cells = initialData;
       }),
-    updateCell: (cellId, updates) =>
-      set((state) => {
-        if (state.map.cells[cellId]) {
-          state.map.cells[cellId] = { ...state.map.cells[cellId], ...updates };
-        }
-      }),
-    updateSelectedCell: (cellId) =>
+    updateSelectedCellId: (cellId) =>
       set((state) => {
         state.map.selectedCellId = cellId;
       }),
@@ -81,6 +78,18 @@ export const createMapSlice: GameSlice<MapSlice> = (set) => ({
       set((state) => {
         state.map.selectedCellId = null;
       }),
+    exploreCell: (cellId, explorationLevel, explorationDaysLeft) => {
+      set((state) => {
+        const cell = state.map.cells[cellId];
+        cell.isVisited = true;
+        cell.explorationLevel =
+          cell.explorationLevel < explorationLevel ? explorationLevel : cell.explorationLevel;
+        if (cell.explorationDaysLeft !== null) {
+          cell.explorationDaysLeft = explorationDaysLeft;
+        }
+      });
+      get().pois.actions.explorePoisInCell(cellId, explorationLevel);
+    },
     modifyCellStatus: (cellId, progressKey: CellProgressKey, delta: number) =>
       set((state) => {
         const cell = state.map.cells[cellId];
@@ -99,7 +108,10 @@ export const createMapSlice: GameSlice<MapSlice> = (set) => ({
       }),
     processDayEnd: () => {
       set((state) => {
+        const partyCellId = state.party.currentPartyPosition;
+
         Object.values(state.map.cells).forEach((cell) => {
+          if (cell.id === partyCellId) return;
           if (cell.explorationDaysLeft != null && cell.explorationDaysLeft > 0) {
             cell.explorationDaysLeft = Math.max(0, cell.explorationDaysLeft - 1);
           }

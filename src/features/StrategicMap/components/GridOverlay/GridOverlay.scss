@@ -34,6 +34,11 @@
   stroke: #4caf50;
   stroke-width: 3px;
   pointer-events: none;
+
+  &.canMove {
+    pointer-events: auto;
+    cursor: pointer;
+  }
 }
 
 .enemy {

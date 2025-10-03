@@ -22,6 +22,7 @@ export interface PoiSlice {
       chance?: number,
       force?: boolean,
     ) => void;
+    explorePoisInCell: (cellId: string, explorationLevel: number) => void;
     removePoiFromCell: (cellId: string, instanceId: string) => void;
     modifyPoiProgress: (cellId: string, poiId: string, delta: number) => void;
     processDayEnd: () => Record<string, EffectsMap>;
@@ -67,7 +68,7 @@ export const createPoiSlice: GameSlice<PoiSlice> = (set, get) => ({
     addPoiToCell: (cellId, poiId, force = false) => {
       set((state) => {
         const list = state.pois.poisByCellId[cellId];
-        if (!list) return;
+        const cell = state.map.cells[cellId];
 
         if (!force && list.length >= SOFT_CAP) return;
 
@@ -75,6 +76,8 @@ export const createPoiSlice: GameSlice<PoiSlice> = (set, get) => ({
         if (!inst) return;
 
         inst.id = `${poiId}_${cellId}_${Date.now()}`;
+        // if isDiscovered is true in template, it means it's always discovered
+        inst.isDiscovered = inst.isDiscovered || inst.perceptionThreshold <= cell.explorationLevel;
         list.push(inst);
       });
     },
@@ -88,6 +91,7 @@ export const createPoiSlice: GameSlice<PoiSlice> = (set, get) => ({
         for (const cellId of cellIds) {
           if (chance !== 1 && Math.random() >= chance) continue;
 
+          const cell = state.map.cells[cellId];
           const list = state.pois.poisByCellId[cellId];
           if (!list) continue;
           if (!force && list.length >= SOFT_CAP) continue;
@@ -95,12 +99,25 @@ export const createPoiSlice: GameSlice<PoiSlice> = (set, get) => ({
           const inst = poiManager.getPoiInstance(poiTplId);
           if (!inst) continue;
 
-          inst.id = `${poiTplId}_${cellId}_${Date.now()}_${Math.floor(Math.random() * 1e6)}`;
+          inst.id = `${poiTplId}_${cellId}_${Date.now()}`;
+          inst.isDiscovered =
+            inst.isDiscovered || inst.perceptionThreshold <= cell.explorationLevel;
           list.push(inst);
         }
       });
     },
+    explorePoisInCell: (cellId, explorationLevel) => {
+      set((state) => {
+        const pois = state.pois.poisByCellId[cellId] ?? [];
 
+        for (const poi of pois) {
+          if (poi.isDiscovered) continue;
+          if (poi.perceptionThreshold <= explorationLevel) {
+            poi.isDiscovered = true;
+          }
+        }
+      });
+    },
     removePoiFromCell: (cellId, poiId) =>
       set((state) => {
         const currentPois = state.pois.poisByCellId[cellId] ?? [];

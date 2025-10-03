@@ -1,6 +1,6 @@
 import { useGameStore } from '@/state/useGameState';
 
-import './BottomBat.scss';
+import './BottomBar.scss';
 
 export const BottomBar = () => {
   const endDay = useGameStore((state) => state.world.actions.endDay);
@@ -11,7 +11,7 @@ export const BottomBar = () => {
 
   return (
     <footer className="bottomBar">
-      <div className="partyPortraits">{/* Заглушка для портретов группы */}</div>
+      <div className="partyPortraits"></div>
 
       <div className="controls">
         <button className="endDayButton" onClick={handleEndDayClick}>

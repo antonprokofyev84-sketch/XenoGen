@@ -60,9 +60,26 @@
       "desc": "A tinkerer and inventor. Provides bonuses to Crafting and Science skills."
     }
   },
+
   "strategicMap": {
     "sectorInfo": "Sector Info",
-    "selectSector": "Select a sector on the map to see details."
+    "selectSector": "Select a sector on the map to see details.",
+    "travelTo": "Travel to",
+    "scout": "Scout",
+        "moveHere": "Move Here",
+    "scoutSector": "Scout Sector",
+    
+    "statusUnexplored": "Unexplored",
+    "statusPermanent": "Explored (Permanent)",
+    "statusActive": "Scouted ({days} days)",
+    "statusOutdated": "Scout Data Outdated",
+    "scoutScoreLabel": "Scout Score"
+  },
+  
+  "travelModes": {
+    "normal": "Normal",
+    "fast": "Fast",
+    "stealth": "Stealth"
   },
   "mapCellTypes": {
     "forest": "Forest",
