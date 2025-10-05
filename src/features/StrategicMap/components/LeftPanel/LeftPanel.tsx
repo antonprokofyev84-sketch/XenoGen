@@ -48,6 +48,8 @@ export const LeftPanel = () => {
     useShallow(poiSelectors.selectVisiblePoisByCellId(selectedCellId!)),
   );
 
+  console.log('LeftPanel rendered');
+
   if (!cellData) {
     return (
       <aside className="leftPanel">

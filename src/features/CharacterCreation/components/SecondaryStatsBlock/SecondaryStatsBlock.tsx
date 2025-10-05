@@ -20,6 +20,11 @@ export const SecondaryStatsBlock = () => {
       </div>
 
       <div className="statRow">
+        <span className="statName">{textData.secondaryStats.maxStamina}</span>
+        <span className="statValue">{stats.maxStamina}</span>
+      </div>
+
+      <div className="statRow">
         <span className="statName">{textData.secondaryStats.armor}</span>
         <span className="statValue">{stats.armor}</span>
       </div>

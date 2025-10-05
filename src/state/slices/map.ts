@@ -70,6 +70,7 @@ export const createMapSlice: GameSlice<MapSlice> = (set, get) => ({
       set((state) => {
         state.map.cells = initialData;
       }),
+    // cell, user selected on the map
     updateSelectedCellId: (cellId) =>
       set((state) => {
         state.map.selectedCellId = cellId;
@@ -90,10 +91,10 @@ export const createMapSlice: GameSlice<MapSlice> = (set, get) => ({
       });
       get().pois.actions.explorePoisInCell(cellId, explorationLevel);
     },
+    // threat contamination prosperity
     modifyCellStatus: (cellId, progressKey: CellProgressKey, delta: number) =>
       set((state) => {
         const cell = state.map.cells[cellId];
-        // if (!cell) return; пусть пока падает
 
         const levelKey = CELL_LEVEL_KEYS[progressKey];
 

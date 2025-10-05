@@ -1,4 +1,3 @@
-import { areCellsAdjacent } from '@/state/slices/party';
 import { useGameStore } from '@/state/useGameState';
 
 interface CellSelectionProps {
@@ -7,15 +6,10 @@ interface CellSelectionProps {
 
 export const CellSelection = ({ cellSize }: CellSelectionProps) => {
   const selectedCellId = useGameStore((state) => state.map.selectedCellId);
-  const currentPartyPosition = useGameStore((state) => state.party.currentPartyPosition);
   const travelToCell = useGameStore((state) => state.world.actions.travelToCell);
 
-  const canMove = selectedCellId && areCellsAdjacent(currentPartyPosition, selectedCellId!);
-
   const handleCellSelectionClick = () => {
-    if (canMove) {
-      travelToCell(selectedCellId!);
-    }
+    travelToCell(selectedCellId!);
   };
 
   if (!selectedCellId) {
@@ -26,9 +20,10 @@ export const CellSelection = ({ cellSize }: CellSelectionProps) => {
   const x = col * cellSize;
   const y = row * cellSize;
 
+  //TODO add canMove logic
   return (
     <rect
-      className={`selectionFrame ${canMove ? 'canMove' : ''}`}
+      className={'selectionFrame canMove'}
       x={x}
       y={y}
       width={cellSize}

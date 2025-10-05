@@ -3,7 +3,7 @@ export interface MapCell {
   row: number;
   col: number;
 
-  type: 'forest' | 'mountain' | 'plain' | 'desert' | 'water' | 'ruins';
+  type: CellType;
 
   threatLevel: number; // 0-9 - текущая опасность
   threatProgress: number; // 0-99
@@ -21,6 +21,8 @@ export interface MapCell {
   explorationLevel: number;
   explorationDaysLeft: number | null; // null = explored
 }
+
+export type CellType = 'forest' | 'mountain' | 'plain' | 'desert' | 'water' | 'ruins';
 
 export type CellProgressKey = 'threatProgress' | 'contaminationProgress' | 'prosperityProgress';
 export type CellLevelKey = 'threatLevel' | 'contaminationLevel' | 'prosperityLevel';

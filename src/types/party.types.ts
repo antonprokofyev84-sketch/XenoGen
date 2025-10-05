@@ -1,6 +1,6 @@
 import type { Rarity } from './character.types';
 
-export type TravelMode = 'normal' | 'stealth' | 'fast';
+// export type TravelMode = 'normal' | 'stealth' | 'fast';
 
 export interface Captive {
   id: string; // Уникальный ID пленника

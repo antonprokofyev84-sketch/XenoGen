@@ -26,6 +26,8 @@ export interface CharactersSlice {
     changeSkill: (characterId: string, skill: SkillKey, delta: number) => void;
     setSkill: (characterId: string, skill: SkillKey, value: number) => void;
     resetHpToMax: (characterId: string) => void;
+    changeStamina: (characterId: string, delta: number) => void;
+    resetStaminaToMax: (characterId: string) => void;
     resetProtagonist: () => void;
   };
 }
@@ -45,7 +47,10 @@ const applyMods = <T extends Record<string, number>>(base: T, mods: Record<strin
 // --- Pure Calculation Functions ---
 
 const calculateMaxHp = (mainStats: MainStats, baseStats: BaseStats): number => {
-  return baseStats.baseHp + mainStats.con + Math.floor(mainStats.str / 5);
+  return baseStats.baseHp + Math.floor(mainStats.con / 1.5) + Math.floor(mainStats.str / 5);
+};
+const calculateMaxStamina = (mainStats: MainStats, baseStats: BaseStats): number => {
+  return baseStats.baseStamina + mainStats.con + Math.floor(mainStats.will / 2);
 };
 const calculateInitiative = (mainStats: MainStats, baseStats: BaseStats): number => {
   return baseStats.baseInitiative + Math.floor(mainStats.dex / 10) + Math.floor(mainStats.int / 25);
@@ -97,10 +102,19 @@ export const characterSelectors = {
     (state: StoreState): SecondaryStats => {
       const character = state.characters.byId[characterId];
       if (!character)
-        return { maxHp: 0, armor: 0, evasion: 0, damageModifier: 0, critChance: 0, initiative: 0 };
+        return {
+          maxHp: 0,
+          maxStamina: 0,
+          armor: 0,
+          evasion: 0,
+          damageModifier: 0,
+          critChance: 0,
+          initiative: 0,
+        };
       const { mainStats, baseStats } = character;
       return {
         maxHp: calculateMaxHp(mainStats, baseStats),
+        maxStamina: calculateMaxStamina(mainStats, baseStats),
         armor: calculateArmor(mainStats, baseStats),
         evasion: calculateEvasion(mainStats),
         damageModifier: calculateDamageModifier(mainStats, baseStats),
@@ -215,5 +229,31 @@ export const createCharactersSlice: GameSlice<CharactersSlice> = (set, get) => (
           char.hp = calculateMaxHp(mainStats, baseStats);
         }
       }),
+
+    resetStaminaToMax: (characterId) =>
+      set((state) => {
+        const char = state.characters.byId[characterId];
+        if (char) {
+          const { mainStats, baseStats } = char;
+          char.stamina = calculateMaxStamina(mainStats, baseStats);
+        }
+      }),
+
+    changeStamina: (characterId: string, delta: number) => {
+      set((state) => {
+        const char = state.characters.byId[characterId];
+        console.log('-----');
+        console.log(characterId, delta);
+        console.log(char.stamina);
+
+        // if (!char) return;
+        const maxStamina = calculateMaxStamina(char.mainStats, char.baseStats);
+
+        const newStamina = char.stamina + delta;
+
+        char.stamina = Math.max(-maxStamina, Math.min(newStamina, maxStamina));
+      });
+      console.log(get().characters.byId[characterId]);
+    },
   },
 });

@@ -3,7 +3,7 @@ import { immer } from 'zustand/middleware/immer';
 
 import { createMapSlice, mapSelectors } from '@/state/slices/map';
 import type { MapSlice } from '@/state/slices/map';
-import { createWorldSlice } from '@/state/slices/world';
+import { createWorldSlice, worldSelectors } from '@/state/slices/world';
 import type { WorldSlice } from '@/state/slices/world';
 
 import { characterSelectors, createCharactersSlice } from './slices/characters';
@@ -55,4 +55,5 @@ export {
   shelterSelectors,
   poiSelectors,
   factionsSelectors,
+  worldSelectors,
 };

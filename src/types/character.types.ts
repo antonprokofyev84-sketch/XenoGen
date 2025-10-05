@@ -13,11 +13,13 @@ export type Skills = Record<SkillKey, number>;
 
 export type SecondaryStatKey =
   | 'maxHp'
+  | 'maxStamina'
   | 'armor'
   | 'evasion'
   | 'damageModifier'
   | 'critChance'
   | 'initiative';
+
 export type SecondaryStats = Record<SecondaryStatKey, number>;
 
 export type BaseStatsKey =
@@ -26,6 +28,7 @@ export type BaseStatsKey =
   | 'beauty'
   | 'fame'
   | 'baseHp'
+  | 'baseStamina'
   | 'baseInitiative'
   | 'baseArmor'
   | 'baseCritChance'
@@ -37,6 +40,7 @@ export interface Character {
   id: string;
   name: string;
   hp: number;
+  stamina: number;
   baseStats: BaseStats;
   mainStats: MainStats;
   skills: Skills;

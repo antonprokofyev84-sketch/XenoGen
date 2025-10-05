@@ -2,7 +2,8 @@ import type { StoreState } from '@/state/useGameState';
 import type { MainStatKey } from '@/types/character.types';
 import type { Rarity } from '@/types/character.types';
 import type { Character } from '@/types/character.types';
-import type { Captive, TravelMode } from '@/types/party.types';
+import type { Captive } from '@/types/party.types';
+import type { MovementMode } from '@/types/travel.types';
 
 import type { GameSlice } from '../types';
 import { characterSelectors } from './characters';
@@ -21,38 +22,44 @@ export interface PartySlice {
   captives: Captive[];
   currentPartyPosition: string;
   previousPartyPosition: string | null;
-  travelMode: TravelMode;
+  travelMode: MovementMode;
   morale: number;
 
   actions: {
     addMember: (characterId: string) => void;
     removeMember: (characterId: string) => void;
     moveToCell: (targetCellId: string) => void;
-    setTravelMode: (mode: TravelMode) => void;
+    setTravelMode: (mode: MovementMode) => void;
+    changeStamina: (delta: number) => void;
     addCaptive: (templateId: string, rarity: Rarity) => void;
     removeCaptive: (captiveId: string) => void;
   };
 }
 
-// --- Вспомогательные функции ---
-
-export const areCellsAdjacent = (cellId1: string, cellId2: string): boolean => {
-  const [col1, row1] = cellId1.split('-').map(Number);
-  const [col2, row2] = cellId2.split('-').map(Number);
-  const dx = Math.abs(col1 - col2);
-  const dy = Math.abs(row1 - row2);
-  if (dx === 0 && dy === 0) return false;
-  return dx <= 1 && dy <= 1;
-};
-
 // --- Селекторы ---
 
 export const partySelectors = {
-  /** Возвращает полные данные всех членов активного отряда */
-  selectPartyMembers: (state: StoreState) => {
-    return state.party.memberIds.map((id) =>
+  selectAllMemberIds: (state: StoreState) => {
+    return [...state.party.memberIds, ...state.party.reserveIds];
+  },
+  /** Возвращает полные данные всех членов отряда */
+  selectAllPartyMembers: (state: StoreState) => {
+    const allMembersIds = partySelectors.selectAllMemberIds(state);
+    return allMembersIds.map((id) =>
       characterSelectors.selectCharacterById(id)(state),
     ) as Character[];
+  },
+
+  selectActivePartyMembers: (state: StoreState) => {
+    return state.party.memberIds
+      .map((id) => characterSelectors.selectCharacterById(id)(state))
+      .filter((char): char is Character => !!char);
+  },
+
+  selectReserveMembers: (state: StoreState) => {
+    return state.party.reserveIds
+      .map((id) => characterSelectors.selectCharacterById(id)(state))
+      .filter((char): char is Character => !!char);
   },
 
   /** Возвращает максимальный размер отряда, зависящий от Харизмы протагониста */
@@ -65,7 +72,7 @@ export const partySelectors = {
 
   /** Возвращает максимальное количество пленников, зависящее от Силы отряда */
   selectMaxCaptives: (state: StoreState): number => {
-    const partyMembers = partySelectors.selectPartyMembers(state);
+    const partyMembers = partySelectors.selectAllPartyMembers(state);
     const totalStrength = partyMembers.reduce((sum, char) => sum + char.mainStats.str, 0);
     return BASE_CAPTIVES_NUMBER + Math.floor(totalStrength / STRENGTH_PER_CAPTIVE_SLOT);
   },
@@ -77,14 +84,16 @@ export const partySelectors = {
     (stat: MainStatKey) =>
     (state: StoreState): number => {
       const partyLeaderId = state.party.leaderId;
-      const partyMembers = state.party.memberIds.filter((id) => id !== partyLeaderId);
+      const partyMemberIds = partySelectors
+        .selectAllMemberIds(state)
+        .filter((id) => id !== partyLeaderId);
 
       const partyLeaderStat =
         characterSelectors.selectEffectiveMainStats(partyLeaderId)(state)[stat];
 
       let highestValue = partyLeaderStat;
 
-      for (const memberId of partyMembers) {
+      for (const memberId of partyMemberIds) {
         const effectiveStats = characterSelectors.selectEffectiveMainStats(memberId)(state);
         const statValue = effectiveStats[stat] - NON_LEADER_STAT_PENALTY; // Штраф для не-лидера
         if (statValue > highestValue) {
@@ -94,6 +103,10 @@ export const partySelectors = {
 
       return highestValue;
     },
+  selectIsPartyFatigued: (state: StoreState): boolean => {
+    const partyMembers = partySelectors.selectAllPartyMembers(state);
+    return partyMembers.some((member) => member.stamina < 0);
+  },
 };
 
 export const createPartySlice: GameSlice<PartySlice> = (set, get) => ({
@@ -103,13 +116,14 @@ export const createPartySlice: GameSlice<PartySlice> = (set, get) => ({
   captives: [],
   currentPartyPosition: '3-1',
   previousPartyPosition: null,
-  travelMode: 'normal',
+  travelMode: 'foot',
   morale: 75,
   actions: {
     addMember: (characterId) =>
       set((state) => {
         const maxPartySize = partySelectors.selectMaxPartySize(state);
-        if (state.party.memberIds.length < maxPartySize) {
+        const isAlreadyInParty = partySelectors.selectAllMemberIds(state).includes(characterId);
+        if (state.party.memberIds.length < maxPartySize && !isAlreadyInParty) {
           state.party.memberIds.push(characterId);
           // Можно также убрать из резерва, если нужно
         }
@@ -120,21 +134,19 @@ export const createPartySlice: GameSlice<PartySlice> = (set, get) => ({
       }),
     moveToCell: (targetCellId) =>
       set((state) => {
-        if (areCellsAdjacent(state.party.currentPartyPosition, targetCellId)) {
-          state.party.previousPartyPosition = state.party.currentPartyPosition;
-          state.party.currentPartyPosition = targetCellId;
-        } else {
-          console.warn(
-            `Cannot move from ${
-              state.party.currentPartyPosition
-            } to ${targetCellId}: not adjacent.`,
-          );
-        }
+        state.party.previousPartyPosition = state.party.currentPartyPosition;
+        state.party.currentPartyPosition = targetCellId;
       }),
     setTravelMode: (mode) =>
       set((state) => {
         state.party.travelMode = mode;
       }),
+    changeStamina: (delta: number) => {
+      const allMemberIds = partySelectors.selectAllMemberIds(get());
+      for (const memberId of allMemberIds) {
+        get().characters.actions.changeStamina(memberId, delta);
+      }
+    },
     addCaptive: (templateId, rarity) =>
       set((state) => {
         const maxCaptives = partySelectors.selectMaxCaptives(state);

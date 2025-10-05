@@ -28,6 +28,7 @@
   },
   "secondaryStats": {
     "maxHp": "Max HP",
+    "maxStamina": "Max Stamina",
     "initiative": "Initiative",
     "armor": "Armor",
     "critChance": "Crit Chance",

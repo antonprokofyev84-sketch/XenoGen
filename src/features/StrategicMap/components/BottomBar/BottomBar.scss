@@ -9,40 +9,48 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 2rem;
 }
 
-// Заглушки для будущих секций, чтобы кнопка была по центру
-.partyPortraits,
-.resources {
-  flex: 1;
-}
-
+.timeSection,
 .controls {
   flex-shrink: 0;
 }
+.partyPortraits {
+  flex-grow: 1;
+}
 
-.endDayButton {
-  padding: 0.8rem 2.5rem;
-  font-size: 1.2rem;
+.controls {
+  display: flex;
+  gap: 1rem;
+}
+
+.controlButton {
+  padding: 0.8rem 1.5rem;
+  font-size: 1.1rem;
   font-weight: bold;
-  background-color: #c53d3d;
-  color: #fff;
-  border: 2px solid #a13131;
+  color: #ccc;
+  background-color: #383838;
+  border: 2px solid #555;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease-in-out;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
 
   &:hover {
-    background-color: #d64a4a;
-    border-color: #c53d3d;
+    background-color: #4a4a4a;
+    border-color: #777;
     transform: translateY(-2px);
-    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
   }
 
-  &:active {
-    transform: translateY(0);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  &.primary {
+    background-color: #c53d3d;
+    color: #fff;
+    border-color: #a13131;
+
+    &:hover {
+      background-color: #d64a4a;
+      border-color: #c53d3d;
+    }
   }
 }
