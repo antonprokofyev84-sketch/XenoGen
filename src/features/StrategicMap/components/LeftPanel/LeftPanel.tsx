@@ -47,6 +47,7 @@ export const LeftPanel = () => {
   const poisToDisplay = useGameStore(
     useShallow(poiSelectors.selectVisiblePoisByCellId(selectedCellId!)),
   );
+  const setSelectedPoiId = useGameStore((state) => state.map.actions.setSelectedPoiId);
 
   console.log('LeftPanel rendered');
 
@@ -114,6 +115,9 @@ export const LeftPanel = () => {
                 <button
                   key={poi.id}
                   className="poiButton"
+                  onClick={() => {
+                    setSelectedPoiId(poi.id);
+                  }}
                   disabled={partyPosition !== selectedCellId}
                 >
                   {textData.poi[poi.poiTemplateId as keyof typeof textData.poi]?.name ||

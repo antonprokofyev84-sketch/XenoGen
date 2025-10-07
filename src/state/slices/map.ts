@@ -23,11 +23,14 @@ const POI_ICON_PRIORITY: Partial<Record<PoiType, number>> = {
 
 export interface MapSlice {
   selectedCellId: string | null;
+  selectedPoiId: string | null;
   cells: Record<string, MapCell>;
   actions: {
     initializeMap: (initialData: Record<string, MapCell>) => void;
-    updateSelectedCellId: (cellId: string | null) => void;
+    setSelectedCellId: (cellId: string | null) => void;
     clearSelectedCellId: () => void;
+    setSelectedPoiId: (poiId: string | null) => void;
+    clearSelectedPoiId: () => void;
     exploreCell: (
       cellId: string,
       explorationLevel: number,
@@ -64,6 +67,7 @@ export const mapSelectors = {
 
 export const createMapSlice: GameSlice<MapSlice> = (set, get) => ({
   selectedCellId: null,
+  selectedPoiId: null,
   cells: {},
   actions: {
     initializeMap: (initialData) =>
@@ -71,13 +75,21 @@ export const createMapSlice: GameSlice<MapSlice> = (set, get) => ({
         state.map.cells = initialData;
       }),
     // cell, user selected on the map
-    updateSelectedCellId: (cellId) =>
+    setSelectedCellId: (cellId) =>
       set((state) => {
         state.map.selectedCellId = cellId;
       }),
     clearSelectedCellId: () =>
       set((state) => {
         state.map.selectedCellId = null;
+      }),
+    setSelectedPoiId: (poiId) =>
+      set((state) => {
+        state.map.selectedPoiId = poiId;
+      }),
+    clearSelectedPoiId: () =>
+      set((state) => {
+        state.map.selectedPoiId = null;
       }),
     exploreCell: (cellId, explorationLevel, explorationDaysLeft) => {
       set((state) => {

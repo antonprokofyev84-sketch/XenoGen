@@ -1,6 +1,6 @@
 import { BottomBar } from './components/BottomBar/BottomBar';
-import { GridOverlay } from './components/GridOverlay/GridOverlay';
 import { LeftPanel } from './components/LeftPanel/LeftPanel';
+import { MainPanel } from './components/MainPanel/MainPanel';
 
 import './StrategicMap.scss';
 
@@ -9,17 +9,8 @@ export const StrategicMap = () => {
 
   return (
     <div className="strategicMapContainer">
-      {/* Левая область для информации о POI */}
       <LeftPanel />
-
-      <main className="mapArea">
-        <div className="mapViewport">
-          <div className="mapContent">
-            <GridOverlay />
-          </div>
-        </div>
-      </main>
-
+      <MainPanel />
       <BottomBar />
     </div>
   );

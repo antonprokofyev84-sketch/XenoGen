@@ -12,7 +12,7 @@ import './GridOverlay.scss';
 interface GridOverlayProps {}
 
 export const GridOverlay: React.FC<GridOverlayProps> = () => {
-  const updateSelectedCellId = useGameStore((state) => state.map.actions.updateSelectedCellId);
+  const setSelectedCellId = useGameStore((state) => state.map.actions.setSelectedCellId);
   const mapWidth = GRID_COLS * CELL_SIZE;
   const mapHeight = GRID_ROWS * CELL_SIZE;
 
@@ -26,7 +26,7 @@ export const GridOverlay: React.FC<GridOverlayProps> = () => {
 
     console.log(`Clicked sector coordinates: (${col}, ${row})`);
 
-    updateSelectedCellId(`${col}-${row}`);
+    setSelectedCellId(`${col}-${row}`);
   };
 
   return (

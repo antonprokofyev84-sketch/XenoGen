@@ -55,6 +55,15 @@ export const poiSelectors = {
         return allPoisInCell.filter((poi) => poi.isDiscovered && keyTypes.includes(poi.type));
       }
     },
+  selectSelectedPoi: (state: StoreState) => {
+    const selectedCellId = state.map.selectedCellId;
+    const selectedPoiId = state.map.selectedPoiId;
+    if (!selectedCellId || !selectedPoiId) return null;
+
+    const poisInCell = poiSelectors.selectPoisByCellId(selectedCellId)(state);
+    const selectedPoiData = poisInCell.find((poi) => poi.id === selectedPoiId) || null;
+    return selectedPoiData;
+  },
 };
 
 export const createPoiSlice: GameSlice<PoiSlice> = (set, get) => ({
