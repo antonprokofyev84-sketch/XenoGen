@@ -56,7 +56,7 @@ const calculateInitiative = (mainStats: MainStats, baseStats: BaseStats): number
   return baseStats.baseInitiative + Math.floor(mainStats.dex / 10) + Math.floor(mainStats.int / 25);
 };
 const calculateArmor = (mainStats: MainStats, baseStats: BaseStats): number => {
-  return baseStats.baseArmor + Math.floor(mainStats.con / 20);
+  return baseStats.baseArmor + Math.floor(mainStats.con / 30);
 };
 const calculateCritChance = (mainStats: MainStats, baseStats: BaseStats): number => {
   return baseStats.baseCritChance + Math.floor(mainStats.per / 20) + Math.floor(mainStats.int / 50);
