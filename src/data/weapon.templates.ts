@@ -1,5 +1,28 @@
 import type { WeaponTemplate } from '@/types/weapon.types';
 
+// increase damage and ap
+export const WEAPON_RARITY_MULTIPLIERS_DEFAULT = { uncommon: 1.1, rare: 1.2, unique: 1.3 };
+
+// export const WEAPON_RARITY_MULTIPLIERS = {
+//   uncommon: {
+//     damage: 1.15,      // +15% урона
+//     armorPiercing: 1.1, // +10% пробития
+//     accuracy: 5,       // +5 к точности
+//   },
+//   rare: {
+//     damage: 1.3,       // +30% урона
+//     armorPiercing: 1.2, // +20% пробития
+//     accuracy: 10,      // +10 к точности
+//     critical: 5,       // +5% крит шанс
+//   },
+//   unique: {
+//     damage: 1.5,       // +50% урона
+//     armorPiercing: 1.3, // +30% пробития
+//     accuracy: 15,      // +15 к точности
+//     critical: 10,      // +10% крит шанс
+//   }
+// };
+
 export const WEAPON_TEMPLATES_DB: Record<string, WeaponTemplate> = {
   // --- MELEE WEAPONS ---
   makeshiftKnife: {

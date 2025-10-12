@@ -39,7 +39,7 @@ function mergeBlock<TKeys extends string>(
 /**
  * A factory for creating character "blueprints" based on templates, archetypes, and randomness.
  */
-export const CharacterFactory = {
+export const characterFactory = {
   /**
    * Creates a new character blueprint.
    * @param templateId The ID of the base template (e.g., 'protagonist', 'generic_raider').

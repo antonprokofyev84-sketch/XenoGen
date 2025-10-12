@@ -1,0 +1,45 @@
+30 
+Max HP 56
+Max Stamina 65
+Armor 1
+Evasion 18
+Damage Modifier 4
+Crit Chance 6%
+Initiative 9
+
+60
+Max HP 82
+Max Stamina 110
+Armor 2
+Evasion 36
+Damage Modifier 7
+Crit Chance 9%
+Initiative 13
+
+90
+Max HP 108
+Max Stamina 155
+Armor 3
+Evasion 54
+Damage Modifier 10
+Crit Chance 10%
+Initiative 17
+
+120
+Max HP 134
+Max Stamina 200
+Armor 4
+Evasion 72
+Damage Modifier 13
+Crit Chance 13%
+Initiative 21
+
+
+приросты на уровень сложности - 8
+ΔHP = 6.9333333333
+ΔStamina = 12
+ΔInitiative = 1.12
+ΔArmor = 0.2666666667
+ΔCritChance = 0.56
+ΔDamageModifier = 0.8
+ΔEvasion = 4.8

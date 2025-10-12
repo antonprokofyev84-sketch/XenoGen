@@ -1,13 +1,14 @@
 import type { ArmorTemplate } from '../types/armor.types';
 
-export const rarityMultipliersDefault = { uncommon: 1.15, rare: 1.3, unique: 1.5 };
+// increase positive mods and decrease negative mods
+export const ARMOR_RARITY_MULTIPLIERS_DEFAULT = { uncommon: 1.15, rare: 1.3, unique: 1.5 };
 
 export const ARMOR_TEMPLATES_DB: Record<string, ArmorTemplate> = {
   regularCloth: {
     id: 'regularCloth',
     slot: 'armor',
     price: 30,
-    dropRate: 0.6,
+    dropRate: 0.0,
     mods: {
       armor: 3,
       evasion: 1,

@@ -1,3 +1,5 @@
+import type { Rarity } from '@/types/common.types.js';
+
 export interface WeaponTemplate {
   id: string;
   slot: 'melee' | 'range';
@@ -11,4 +13,14 @@ export interface WeaponTemplate {
   damage: [min: number, max: number];
   armorPiercing: number;
   mods?: Record<string, number>;
+  rarityMultipliers?: {
+    uncommon?: number;
+    rare?: number;
+    unique?: number;
+  };
 }
+
+export type WeaponInstance = Omit<WeaponTemplate, 'dropRate' | 'rarityMultipliers'> & {
+  instanceId: string;
+  rarity: Rarity;
+};

@@ -16,9 +16,9 @@ import { TraitBlock } from './components/TraitBlock/TraitBlock';
 
 import './CharacterCreation.scss';
 
-const INITIAL_CREATION_POINTS = 150;
+const INITIAL_CREATION_POINTS = 1500;
 const MIN_STAT = 15;
-const MAX_STAT = 50;
+const MAX_STAT = 500;
 const MIN_SKILL = 0;
 const MAX_SKILL = 50;
 

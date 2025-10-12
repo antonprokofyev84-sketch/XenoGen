@@ -1,3 +1,5 @@
+import type { Rarity } from '@/types/common.types.js';
+
 export interface ArmorTemplate {
   id: string;
 
@@ -14,4 +16,9 @@ export interface ArmorTemplate {
     rare?: number;
     unique?: number;
   };
+}
+
+export interface ArmorInstance extends Omit<ArmorTemplate, 'rarityMultipliers'> {
+  instanceId: string; // A unique ID for this specific item instance
+  rarity: Rarity;
 }
