@@ -15,7 +15,8 @@ export interface EnemyStats {
 // Упрощённый противник для runtime боя
 export interface EnemyTemplate {
   id: string;
-  characterTemplateId: string;
+  templateId: string;
+  appearanceVariation?: number;
   faction: string;
   rarity?: Rarity; // Rarity of the character itself (for capturing)
 
@@ -37,7 +38,7 @@ export interface EnemyTemplate {
 export interface EnemyInstance {
   instanceId: string;
   templateId: string; // ID из ENEMY_TEMPLATES_DB, например 'youngScavenger'
-  characterTemplateId: string;
+  appearanceVariation: number;
   faction: string;
   level: number;
   rarity: Rarity;

@@ -1,8 +1,17 @@
+import { BUDGET_FOR_LEVEL } from '@/data/combat.rules';
 import { POI_TEMPLATES_DB } from '@/data/poi.templates';
 import type { StoreState } from '@/state/useGameState';
+import { generateEnemyGroup } from '@/systems/combat/enemyGroupGenerator';
 import { EffectManager } from '@/systems/effects/effectManager';
+import { enemyRegistry } from '@/systems/enemy/enemyRegistry';
 import { poiManager } from '@/systems/poi/poiManager';
-import type { ActivePoi, EffectsMap, PoiType } from '@/types/poi.types';
+import type {
+  ActivePoi,
+  CombatPoiDetails,
+  EffectsMap,
+  PoiDetails,
+  PoiType,
+} from '@/types/poi.types';
 
 import type { GameSlice } from '../types';
 import { mapSelectors } from './map';
@@ -23,6 +32,7 @@ export interface PoiSlice {
       force?: boolean,
     ) => void;
     explorePoisInCell: (cellId: string, explorationLevel: number) => void;
+    ensurePoiDetails: (cellId: string, poiId: string) => void;
     removePoiFromCell: (cellId: string, instanceId: string) => void;
     modifyPoiProgress: (cellId: string, poiId: string, delta: number) => void;
     processDayEnd: () => Record<string, EffectsMap>;
@@ -124,6 +134,46 @@ export const createPoiSlice: GameSlice<PoiSlice> = (set, get) => ({
           if (poi.perceptionThreshold <= explorationLevel) {
             poi.isDiscovered = true;
           }
+        }
+      });
+    },
+    ensurePoiDetails: (cellId, poiId) => {
+      set((state) => {
+        const poi = state.pois.poisByCellId[cellId]?.find((p) => p.id === poiId);
+        if (!poi || poi.details) {
+          return;
+        }
+
+        let newDetails: PoiDetails | null = null;
+
+        switch (poi.type) {
+          case 'combat':
+          case 'boss': {
+            const allowedTemplates = enemyRegistry.getByFaction(poi.faction || 'scavengers');
+            const difficultyLevel = poi.difficulty || 1;
+
+            if (allowedTemplates.length > 0) {
+              const enemyGroup = generateEnemyGroup({
+                difficultyLevel: difficultyLevel,
+                budget: BUDGET_FOR_LEVEL[difficultyLevel],
+                allowedTemplates: allowedTemplates,
+              });
+              newDetails = { enemyGroup } as CombatPoiDetails;
+            }
+            break;
+          }
+          case 'loot': {
+            // Здесь в будущем будет логика генерации лута
+            console.log(`[ensurePoiDetails] TODO: Generate loot for ${poi.id}`);
+            break;
+          }
+          default:
+            // Для этого типа POI детали не нужны
+            return;
+        }
+
+        if (newDetails) {
+          poi.details = newDetails;
         }
       });
     },

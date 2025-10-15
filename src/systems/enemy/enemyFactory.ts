@@ -1,10 +1,6 @@
 import { RARITY_RULES } from '@/data/enemy.rules';
-import {
-  ENEMY_RARITY_CHANCE,
-  ENEMY_TEMPLATES_DB,
-  EQUIPMENT_BY_TIER_CHANCE,
-  TIER_UP_DELTAS,
-} from '@/data/enemy.templates';
+import { ENEMY_RARITY_CHANCE, EQUIPMENT_BY_TIER_CHANCE, TIER_UP_DELTAS } from '@/data/enemy.rules';
+import { ENEMY_TEMPLATES_DB } from '@/data/enemy.templates';
 import type { ArmorInstance } from '@/types/armor.types.js';
 import type { Rarity } from '@/types/common.types';
 import type { EnemyInstance, EnemyStats } from '@/types/enemy.types';
@@ -31,6 +27,8 @@ const getRandomKeyByWeight = (weights: Record<string, number>): string => {
   }
 
   let random = Math.random() * totalWeight;
+
+  console.log(random);
 
   for (const [key, weight] of Object.entries(weights)) {
     if (random < weight) {
@@ -155,8 +153,8 @@ export const enemyFactory = {
     const instance: EnemyInstance = {
       instanceId: makeInstanceId(),
       templateId,
-      characterTemplateId: template.characterTemplateId,
       faction: template.faction,
+      appearanceVariation: Math.floor(Math.random() * (template.appearanceVariation ?? 1)),
       level,
       rarity: enemyRarity,
       stats: finalStats,

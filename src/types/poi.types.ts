@@ -1,5 +1,7 @@
+import type { EnemyInstance } from './enemy.types';
+
 export type PoiType =
-  | 'battle'
+  | 'combat'
   | 'loot'
   | 'dungeon'
   | 'settlement'
@@ -30,6 +32,13 @@ export interface ActivePoi {
   faction: string;
   isDiscovered: boolean;
   perceptionThreshold: number;
+  details: PoiDetails;
+}
+
+export type PoiDetails = CombatPoiDetails /* | LootPoiDetails */;
+
+export interface CombatPoiDetails {
+  enemyGroup: EnemyInstance[];
 }
 
 export type PoiTriggerRule = {

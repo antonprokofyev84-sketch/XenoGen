@@ -1,43 +1,10 @@
 import type { EnemyTemplate } from '@/types/enemy.types';
 
-export const TIER_UP_DELTAS = {
-  hp: 6.9,
-  armor: 0.26,
-  baseMeleeDamage: 0.8,
-  melee: 8,
-  ranged: 8,
-  evasion: 4.8,
-  initiative: 1.12,
-  critChance: 0.56,
-};
-
-export const ENEMY_RARITY_CHANCE = { common: 0.7, uncommon: 0.2, rare: 0.08, unique: 0.02 };
-
-export const EQUIPMENT_BY_TIER_CHANCE = {
-  0: {
-    common: 0.8,
-    uncommon: 0.12,
-    rare: 0.06,
-    unique: 0.02,
-  },
-  1: {
-    common: 0.5,
-    uncommon: 0.24,
-    rare: 0.12,
-    unique: 0.04,
-  },
-  2: {
-    common: 0.4,
-    uncommon: 0.36,
-    rare: 0.18,
-    unique: 0.06,
-  },
-};
-
 export const ENEMY_TEMPLATES_DB: Record<string, EnemyTemplate> = {
   youngScavenger: {
     id: '',
-    characterTemplateId: 'youngScavenger',
+    templateId: 'youngScavenger',
+    appearanceVariation: 2,
     faction: 'scavengers',
     baseLevel: 1,
     tierScalingFactor: 0.8,
@@ -53,5 +20,85 @@ export const ENEMY_TEMPLATES_DB: Record<string, EnemyTemplate> = {
     },
     weaponId: 'makeshiftKnife',
     bodyArmorId: 'regularCloth',
+  },
+  oldScavenger: {
+    id: '',
+    templateId: 'oldScavenger',
+    appearanceVariation: 2,
+    faction: 'scavengers',
+    baseLevel: 3,
+    tierScalingFactor: 0.9,
+    baseStats: {
+      hp: 60,
+      armor: 2,
+      baseMeleeDamage: 4,
+      melee: 42,
+      ranged: 6,
+      evasion: 16,
+      initiative: 13,
+      critChance: 6,
+    },
+    weaponId: 'spear',
+    bodyArmorId: 'lightLeatherArmor',
+  },
+  scavengerStalker: {
+    id: '',
+    templateId: 'scavengerStalker',
+    appearanceVariation: 1,
+    faction: 'scavengers',
+    baseLevel: 2,
+    tierScalingFactor: 1,
+    baseStats: {
+      hp: 55,
+      armor: 3,
+      baseMeleeDamage: 4,
+      melee: 10,
+      ranged: 38,
+      evasion: 14,
+      initiative: 12,
+      critChance: 6,
+    },
+    weaponId: 'crossbow',
+    bodyArmorId: 'regularCloth',
+  },
+  scavengerScout: {
+    id: '',
+    templateId: 'scavengerScout',
+    appearanceVariation: 2,
+    faction: 'scavengers',
+    baseLevel: 3,
+    tierScalingFactor: 1,
+    baseStats: {
+      hp: 66,
+      armor: 2,
+      baseMeleeDamage: 4,
+      melee: 10,
+      ranged: 46,
+      evasion: 18,
+      initiative: 13,
+      critChance: 6,
+    },
+    weaponId: 'beretta92',
+    bodyArmorId: 'lightLeatherArmor',
+  },
+  scavengerMarksman: {
+    id: '',
+    templateId: 'scavengerMarksman',
+    appearanceVariation: 1,
+    faction: 'scavengers',
+    baseLevel: 4,
+    tierScalingFactor: 1,
+    baseStats: {
+      hp: 70,
+      armor: 3,
+      baseMeleeDamage: 5,
+      melee: 12,
+      ranged: 53,
+      evasion: 21,
+      initiative: 14,
+      critChance: 7,
+    },
+    weaponId: 'makeshiftRifle',
+    bodyArmorId: 'lightLeatherArmor',
   },
 };

@@ -1,0 +1,30 @@
+.combatPreview {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #2a2a2a;
+  border-radius: 8px;
+  border: 1px solid #444;
+  padding: 2rem;
+  box-sizing: border-box;
+
+  &.placeholder {
+    color: #888;
+    text-align: center;
+    h2 {
+      color: #e0e0e0;
+      margin-bottom: 1rem;
+    }
+  }
+}
+
+.enemy-group-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}

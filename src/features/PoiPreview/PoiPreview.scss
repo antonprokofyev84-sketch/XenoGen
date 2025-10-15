@@ -1,3 +1,14 @@
+.poiPreviewOverlay {
+  position: fixed;
+  padding: 2rem;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #1a1a1a;
+  z-index: 1000; // Поверх всего остального
+}
+
 .poiPreview {
   width: 100%;
   height: 100%;
@@ -5,14 +16,14 @@
   flex-direction: column;
   background-color: #2a2a2a;
   border-radius: 8px;
-  border: 1px solid #444;
+  border: 2px solid #444;
   overflow: hidden; // Чтобы скругленные углы работали для дочерних элементов
 }
 
 .previewHeader {
   flex-shrink: 0; // Хедер не будет сжиматься
   width: 100%;
-  height: 350px; // Фиксированная высота для картинки
+  height: 450px;
   background-color: #1e1e1e;
 }
 

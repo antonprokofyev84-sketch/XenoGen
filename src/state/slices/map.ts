@@ -29,7 +29,7 @@ export interface MapSlice {
     initializeMap: (initialData: Record<string, MapCell>) => void;
     setSelectedCellId: (cellId: string | null) => void;
     clearSelectedCellId: () => void;
-    setSelectedPoiId: (poiId: string | null) => void;
+    setSelectedPoiId: (poiId: string) => void;
     clearSelectedPoiId: () => void;
     exploreCell: (
       cellId: string,
@@ -83,10 +83,14 @@ export const createMapSlice: GameSlice<MapSlice> = (set, get) => ({
       set((state) => {
         state.map.selectedCellId = null;
       }),
-    setSelectedPoiId: (poiId) =>
+    setSelectedPoiId: (poiId) => {
+      const selectedCellId = get().map.selectedCellId;
+      get().pois.actions.ensurePoiDetails(selectedCellId!, poiId);
+
       set((state) => {
         state.map.selectedPoiId = poiId;
-      }),
+      });
+    },
     clearSelectedPoiId: () =>
       set((state) => {
         state.map.selectedPoiId = null;

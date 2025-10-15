@@ -98,5 +98,10 @@
     "abandoned_car": { "name": "Abandoned Car", "desc": "A rusted-out husk of a vehicle. Might be something inside." },
     "crashed_drone": { "name": "Crashed Drone", "desc": "A military-grade drone, half-buried in the dirt. Its cargo might still be intact." },
     "makeshift_cache": { "name": "Makeshift Cache", "desc": "A cleverly hidden stash of supplies." }
+  },
+  "characters": {
+    "youngScavenger": { "name": "Young Scavenger" },
+    "scavenger": { "name": "Scavenger" },
+    "veteranScavenger": { "name": "Veteran Scavenger" }
   }
 }
