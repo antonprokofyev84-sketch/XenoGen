@@ -32,7 +32,7 @@ export interface ActivePoi {
   faction: string;
   isDiscovered: boolean;
   perceptionThreshold: number;
-  details: PoiDetails;
+  details?: PoiDetails;
 }
 
 export type PoiDetails = CombatPoiDetails /* | LootPoiDetails */;

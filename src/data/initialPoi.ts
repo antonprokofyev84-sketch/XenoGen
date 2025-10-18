@@ -112,6 +112,28 @@ export const INITIAL_POI: Record<string, Poi[]> = {
       isDiscovered: true,
       difficulty: 1,
     },
+    {
+      id: 'scavenger_group_3-0_001',
+      poiTemplateId: 'scavenger_group',
+      nameKey: 'poi.scavenger_group.name',
+      descriptionKey: 'poi.scavenger_group.desc',
+      type: 'combat',
+      faction: 'scavengers',
+      perceptionThreshold: 25,
+      isDiscovered: true,
+      difficulty: 4,
+    },
+    {
+      id: 'scavenger_group_3-0_002',
+      poiTemplateId: 'scavenger_group',
+      nameKey: 'poi.scavenger_group.name',
+      descriptionKey: 'poi.scavenger_group.desc',
+      type: 'combat',
+      faction: 'scavengers',
+      perceptionThreshold: 25,
+      isDiscovered: true,
+      difficulty: 5,
+    },
   ],
   '3-1': [
     {

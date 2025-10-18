@@ -1,5 +1,6 @@
 import { useShallow } from 'zustand/react/shallow';
 
+import { Button } from '@/components/Button/Button';
 import { useGameStore } from '@/state/useGameState';
 
 import { TimeDisplay } from '../TimeDisplay/TimeDisplay';
@@ -26,12 +27,12 @@ export const BottomBar = () => {
       <div className="partyPortraits">{stamina}</div>
 
       <div className="controls">
-        <button className="controlButton" onClick={handleRestOneHour}>
+        <Button variant="solid" color="white" onClick={handleRestOneHour}>
           Rest (1 Hour)
-        </button>
-        <button className="controlButton primary" onClick={restUntilMorning}>
+        </Button>
+        <Button variant="solid" color="red" onClick={restUntilMorning}>
           Rest Until Morning
-        </button>
+        </Button>
       </div>
     </footer>
   );

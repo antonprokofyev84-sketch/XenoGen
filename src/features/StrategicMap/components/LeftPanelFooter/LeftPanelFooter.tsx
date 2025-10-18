@@ -1,5 +1,6 @@
 import { useShallow } from 'zustand/shallow';
 
+import { Button } from '@/components/Button/Button';
 import { DEFAULT_EXPLORATION_DURATION } from '@/constants';
 import textData from '@/locales/en.json';
 import { partySelectors, useGameStore, worldSelectors } from '@/state/useGameState';
@@ -56,19 +57,19 @@ export const LeftPanelFooter = () => {
     <div className="panelFooter">
       {isFatigued && <div className="fatigueWarning">Party is fatigued!</div>}
       {canScout && (
-        <button className="actionButton scoutButton" onClick={handleScoutClick}>
+        <Button variant="solid" color="white" onClick={handleScoutClick}>
           {textData.strategicMap.scoutSector}
-        </button>
+        </Button>
       )}
       {travelCost.passable && (
-        <button className="actionButton moveButton" onClick={handleMoveClick}>
+        <Button variant="solid" color="green" onClick={handleMoveClick}>
           <span>
             {textData.strategicMap.travelTo} ({selectedCellId})
           </span>
           <span className="costInfo">
             ({travelCost.minutes} min / {travelCost.stamina} Stamina)
           </span>
-        </button>
+        </Button>
       )}
     </div>
   );

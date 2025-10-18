@@ -1,5 +1,6 @@
 import { useShallow } from 'zustand/react/shallow';
 
+import { Button } from '@/components/Button/Button';
 import { useGameStore } from '@/state/useGameState.ts';
 
 import './MainMenu.scss';
@@ -26,12 +27,12 @@ export const MainMenu = () => {
       <h1 className="title">XenoGen</h1>
 
       <div className="buttons-container">
-        <button className="mainMenuButton" onClick={handleNewGame}>
+        <Button variant="ghost" color="green" onClick={handleNewGame}>
           New Game
-        </button>
-        <button className="mainMenuButton" onClick={handleLoadGame}>
+        </Button>
+        <Button variant="ghost" color="green" onClick={handleLoadGame}>
           Load Game
-        </button>
+        </Button>
       </div>
     </div>
   );

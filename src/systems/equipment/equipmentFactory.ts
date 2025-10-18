@@ -1,3 +1,4 @@
+// src/factories/equipment/equipmentFactory.ts
 import { ARMOR_RARITY_MULTIPLIERS_DEFAULT, ARMOR_TEMPLATES_DB } from '@/data/armor.templates';
 import { WEAPON_RARITY_MULTIPLIERS_DEFAULT, WEAPON_TEMPLATES_DB } from '@/data/weapon.templates';
 import type { ArmorInstance } from '@/types/armor.types';
@@ -6,136 +7,175 @@ import type { WeaponInstance } from '@/types/weapon.types';
 import { makeInstanceId } from '@/utils/utils.js';
 
 /**
- * A reusable helper function to calculate final item modifiers based on rarity.
- * It multiplies positive values (bonuses) and divides negative values (penalties).
- * @param baseMods The base modifiers from the item template.
- * @param multiplier The rarity multiplier to apply.
- * @returns A new record with the calculated modifiers.
+ * Учитывает редкость: положительные модификаторы умножаются,
+ * отрицательные делятся на множитель.
  */
-const calculateRarityMods = (
-  baseMods: Record<string, number>,
-  multiplier: number,
+const calculateRarityModifiers = (
+  baseModifiers: Record<string, number> = {},
+  rarityMultiplier: number,
 ): Record<string, number> => {
-  const finalMods: Record<string, number> = {};
-  for (const key in baseMods) {
-    const value = baseMods[key];
-    if (value > 0) {
-      finalMods[key] = Math.round(value * multiplier);
-    } else if (value < 0) {
-      finalMods[key] = Math.round(value / multiplier);
-    } else {
-      finalMods[key] = 0;
-    }
+  const result: Record<string, number> = {};
+  for (const modifierKey in baseModifiers) {
+    const baseValue = baseModifiers[modifierKey];
+    if (baseValue > 0) result[modifierKey] = Math.round(baseValue * rarityMultiplier);
+    else if (baseValue < 0) result[modifierKey] = Math.round(baseValue / rarityMultiplier);
+    else result[modifierKey] = 0;
   }
-  return finalMods;
+  return result;
 };
 
-/**
- * A factory for creating "live" instances of items from their templates.
- */
-export const equipmentFactory = {
-  /**
-   * Creates an armor instance with stats calculated based on its rarity.
-   * @param templateId The ID of the armor template from the database.
-   * @param rarity The desired rarity of the instance.
-   * @returns A new ArmorInstance object, or null if the templateId is invalid.
-   */
-  createArmorInstance: (templateId: string, rarity: Rarity): ArmorInstance | null => {
-    const template = ARMOR_TEMPLATES_DB[templateId];
+/** Детерминированные рассчитанные поля для брони. */
+type ArmorComputedStats = {
+  price: number;
+  mods: Record<string, number>;
+};
 
-    if (!template) {
-      console.warn(`[equipmentFactory] Armor template with id "${templateId}" not found.`);
-      return null;
-    }
+/** Детерминированные рассчитанные поля для оружия. */
+type WeaponComputedStats = {
+  price: number;
+  damage: [number, number];
+  armorPiercing: number;
+  mods: Record<string, number>;
+};
 
-    const { rarityMultipliers, mods: templateMods = {}, price, ...rest } = template;
+/** Простой кэш только для детерминированных вычислений. */
+const armorComputedCacheMap = new Map<string, ArmorComputedStats>(); // key: `${templateId}|${rarity}`
+const weaponComputedCacheMap = new Map<string, WeaponComputedStats>(); // key: `${templateId}|${rarity}`
 
-    if (rarity === 'common') {
-      return {
-        ...rest,
-        instanceId: makeInstanceId(),
-        rarity: 'common',
-        price,
-        mods: { ...templateMods }, // Create a copy
-      };
-    }
+const makeArmorCacheKey = (templateId: string, rarity: Rarity) => `${templateId}|${rarity}`;
+const makeWeaponCacheKey = (templateId: string, rarity: Rarity) => `${templateId}|${rarity}`;
 
-    const multipliers = rarityMultipliers ?? ARMOR_RARITY_MULTIPLIERS_DEFAULT;
-    const multiplier = multipliers[rarity] ?? 1;
+/** Единый расчёт статов брони по (templateId, rarity). */
+function computeArmorStats(templateId: string, rarity: Rarity): ArmorComputedStats | null {
+  const template = ARMOR_TEMPLATES_DB[templateId];
+  if (!template) return null;
 
-    const finalMods = calculateRarityMods(templateMods, multiplier);
-    const finalPrice = Math.round(price * Math.pow(multiplier, 2));
+  if (rarity === 'common') {
+    return { price: template.price, mods: { ...(template.mods ?? {}) } };
+  }
 
-    const instance: ArmorInstance = {
-      ...rest,
-      instanceId: makeInstanceId(),
-      rarity,
-      price: finalPrice,
-      mods: finalMods,
+  const rarityMultipliers = template.rarityMultipliers ?? ARMOR_RARITY_MULTIPLIERS_DEFAULT;
+  const rarityMultiplier = rarityMultipliers[rarity] ?? 1;
+
+  return {
+    price: Math.round(template.price * rarityMultiplier * rarityMultiplier),
+    mods: calculateRarityModifiers(template.mods ?? {}, rarityMultiplier),
+  };
+}
+
+/** Единый расчёт статов оружия по (templateId, rarity). */
+function computeWeaponStats(templateId: string, rarity: Rarity): WeaponComputedStats | null {
+  const template = WEAPON_TEMPLATES_DB[templateId];
+  if (!template) return null;
+
+  if (rarity === 'common') {
+    return {
+      price: template.price,
+      damage: [...template.damage] as [number, number],
+      armorPiercing: template.armorPiercing,
+      mods: { ...(template.mods ?? {}) },
     };
+  }
 
-    return instance;
+  const rarityMultipliers = template.rarityMultipliers ?? WEAPON_RARITY_MULTIPLIERS_DEFAULT;
+  const rarityMultiplier = rarityMultipliers[rarity] ?? 1;
+
+  return {
+    price: Math.round(template.price * rarityMultiplier * rarityMultiplier),
+    damage: [
+      Math.round(template.damage[0] * rarityMultiplier),
+      Math.round(template.damage[1] * rarityMultiplier),
+    ],
+    armorPiercing: Math.round(template.armorPiercing * rarityMultiplier),
+    mods: calculateRarityModifiers(template.mods ?? {}, rarityMultiplier),
+  };
+}
+
+/** Достаёт рассчитанные статы брони из кэша или считает и кладёт. */
+function getArmorStatsCached(templateId: string, rarity: Rarity): ArmorComputedStats | null {
+  const cacheKey = makeArmorCacheKey(templateId, rarity);
+  const cached = armorComputedCacheMap.get(cacheKey);
+  if (cached) return cached;
+
+  const computed = computeArmorStats(templateId, rarity);
+  if (computed) armorComputedCacheMap.set(cacheKey, computed);
+  return computed;
+}
+
+/** Достаёт рассчитанные статы оружия из кэша или считает и кладёт. */
+function getWeaponStatsCached(templateId: string, rarity: Rarity): WeaponComputedStats | null {
+  const cacheKey = makeWeaponCacheKey(templateId, rarity);
+  const cached = weaponComputedCacheMap.get(cacheKey);
+  if (cached) return cached;
+
+  const computed = computeWeaponStats(templateId, rarity);
+  if (computed) weaponComputedCacheMap.set(cacheKey, computed);
+  return computed;
+}
+
+/** Публичная фабрика. */
+export const equipmentFactory = {
+  /** Сбросить оба кэша (например, после правок баланса). */
+  clearCache(): void {
+    armorComputedCacheMap.clear();
+    weaponComputedCacheMap.clear();
   },
 
-  /**
-   * Creates a weapon instance with stats calculated based on its rarity.
-   * Rarity affects core stats (damage, armorPiercing) and price directly,
-   * and secondary mods via the standard modifier calculation.
-   * @param templateId The ID of the weapon template from the database.
-   * @param rarity The desired rarity of the instance.
-   * @returns A new WeaponInstance object, or null if the templateId is invalid.
-   */
-  createWeaponInstance: (templateId: string, rarity: Rarity): WeaponInstance | null => {
-    const template = WEAPON_TEMPLATES_DB[templateId];
+  /** Лёгкие превью: детерминированные статы без создания instanceId. */
+  getArmorPreview(templateId: string, rarity: Rarity) {
+    return getArmorStatsCached(templateId, rarity);
+  },
+  getWeaponPreview(templateId: string, rarity: Rarity) {
+    return getWeaponStatsCached(templateId, rarity);
+  },
 
+  /** Полный инстанс брони: добавляем instanceId и переносим статические поля шаблона. */
+  createArmorInstance(templateId: string, rarity: Rarity): ArmorInstance | null {
+    const template = ARMOR_TEMPLATES_DB[templateId];
     if (!template) {
-      console.warn(`[equipmentFactory] Weapon template with id "${templateId}" not found.`);
+      console.warn(`[equipmentFactory] Armor template "${templateId}" not found.`);
       return null;
     }
 
-    const {
-      rarityMultipliers,
-      mods: templateMods = {},
-      price,
-      damage, // [min, max]
-      armorPiercing,
-      ...rest
-    } = template;
+    const computed = getArmorStatsCached(templateId, rarity);
+    if (!computed) return null;
 
-    if (rarity === 'common') {
-      return {
-        ...rest,
-        instanceId: makeInstanceId(),
-        rarity: 'common',
-        price,
-        damage: [...damage], // Create a copy
-        armorPiercing,
-        mods: { ...templateMods }, // Create a copy
-      };
-    }
+    // Берём все поля шаблона, кроме служебного rarityMultipliers (остальные перезапишем computed-полями)
+    const { rarityMultipliers, ...templateFields } = template;
 
-    const multipliers = rarityMultipliers ?? WEAPON_RARITY_MULTIPLIERS_DEFAULT;
-    const multiplier = multipliers[rarity] ?? 1;
-
-    // Calculate final stats based on rarity
-    const finalPrice = Math.round(price * Math.pow(multiplier, 2));
-    const finalMods = calculateRarityMods(templateMods, multiplier);
-    const finalArmorPiercing = Math.round(armorPiercing * multiplier);
-    const finalDamage: [number, number] = [
-      Math.round(damage[0] * multiplier),
-      Math.round(damage[1] * multiplier),
-    ];
-
-    const instance: WeaponInstance = {
-      ...rest,
+    const armorInstance: ArmorInstance = {
+      ...templateFields,
       instanceId: makeInstanceId(),
       rarity,
-      price: finalPrice,
-      damage: finalDamage,
-      armorPiercing: finalArmorPiercing,
-      mods: finalMods,
+      price: computed.price,
+      mods: computed.mods,
     };
+    return armorInstance;
+  },
 
-    return instance;
+  /** Полный инстанс оружия: добавляем instanceId и переносим статические поля шаблона. */
+  createWeaponInstance(templateId: string, rarity: Rarity): WeaponInstance | null {
+    const template = WEAPON_TEMPLATES_DB[templateId];
+    if (!template) {
+      console.warn(`[equipmentFactory] Weapon template "${templateId}" not found.`);
+      return null;
+    }
+
+    const computed = getWeaponStatsCached(templateId, rarity);
+    if (!computed) return null;
+
+    // Берём все поля шаблона, кроме служебного rarityMultipliers (остальные перезапишем computed-полями)
+    const { rarityMultipliers, ...templateFields } = template;
+
+    const weaponInstance: WeaponInstance = {
+      ...templateFields,
+      instanceId: makeInstanceId(),
+      rarity,
+      price: computed.price,
+      damage: computed.damage,
+      armorPiercing: computed.armorPiercing,
+      mods: computed.mods,
+    };
+    return weaponInstance;
   },
 };

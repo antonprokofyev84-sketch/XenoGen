@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
 
+import { Button } from '@/components/Button/Button';
 import { INITIAL_FACTIONS } from '@/data/initialFaction';
 import { INITIAL_MAP } from '@/data/initialMap';
 import { INITIAL_POI } from '@/data/initialPoi';
@@ -147,12 +148,12 @@ export const CharacterCreation = () => {
       </section>
 
       <footer className="characterCreationFooter">
-        <button type="button" className="characterCreationBtn ghost" onClick={handleBack}>
+        <Button type="button" variant="outline" color="red" onClick={handleBack}>
           {textData.characterCreation.backButton}
-        </button>
-        <button type="button" className="characterCreationBtn primary" onClick={handleStart}>
+        </Button>
+        <Button type="button" variant="outline" color="green" onClick={handleStart}>
           {textData.characterCreation.startButton}
-        </button>
+        </Button>
       </footer>
     </div>
   );

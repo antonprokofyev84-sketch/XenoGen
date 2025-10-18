@@ -11,6 +11,7 @@ import type {
 } from '@/types/character.types';
 
 import type { GameSlice } from '../types';
+import { equipmentSelectors } from './equipment';
 import { traitsSelectors } from './traits';
 
 /**
@@ -34,11 +35,16 @@ export interface CharactersSlice {
 
 // --- Helper Functions ---
 
-const applyMods = <T extends Record<string, number>>(base: T, mods: Record<string, number>): T => {
+const applyMods = <T extends Record<string, number>>(
+  base: T,
+  ...mods: Record<string, number>[]
+): T => {
   const result = { ...base };
-  for (const key in mods) {
-    if (key in result) {
-      result[key as keyof T] = ((result[key as keyof T] || 0) + mods[key]) as T[keyof T];
+  for (const modSet of mods) {
+    for (const key in modSet) {
+      if (key in result) {
+        result[key as keyof T] = ((result[key as keyof T] || 0) + modSet[key]) as T[keyof T];
+      }
     }
   }
   return result;
@@ -150,8 +156,11 @@ export const characterSelectors = {
     (state: StoreState): MainStats => {
       const character = state.characters.byId[characterId];
       if (!character) return {} as MainStats;
-      const mods = traitsSelectors.selectMainStatMods(characterId)(state);
-      return applyMods(character.mainStats, mods);
+
+      const traitMods = traitsSelectors.selectMainStatMods(characterId)(state);
+      const equipmentMods = equipmentSelectors.selectMainStatMods(characterId)(state);
+
+      return applyMods(character.mainStats, traitMods, equipmentMods);
     },
 
   /** Calculates the final, effective skills after applying trait modifiers. */
@@ -160,8 +169,11 @@ export const characterSelectors = {
     (state: StoreState): Skills => {
       const character = state.characters.byId[characterId];
       if (!character) return {} as Skills;
-      const mods = traitsSelectors.selectSkillMods(characterId)(state);
-      return applyMods(character.skills, mods);
+
+      const traitMods = traitsSelectors.selectSkillMods(characterId)(state);
+      const equipmentMods = equipmentSelectors.selectSkillMods(characterId)(state);
+
+      return applyMods(character.skills, traitMods, equipmentMods);
     },
 
   selectEffectiveSecondaryStats:
@@ -169,9 +181,12 @@ export const characterSelectors = {
     (state: StoreState): SecondaryStats => {
       const character = state.characters.byId[characterId];
       if (!character) return {} as SecondaryStats;
+
       const baseSecondary = characterSelectors.selectSecondaryStats(characterId)(state);
-      const mods = traitsSelectors.selectSecondaryStatMods(characterId)(state);
-      return applyMods(baseSecondary, mods);
+      const traitMods = traitsSelectors.selectSecondaryStatMods(characterId)(state);
+      const equipmentMods = equipmentSelectors.selectSecondaryStatMods(characterId)(state);
+
+      return applyMods(baseSecondary, traitMods, equipmentMods);
     },
 };
 

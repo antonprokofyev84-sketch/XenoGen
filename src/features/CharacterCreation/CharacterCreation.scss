@@ -147,35 +147,3 @@
   gap: 1rem;
   justify-content: center;
 }
-
-.characterCreationBtn {
-  width: 200px;
-  padding: 0.8rem 2rem;
-  font-size: 1.1rem;
-  border-radius: 10px;
-  border: 2px solid #505050;
-  background: transparent;
-  color: #a0a0a0;
-  cursor: pointer;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease,
-    border-color 0.15s ease;
-
-  &.ghost:hover {
-    color: #fff;
-    border-color: #c53d3d;
-    background: rgba(197, 61, 61, 0.1);
-  }
-
-  &.primary {
-    border-color: #4caf50;
-    color: #cfe9d1;
-  }
-
-  &.primary:hover {
-    color: #fff;
-    background: rgba(76, 175, 80, 0.1);
-    border-color: #6bd473;
-  }
-}

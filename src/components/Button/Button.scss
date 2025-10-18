@@ -1,0 +1,160 @@
+// --- Color Palette ---
+$btn-color-red: #c53d3d;
+$btn-color-green: #4caf50;
+$btn-color-blue: #3e4b86;
+$btn-color-yellow: #c5b05c;
+$btn-color-white: #ffffff;
+$btn-color-grey: #a0a0a0;
+$btn-color-border-default: #505050;
+
+// --- Base Button Styles ---
+.btn {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.8rem 2rem;
+  font-size: 1.2rem;
+  font-weight: bold;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  text-decoration: none;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+// --- Style Modifier: Ghost (transparent, colored on hover) ---
+.btn-ghost {
+  background-color: transparent;
+  color: $btn-color-grey;
+  border-color: $btn-color-border-default;
+
+  &.btn-red:hover:not(:disabled) {
+    color: $btn-color-white;
+    border-color: $btn-color-red;
+    background-color: rgba($btn-color-red, 0.1);
+  }
+  &.btn-green:hover:not(:disabled) {
+    color: $btn-color-white;
+    border-color: $btn-color-green;
+    background-color: rgba($btn-color-green, 0.1);
+  }
+  &.btn-blue:hover:not(:disabled) {
+    color: $btn-color-white;
+    border-color: $btn-color-blue;
+    background-color: rgba($btn-color-blue, 0.1);
+  }
+  &.btn-yellow:hover:not(:disabled) {
+    color: $btn-color-white;
+    border-color: $btn-color-yellow;
+    background-color: rgba($btn-color-yellow, 0.1);
+  }
+  &.btn-white:hover:not(:disabled) {
+    color: $btn-color-white;
+    border-color: $btn-color-white;
+    background-color: rgba($btn-color-white, 0.1);
+  }
+}
+
+// --- Style Modifier: Outline (colored border) ---
+.btn-outline {
+  background-color: transparent;
+
+  &.btn-red {
+    border-color: $btn-color-red;
+    color: lighten($btn-color-red, 20%);
+    &:hover:not(:disabled) {
+      color: $btn-color-white;
+      background-color: rgba($btn-color-red, 0.15);
+      border-color: lighten($btn-color-red, 10%);
+    }
+  }
+  &.btn-green {
+    border-color: $btn-color-green;
+    color: lighten($btn-color-green, 20%);
+    &:hover:not(:disabled) {
+      color: $btn-color-white;
+      background-color: rgba($btn-color-green, 0.15);
+      border-color: lighten($btn-color-green, 10%);
+    }
+  }
+  &.btn-blue {
+    border-color: $btn-color-blue;
+    color: lighten($btn-color-blue, 20%);
+    &:hover:not(:disabled) {
+      color: $btn-color-white;
+      background-color: rgba($btn-color-blue, 0.15);
+      border-color: lighten($btn-color-blue, 10%);
+    }
+  }
+  &.btn-yellow {
+    border-color: $btn-color-yellow;
+    color: lighten($btn-color-yellow, 20%);
+    &:hover:not(:disabled) {
+      color: $btn-color-white;
+      background-color: rgba($btn-color-yellow, 0.15);
+      border-color: lighten($btn-color-yellow, 10%);
+    }
+  }
+  &.btn-white {
+    border-color: $btn-color-grey;
+    color: $btn-color-grey;
+    &:hover:not(:disabled) {
+      color: $btn-color-white;
+      background-color: rgba($btn-color-white, 0.15);
+      border-color: $btn-color-white;
+    }
+  }
+}
+
+// --- Style Modifier: Solid (colored background) ---
+.btn-solid {
+  color: $btn-color-white;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+
+  &.btn-red {
+    background-color: $btn-color-red;
+    border-color: darken($btn-color-red, 10%);
+    &:hover:not(:disabled) {
+      background-color: lighten($btn-color-red, 5%);
+      border-color: $btn-color-red;
+    }
+  }
+  &.btn-green {
+    background-color: $btn-color-green;
+    border-color: darken($btn-color-green, 10%);
+    &:hover:not(:disabled) {
+      background-color: lighten($btn-color-green, 5%);
+      border-color: $btn-color-green;
+    }
+  }
+  &.btn-blue {
+    background-color: $btn-color-blue;
+    border-color: darken($btn-color-blue, 10%);
+    &:hover:not(:disabled) {
+      background-color: lighten($btn-color-blue, 5%);
+      border-color: $btn-color-blue;
+    }
+  }
+  &.btn-yellow {
+    background-color: $btn-color-yellow;
+    border-color: darken($btn-color-yellow, 10%);
+    &:hover:not(:disabled) {
+      background-color: lighten($btn-color-yellow, 5%);
+      border-color: $btn-color-yellow;
+    }
+  }
+  &.btn-white {
+    background-color: #383838;
+    color: #ccc;
+    border-color: #555;
+    &:hover:not(:disabled) {
+      background-color: #4a4a4a;
+      border-color: #777;
+    }
+  }
+}

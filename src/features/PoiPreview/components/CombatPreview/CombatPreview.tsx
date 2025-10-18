@@ -27,7 +27,6 @@ export const CombatPreview = () => {
           <CharacterCard key={enemy.instanceId} character={enemy} />
         ))}
       </div>
-      {/* В будущем здесь будут кнопки "Атаковать" / "Отступить" */}
     </div>
   );
 };

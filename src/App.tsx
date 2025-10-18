@@ -1,4 +1,5 @@
 import { CharacterCreation } from '@/features/CharacterCreation/CharacterCreation';
+import { Combat } from '@/features/Combat/Combat';
 import { MainMenu } from '@/features/MainMenu/MainMenu';
 import { StrategicMap } from '@/features/StrategicMap/StrategicMap';
 import { useGameStore } from '@/state/useGameState';
@@ -16,6 +17,8 @@ function App() {
         return <CharacterCreation />;
       case 'strategicMap':
         return <StrategicMap />;
+      case 'combat':
+        return <Combat />;
       default:
         return <MainMenu />;
     }

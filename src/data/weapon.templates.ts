@@ -108,7 +108,7 @@ export const WEAPON_TEMPLATES_DB: Record<string, WeaponTemplate> = {
   crossbow: {
     id: 'crossbow',
     slot: 'range',
-    price: 300,
+    price: 150,
     dropRate: 0.22,
     requiredStrength: 35,
     requiredRanged: 30,
