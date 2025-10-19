@@ -1,13 +1,28 @@
+import { DEFAULT_ARMOR_ID, DEFAULT_MELEE_ID } from '@/constants.js';
 import { mainStatKeys, secondaryStatsKeys, skillKeys } from '@/state/constants';
 import type { StoreState } from '@/state/useGameState';
 import { equipmentFactory } from '@/systems/equipment/equipmentFactory';
 import type { Rarity } from '@/types/common.types';
-import type { EquipmentItem, EquipmentSlot, EquipmentSlots } from '@/types/equipment.types';
+import type {
+  EquipmentItem,
+  EquipmentSlot,
+  EquipmentSlots,
+  WeaponSlots,
+} from '@/types/equipment.types';
 
 import type { GameSlice } from '../types';
 
-const WEAPON_SLOTS = new Set<EquipmentSlot>(['melee', 'ranged']);
-const isWeaponSlot = (slot: EquipmentSlot) => WEAPON_SLOTS.has(slot);
+const DEFAULT_ARMOR_ITEM: Readonly<EquipmentItem> = Object.freeze({
+  templateId: DEFAULT_ARMOR_ID,
+  rarity: 'common',
+});
+const DEFAULT_MELEE_ITEM: Readonly<EquipmentItem> = Object.freeze({
+  templateId: DEFAULT_MELEE_ID,
+  rarity: 'common',
+});
+
+const isWeaponSlot = (slot: EquipmentSlot): slot is WeaponSlots =>
+  slot === 'meleeWeapon' || slot === 'rangeWeapon';
 
 const filterModsByKeys = (
   totalMods: Record<string, number>,
@@ -45,7 +60,20 @@ export const equipmentSelectors = {
   selectEquipmentByCharacterId:
     (characterId: string) =>
     (state: StoreState): Partial<EquipmentSlots> => {
-      return state.equipment.equipmentByCharacterId[characterId] ?? {};
+      const currentEquipment = state.equipment.equipmentByCharacterId[characterId] ?? {};
+      const result = { ...currentEquipment }; // Создаем копию, чтобы не мутировать состояние
+
+      // Гарантируем наличие дефолтной брони, если слот пуст
+      if (!result.armor) {
+        result.armor = DEFAULT_ARMOR_ITEM;
+      }
+
+      // Гарантируем наличие дефолтного оружия ближнего боя, если слот пуст
+      if (!result.meleeWeapon) {
+        result.meleeWeapon = DEFAULT_MELEE_ITEM;
+      }
+
+      return result;
     },
 
   selectTotalModsByCharacterId:
@@ -118,7 +146,12 @@ export const createEquipmentSlice: GameSlice<EquipmentSlice> = (set) => ({
 
     resetCharacterEquipment: (characterId) => {
       set((state) => {
-        state.equipment.equipmentByCharacterId[characterId] = {};
+        state.equipment.equipmentByCharacterId[characterId] = {
+          meleeWeapon: null,
+          armor: null,
+          rangeWeapon: null,
+          gadget: null,
+        };
       });
     },
   },

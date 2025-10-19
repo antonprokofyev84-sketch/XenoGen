@@ -1,16 +1,12 @@
 import type { Rarity } from '@/types/common.types.js';
 
 export interface ArmorTemplate {
-  id: string;
-
+  templateId: string;
   slot: 'armor' | 'outerwear' | 'accessory';
   price: number;
   dropRate: number;
-
   requiredStrength?: number;
-
   mods: Record<string, number>;
-
   rarityMultipliers?: {
     uncommon?: number;
     rare?: number;
@@ -18,7 +14,7 @@ export interface ArmorTemplate {
   };
 }
 
-export interface ArmorInstance extends Omit<ArmorTemplate, 'rarityMultipliers'> {
+export interface ArmorInstance extends Omit<ArmorTemplate, 'dropRate' | 'rarityMultipliers'> {
   instanceId: string; // A unique ID for this specific item instance
   rarity: Rarity;
 }

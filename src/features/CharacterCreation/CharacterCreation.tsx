@@ -29,25 +29,13 @@ export const CharacterCreation = () => {
   const [creationPoints, setCreationPoints] = useState(INITIAL_CREATION_POINTS);
   const [pointStep, setPointStep] = useState<number>(5);
 
-  const {
-    protagonistId,
-    characterActions,
-    goToScreen,
-    traitActions,
-    initializeMap,
-    initializePois,
-    initializeFactions,
-  } = useGameStore(
-    useShallow((state) => ({
-      protagonistId: state.characters.protagonistId,
-      characterActions: state.characters.actions,
-      goToScreen: state.ui.goToScreen,
-      traitActions: state.traits.actions,
-      initializeMap: state.map.actions.initializeMap,
-      initializePois: state.pois.actions.initializePois,
-      initializeFactions: state.factions.actions.initializeFactions,
-    })),
-  );
+  const protagonistId = useGameStore((state) => state.characters.protagonistId);
+  const characterActions = useGameStore((state) => state.characters.actions);
+  const traitActions = useGameStore((state) => state.traits.actions);
+  const goToScreen = useGameStore((state) => state.ui.goToScreen);
+  const initializeFactions = useGameStore((state) => state.factions.actions.initializeFactions);
+  const initializeMap = useGameStore((state) => state.map.actions.initializeMap);
+  const initializePois = useGameStore((state) => state.pois.actions.initializePois);
 
   const handleStatChange = (statKey: MainStatKey, delta: number) => {
     characterActions.changeMainStat(protagonistId, statKey, delta);
@@ -77,6 +65,8 @@ export const CharacterCreation = () => {
   };
 
   const handleStart = () => {
+    characterActions.finalizeCharacterCreation(protagonistId);
+
     initializeFactions(INITIAL_FACTIONS);
     initializeMap(INITIAL_MAP);
     initializePois(INITIAL_POI);

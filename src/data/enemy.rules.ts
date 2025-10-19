@@ -8,7 +8,7 @@ type StatKey =
   | 'armor'
   | 'baseMeleeDamage'
   | 'melee'
-  | 'ranged'
+  | 'range'
   | 'evasion'
   | 'initiative'
   | 'critChance';
@@ -20,7 +20,7 @@ export const RARITY_RULES: Partial<Record<Rarity, StatAppliers>> = {
   uncommon: {
     hp: multiply(1.1),
     melee: multiply(1.1),
-    ranged: multiply(1.1),
+    range: multiply(1.1),
     armor: multiply(1.1),
     baseMeleeDamage: add(1),
     evasion: add(3),
@@ -29,7 +29,7 @@ export const RARITY_RULES: Partial<Record<Rarity, StatAppliers>> = {
   rare: {
     hp: multiply(1.2),
     melee: multiply(1.2),
-    ranged: multiply(1.2),
+    range: multiply(1.2),
     armor: multiply(1.2),
     baseMeleeDamage: add(2),
     evasion: add(6),
@@ -38,7 +38,7 @@ export const RARITY_RULES: Partial<Record<Rarity, StatAppliers>> = {
   unique: {
     hp: multiply(1.3),
     melee: multiply(1.3),
-    ranged: multiply(1.3),
+    range: multiply(1.3),
     armor: multiply(1.3),
     baseMeleeDamage: add(3),
     evasion: add(9),
@@ -46,12 +46,15 @@ export const RARITY_RULES: Partial<Record<Rarity, StatAppliers>> = {
   },
 } as const;
 
+export const MIN_ENEMY_TIER = 0;
+export const MAX_ENEMY_TIER = 2;
+
 export const TIER_UP_DELTAS = {
   hp: 6.9,
   armor: 0.26,
   baseMeleeDamage: 0.8,
   melee: 8,
-  ranged: 8,
+  range: 8,
   evasion: 4.8,
   initiative: 1.12,
   critChance: 0.56,

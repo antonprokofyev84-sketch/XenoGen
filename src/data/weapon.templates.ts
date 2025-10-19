@@ -25,9 +25,20 @@ export const WEAPON_RARITY_MULTIPLIERS_DEFAULT = { uncommon: 1.1, rare: 1.2, uni
 
 export const WEAPON_TEMPLATES_DB: Record<string, WeaponTemplate> = {
   // --- MELEE WEAPONS ---
+  fists: {
+    templateId: 'fists',
+    slot: 'meleeWeapon',
+    price: 0,
+    dropRate: 0.0,
+    requiredMelee: 0,
+    distance: 0,
+    attacksPerTurn: 1,
+    damage: [2, 4],
+    armorPiercing: 0,
+  },
   makeshiftKnife: {
-    id: 'makeshiftKnife',
-    slot: 'melee',
+    templateId: 'makeshiftKnife',
+    slot: 'meleeWeapon',
     price: 40,
     dropRate: 0.5,
     requiredMelee: 15,
@@ -38,8 +49,8 @@ export const WEAPON_TEMPLATES_DB: Record<string, WeaponTemplate> = {
   },
 
   spear: {
-    id: 'spear',
-    slot: 'melee',
+    templateId: 'spear',
+    slot: 'meleeWeapon',
     price: 110,
     dropRate: 0.3,
     requiredStrength: 30,
@@ -51,8 +62,8 @@ export const WEAPON_TEMPLATES_DB: Record<string, WeaponTemplate> = {
   },
 
   fireAxe: {
-    id: 'fireAxe',
-    slot: 'melee',
+    templateId: 'fireAxe',
+    slot: 'meleeWeapon',
     price: 90,
     dropRate: 0.3,
     requiredStrength: 45,
@@ -66,8 +77,8 @@ export const WEAPON_TEMPLATES_DB: Record<string, WeaponTemplate> = {
   // --- RANGED WEAPONS ---
 
   beretta92: {
-    id: 'beretta92',
-    slot: 'range',
+    templateId: 'beretta92',
+    slot: 'rangeWeapon',
     price: 250,
     dropRate: 0.28,
     requiredRanged: 25,
@@ -78,8 +89,8 @@ export const WEAPON_TEMPLATES_DB: Record<string, WeaponTemplate> = {
   },
 
   pumpShotgun: {
-    id: 'pumpShotgun',
-    slot: 'range',
+    templateId: 'pumpShotgun',
+    slot: 'rangeWeapon',
     price: 400,
     dropRate: 0.2,
     requiredStrength: 45,
@@ -94,8 +105,8 @@ export const WEAPON_TEMPLATES_DB: Record<string, WeaponTemplate> = {
   },
 
   makeshiftRifle: {
-    id: 'makeshiftRifle',
-    slot: 'range',
+    templateId: 'makeshiftRifle',
+    slot: 'rangeWeapon',
     price: 350,
     dropRate: 0.25,
     requiredRanged: 35,
@@ -106,8 +117,8 @@ export const WEAPON_TEMPLATES_DB: Record<string, WeaponTemplate> = {
   },
 
   crossbow: {
-    id: 'crossbow',
-    slot: 'range',
+    templateId: 'crossbow',
+    slot: 'rangeWeapon',
     price: 150,
     dropRate: 0.22,
     requiredStrength: 35,

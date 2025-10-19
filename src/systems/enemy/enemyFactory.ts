@@ -1,9 +1,12 @@
+import { DEFAULT_ARMOR_ID, DEFAULT_MELEE_ID } from '@/constants.js';
 import { RARITY_RULES } from '@/data/enemy.rules';
 import { ENEMY_RARITY_CHANCE, EQUIPMENT_BY_TIER_CHANCE, TIER_UP_DELTAS } from '@/data/enemy.rules';
+import { MAX_ENEMY_TIER, MIN_ENEMY_TIER } from '@/data/enemy.rules';
 import { ENEMY_TEMPLATES_DB } from '@/data/enemy.templates';
-import type { ArmorInstance } from '@/types/armor.types.js';
+import type { CombatStats, CombatUnit } from '@/types/combat.types.js';
 import type { Rarity } from '@/types/common.types';
-import type { EnemyInstance, EnemyStats } from '@/types/enemy.types';
+import type { EquipmentItem } from '@/types/equipment.types';
+import type { WeaponSlots } from '@/types/equipment.types.js';
 import type { WeaponInstance } from '@/types/weapon.types.js';
 import { makeInstanceId } from '@/utils/utils.js';
 
@@ -27,9 +30,6 @@ const getRandomKeyByWeight = (weights: Record<string, number>): string => {
   }
 
   let random = Math.random() * totalWeight;
-
-  console.log(random);
-
   for (const [key, weight] of Object.entries(weights)) {
     if (random < weight) {
       return key;
@@ -40,10 +40,10 @@ const getRandomKeyByWeight = (weights: Record<string, number>): string => {
   return Object.keys(weights)[0];
 };
 
-const applyMods = (stats: EnemyStats, mods?: Record<string, number>) => {
+const applyMods = (stats: CombatStats, mods?: Record<string, number>) => {
   if (!mods) return;
   for (const [key, value] of Object.entries(mods)) {
-    if (key in stats) stats[key as keyof EnemyStats] += value;
+    if (key in stats) stats[key as keyof CombatStats] += value;
   }
 };
 
@@ -55,9 +55,9 @@ export const enemyFactory = {
    * Создает экземпляр врага на основе шаблона и желаемого уровня.
    * @param templateId ID шаблона из ENEMY_TEMPLATES_DB.
    * @param level Желаемый уровень врага.
-   * @returns Объект EnemyInstance или null, если шаблон не найден.
+   * @returns Объект CombatUnit или null, если шаблон не найден.
    */
-  createEnemyInstance: (templateId: string, level: number): EnemyInstance | null => {
+  createEnemyInstance: (templateId: string, level: number): CombatUnit | null => {
     const template = ENEMY_TEMPLATES_DB[templateId];
 
     if (!template) {
@@ -67,7 +67,7 @@ export const enemyFactory = {
 
     const tier = level - template.baseLevel;
 
-    if (tier < 0 || tier > 2) {
+    if (tier < MIN_ENEMY_TIER || tier > MAX_ENEMY_TIER) {
       console.warn(
         `[enemyFactory] Cannot create enemy "${templateId}" of level ${level} (based on baseLevel ${template.baseLevel}).`,
       );
@@ -75,7 +75,7 @@ export const enemyFactory = {
     }
 
     // --- Шаг 1: Расчет характеристик по уровню ---
-    let finalStats: EnemyStats;
+    let finalStats: CombatStats;
     const overrideStats = template.tierOverrides?.[tier as keyof typeof template.tierOverrides];
 
     if (overrideStats) {
@@ -87,7 +87,7 @@ export const enemyFactory = {
       if (tier > 0) {
         const scalingFactor = template.tierScalingFactor ?? 1;
         for (const key in finalStats) {
-          const statKey = key as keyof EnemyStats;
+          const statKey = key as keyof CombatStats;
           const delta = TIER_UP_DELTAS[statKey] ?? 0;
           finalStats[statKey] += delta * scalingFactor * tier;
         }
@@ -100,7 +100,7 @@ export const enemyFactory = {
     const rarityRules = RARITY_RULES[enemyRarity];
     if (rarityRules) {
       for (const key in rarityRules) {
-        const statKey = key as keyof EnemyStats;
+        const statKey = key as keyof CombatStats;
         const rule = rarityRules[statKey];
         if (rule && finalStats[statKey] !== undefined) {
           finalStats[statKey] = rule(finalStats[statKey]);
@@ -108,58 +108,74 @@ export const enemyFactory = {
       }
     }
 
-    // --- Шаг 3: Генерация и интеграция снаряжения ---
+    // --- Шаг 3: Генерация и интеграция снаряжения (ОБНОВЛЕНО) ---
     const tierChances = EQUIPMENT_BY_TIER_CHANCE[tier as keyof typeof EQUIPMENT_BY_TIER_CHANCE];
-    let weaponInstance: WeaponInstance | null = null;
-    if (template.weaponId) {
-      // Оружие
-      let weaponRarity = getMaxRarity(getRandomKeyByWeight(tierChances) as Rarity, enemyRarity);
-      weaponInstance = equipmentFactory.createWeaponInstance(template.weaponId, weaponRarity);
-      if (!weaponInstance) {
-        console.error(
-          `[enemyFactory] Failed to create weapon "${template.weaponId}" for enemy "${templateId}".`,
-        );
-        return null;
-      }
-      applyMods(finalStats, weaponInstance.mods);
+
+    // Вспомогательная функция для чистоты кода
+    const createWeapon = (weaponId?: string): WeaponInstance | null => {
+      if (!weaponId) return null;
+      const rarity = getMaxRarity(getRandomKeyByWeight(tierChances) as Rarity, enemyRarity);
+      return equipmentFactory.createWeaponInstance(weaponId, rarity);
+    };
+
+    let meleeInstance = createWeapon(template.equipment.meleeId);
+    let rangedInstance = createWeapon(template.equipment.rangedId);
+
+    // Дефолтное оружие, если ни одного не указано
+    if (!meleeInstance && !rangedInstance) {
+      meleeInstance = createWeapon(DEFAULT_MELEE_ID);
     }
 
-    let armorInstance: ArmorInstance | null = null;
-    if (template.bodyArmorId) {
-      // Броня
-      let armorRarity = getMaxRarity(getRandomKeyByWeight(tierChances) as Rarity, enemyRarity);
-      armorInstance = equipmentFactory.createArmorInstance(template.bodyArmorId, armorRarity);
-      if (!armorInstance) {
-        console.error(
-          `[enemyFactory] Failed to create armor "${template.bodyArmorId}" for enemy "${templateId}".`,
-        );
-        return null; // Критическая ошибка, броня не найдена
-      }
-      applyMods(finalStats, armorInstance?.mods);
+    // Броня (используем дефолтную, если не указана)
+    const armorIdToCreate = template.equipment.armorId ?? DEFAULT_ARMOR_ID;
+    const armorRarity = getMaxRarity(getRandomKeyByWeight(tierChances) as Rarity, enemyRarity);
+    const armorInstance = equipmentFactory.createArmorInstance(armorIdToCreate, armorRarity);
+
+    // Гаджет (если есть)
+    let gadgetInstance: EquipmentItem | null = null;
+    if (template.equipment.gadgetId) {
+      const rarity = getMaxRarity(getRandomKeyByWeight(tierChances) as Rarity, enemyRarity);
+      gadgetInstance = { templateId: template.equipment.gadgetId, rarity };
     }
-    // --- Шаг 4: Сборка финального объекта ---
 
-    const { mods, ...restOfWeapon } = weaponInstance as WeaponInstance; // Убираем моды из оружия
-    let finalBodyArmor = armorInstance
-      ? { id: armorInstance.id, rarity: armorInstance.rarity }
-      : undefined;
+    // Применяем моды от всей экипировки
+    applyMods(finalStats, meleeInstance?.mods);
+    applyMods(finalStats, rangedInstance?.mods);
+    applyMods(finalStats, armorInstance?.mods);
+    // applyMods(finalStats, gadgetInstance?.mods);
 
-    // Округляем все характеристики до целых чисел
+    // --- Шаг 4: Сборка финального объекта (ОБНОВЛЕНО) ---
+
+    const finalMelee = meleeInstance ? { ...meleeInstance, mods: {} } : null;
+    const finalRanged = rangedInstance ? { ...rangedInstance, mods: {} } : null;
+
+    const finalArmor = armorInstance
+      ? { templateId: armorInstance.templateId, rarity: armorInstance.rarity }
+      : null;
+    const finalGadget = gadgetInstance;
+
+    const activeWeaponSlot: WeaponSlots = finalRanged ? 'rangeWeapon' : 'meleeWeapon';
+
     for (const key in finalStats) {
-      const statKey = key as keyof EnemyStats;
+      const statKey = key as keyof CombatStats;
       finalStats[statKey] = Math.round(finalStats[statKey]);
     }
 
-    const instance: EnemyInstance = {
+    const instance: CombatUnit = {
       instanceId: makeInstanceId(),
-      templateId,
+      templateId: template.templateId,
       faction: template.faction,
       appearanceVariation: Math.floor(Math.random() * (template.appearanceVariation ?? 1)),
       level,
       rarity: enemyRarity,
       stats: finalStats,
-      weapon: restOfWeapon,
-      bodyArmor: finalBodyArmor,
+      equipment: {
+        meleeWeapon: finalMelee,
+        rangeWeapon: finalRanged,
+        armor: finalArmor,
+        gadget: finalGadget,
+      },
+      activeWeaponSlot,
     };
 
     return instance;

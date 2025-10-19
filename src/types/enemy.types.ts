@@ -1,18 +1,7 @@
+import type { CombatStats } from './combat.types';
 import type { Rarity } from './common.types';
-import type { WeaponInstance } from './weapon.types';
 
-export interface EnemyStats {
-  hp: number;
-  armor: number;
-  baseMeleeDamage: number;
-  melee: number;
-  ranged: number;
-  evasion: number;
-  initiative: number;
-  critChance: number;
-}
-
-// Упрощённый противник для runtime боя
+// темплейт врага из базы данных
 export interface EnemyTemplate {
   id: string;
   templateId: string;
@@ -22,30 +11,18 @@ export interface EnemyTemplate {
 
   baseLevel: number;
   tierScalingFactor?: number; // Defaults to 1.0 if not present
-  baseStats: EnemyStats;
+  baseStats: CombatStats;
 
-  weaponId: string;
-  bodyArmorId?: string;
+  equipment: {
+    meleeId?: string;
+    rangedId?: string;
+    armorId?: string;
+    gadgetId?: string;
+  };
 
   // Optional tier override object
   tierOverrides?: {
-    1?: EnemyStats;
-    2?: EnemyStats;
-  };
-}
-
-// Финальный объект врага, готовый для боя
-export interface EnemyInstance {
-  instanceId: string;
-  templateId: string; // ID из ENEMY_TEMPLATES_DB, например 'youngScavenger'
-  appearanceVariation: number;
-  faction: string;
-  level: number;
-  rarity: Rarity;
-  stats: EnemyStats;
-  weapon: Omit<WeaponInstance, 'mods'>; // Полный объект оружия, но без модов (они уже учтены)
-  bodyArmor?: {
-    id: string;
-    rarity: Rarity;
+    1?: CombatStats;
+    2?: CombatStats;
   };
 }

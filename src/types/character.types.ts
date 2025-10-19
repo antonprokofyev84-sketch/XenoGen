@@ -38,6 +38,7 @@ export type BaseStats = Record<BaseStatsKey, number>;
 
 export interface Character {
   id: string;
+  templateId: string;
   name: string;
   hp: number;
   stamina: number;

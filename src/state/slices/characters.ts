@@ -10,6 +10,7 @@ import type {
   Skills,
 } from '@/types/character.types';
 
+import { skillKeys } from '../constants';
 import type { GameSlice } from '../types';
 import { equipmentSelectors } from './equipment';
 import { traitsSelectors } from './traits';
@@ -26,6 +27,7 @@ export interface CharactersSlice {
     setMainStat: (characterId: string, stat: MainStatKey, value: number) => void;
     changeSkill: (characterId: string, skill: SkillKey, delta: number) => void;
     setSkill: (characterId: string, skill: SkillKey, value: number) => void;
+    finalizeCharacterCreation: (characterId: string) => void;
     resetHpToMax: (characterId: string) => void;
     changeStamina: (characterId: string, delta: number) => void;
     resetStaminaToMax: (characterId: string) => void;
@@ -227,6 +229,26 @@ export const createCharactersSlice: GameSlice<CharactersSlice> = (set, get) => (
         if (char) char.skills[skill] = value;
       }),
 
+    finalizeCharacterCreation: (characterId: string) =>
+      //for now just finalize skills
+      {
+        set((state) => {
+          const char = state.characters.byId[characterId];
+          const baseSkills = characterSelectors.selectBaseSkills(characterId)(state);
+          const finalSkills: Skills = { ...char.skills };
+
+          skillKeys.forEach((skill) => {
+            finalSkills[skill] = (char.skills[skill] || 0) + (baseSkills[skill] || 0);
+          });
+
+          char.skills = finalSkills;
+        });
+
+        get().characters.actions.resetHpToMax(characterId);
+        get().characters.actions.resetStaminaToMax(characterId);
+        get().equipment.actions.resetCharacterEquipment(characterId);
+      },
+
     resetProtagonist: () =>
       set((state) => {
         const protagonistId = state.characters.protagonistId;
@@ -257,15 +279,9 @@ export const createCharactersSlice: GameSlice<CharactersSlice> = (set, get) => (
     changeStamina: (characterId: string, delta: number) => {
       set((state) => {
         const char = state.characters.byId[characterId];
-        console.log('-----');
-        console.log(characterId, delta);
-        console.log(char.stamina);
 
-        // if (!char) return;
         const maxStamina = calculateMaxStamina(char.mainStats, char.baseStats);
-
         const newStamina = char.stamina + delta;
-
         char.stamina = Math.max(-maxStamina, Math.min(newStamina, maxStamina));
       });
       console.log(get().characters.byId[characterId]);

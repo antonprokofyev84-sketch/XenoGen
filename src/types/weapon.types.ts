@@ -1,8 +1,10 @@
 import type { Rarity } from '@/types/common.types.js';
 
+import type { WeaponSlots } from './equipment.types';
+
 export interface WeaponTemplate {
-  id: string;
-  slot: 'melee' | 'range';
+  templateId: string;
+  slot: WeaponSlots;
   price: number;
   dropRate: number;
   requiredStrength?: number;

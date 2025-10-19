@@ -3,6 +3,7 @@ import type { Character, CharacterTemplate } from '@/types/character.types';
 
 export const PROTAGONIST_TEMPLATE: Character = {
   id: 'protagonist',
+  templateId: 'protagonist',
   name: 'Hero',
   hp: 1,
   stamina: 1,

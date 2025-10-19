@@ -1,8 +1,32 @@
+import { useState } from 'react';
+
+import { useShallow } from 'zustand/react/shallow';
+
 import { Button } from '@/components/Button/Button';
+import { poiSelectors, useGameStore } from '@/state/useGameState';
+import { makeActivePartyCombatUnitsSnapshot } from '@/systems/combat/playerGroupGenerator';
+import type { CombatUnit } from '@/types/combat.types';
 
 import './Combat.scss';
 
 export const Combat = () => {
+  const protagonistId = 'protagonist';
+  const protagonist = useGameStore((state) => state.characters.byId[protagonistId]);
+  const selectedPoi = useGameStore(useShallow(poiSelectors.selectSelectedPoi));
+  const enemyGroup = selectedPoi?.details?.enemyGroup || [];
+
+  const [partyGroup, setPartyGroup] = useState<CombatUnit[]>(() =>
+    makeActivePartyCombatUnitsSnapshot(useGameStore.getState()),
+  );
+  const [enemies, setEnemies] = useState<CombatUnit[]>(() =>
+    JSON.parse(JSON.stringify(enemyGroup)),
+  );
+
+  // console.log('--- Combat Render ---');
+  console.log(partyGroup);
+  // console.log(enemies);
+  // console.log(protagonist);
+
   return (
     <div className="combatScreen">
       {/* Левая колонка для кнопок управления */}

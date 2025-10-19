@@ -5,7 +5,7 @@ export const ARMOR_RARITY_MULTIPLIERS_DEFAULT = { uncommon: 1.15, rare: 1.3, uni
 
 export const ARMOR_TEMPLATES_DB: Record<string, ArmorTemplate> = {
   regularCloth: {
-    id: 'regularCloth',
+    templateId: 'regularCloth',
     slot: 'armor',
     price: 30,
     dropRate: 0.0,
@@ -16,8 +16,8 @@ export const ARMOR_TEMPLATES_DB: Record<string, ArmorTemplate> = {
     },
   },
   travelDuster: {
-    id: 'travelDuster',
-    slot: 'outerwear',
+    templateId: 'travelDuster',
+    slot: 'armor',
     price: 60,
     dropRate: 0.3,
     mods: {
@@ -26,7 +26,7 @@ export const ARMOR_TEMPLATES_DB: Record<string, ArmorTemplate> = {
     },
   },
   lightLeatherArmor: {
-    id: 'lightLeatherArmor',
+    templateId: 'lightLeatherArmor',
     slot: 'armor',
     price: 150,
     dropRate: 0.15,
@@ -36,7 +36,7 @@ export const ARMOR_TEMPLATES_DB: Record<string, ArmorTemplate> = {
     },
   },
   reinforcedLeatherArmor: {
-    id: 'reinforcedLeatherArmor',
+    templateId: 'reinforcedLeatherArmor',
     slot: 'armor',
     price: 250,
     dropRate: 0.1,

@@ -7,20 +7,20 @@ export interface EquipmentItem {
   rarity: Rarity;
 }
 
-export type EquipmentSlot = 'melee' | 'ranged' | 'armor' | 'outerwear' | 'accessory';
+export type WeaponSlots = 'meleeWeapon' | 'rangeWeapon';
+
+export type EquipmentSlot = WeaponSlots | 'armor' | 'gadget';
 
 export interface EquipmentSlots {
-  melee: EquipmentItem | null;
-  ranged: EquipmentItem | null;
+  meleeWeapon: EquipmentItem | null;
+  rangeWeapon: EquipmentItem | null;
   armor: EquipmentItem | null;
-  outerwear: EquipmentItem | null;
-  accessory: EquipmentItem | null;
+  gadget: EquipmentItem | null;
 }
 
 export interface FullEquipment {
-  melee: WeaponInstance | null;
-  ranged: WeaponInstance | null;
+  meleeWeapon: WeaponInstance | null;
+  rangeWeapon: WeaponInstance | null;
   armor: ArmorInstance | null;
-  outerwear: ArmorInstance | null;
-  accessory: ArmorInstance | null;
+  gadget: ArmorInstance | null;
 }
