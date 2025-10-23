@@ -20,6 +20,8 @@ export interface CombatEquipment {
   gadget: EquipmentItem | null;
 }
 
+export type CombatUnitStatus = 'dead' | 'alive' | 'unconscious';
+
 // Финальный объект врага, готовый для боя
 export interface CombatUnit {
   instanceId: string;
@@ -29,6 +31,8 @@ export interface CombatUnit {
   level: number;
   rarity: Rarity;
   stats: CombatStats;
+  status: CombatUnitStatus;
+  position: 0 | 1 | 2 | 3; // линия боя. возможно лучше использовать просто 0 1 зеркально.
   equipment: CombatEquipment;
   activeWeaponSlot: WeaponSlots;
 }

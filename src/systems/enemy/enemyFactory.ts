@@ -169,6 +169,8 @@ export const enemyFactory = {
       level,
       rarity: enemyRarity,
       stats: finalStats,
+      status: 'alive',
+      position: 3,
       equipment: {
         meleeWeapon: finalMelee,
         rangeWeapon: finalRanged,

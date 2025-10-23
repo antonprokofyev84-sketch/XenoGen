@@ -1,0 +1,70 @@
+.initiativeBarContainer {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .initiative-item {
+    width: 70px;
+    height: 70px;
+    border: 3px solid;
+    border-radius: 4px;
+    padding: 2px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+
+    // transition:
+    //   transform 0.2s ease-out,
+    //   box-shadow 0.2s ease-out;
+
+    transition: all 0.2s ease-in-out 0.1s !important;
+
+    &:first-child {
+      width: 100px !important;
+      height: 100px !important;
+      border-width: 4px;
+      left: 0 !important;
+    }
+
+    &.player {
+      border-color: #60708f; // Синий
+    }
+    &.enemy {
+      border-color: #c53d3d; // Красный
+    }
+
+    // Эффект подсветки
+    &.highlighted {
+      transform: scale(1.1);
+      box-shadow: 0 0 12px 4px rgba(255, 255, 255, 0.7);
+      z-index: 10;
+    }
+
+    .portrait {
+      // Внутренний контейнер для картинки
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      border-radius: 2px; // Слегка скругляем углы у самой картинки
+      background-color: #1e1e1e; // Фон на случай, если картинка не загрузится
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; // Картинка заполнит квадрат, сохранив пропорции
+        object-position: center top;
+      }
+    }
+  }
+}

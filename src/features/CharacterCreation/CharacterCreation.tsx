@@ -1,7 +1,5 @@
 import { useState } from 'react';
 
-import { useShallow } from 'zustand/react/shallow';
-
 import { Button } from '@/components/Button/Button';
 import { INITIAL_FACTIONS } from '@/data/initialFaction';
 import { INITIAL_MAP } from '@/data/initialMap';

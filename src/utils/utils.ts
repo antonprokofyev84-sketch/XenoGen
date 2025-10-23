@@ -6,3 +6,6 @@ export const makeInstanceId = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
     ? crypto.randomUUID()
     : `it_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+export const clamp = (value: number, min: number, max: number) =>
+  Math.max(min, Math.min(max, value));

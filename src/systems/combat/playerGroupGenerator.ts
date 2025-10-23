@@ -69,6 +69,8 @@ export const makeCombatUnitForCharacterSnapshot = (
     stats,
     equipment,
     activeWeaponSlot: 'meleeWeapon',
+    status: 'alive',
+    position: 0,
     // TODO: поменять если понадобится
     faction: 'player',
     appearanceVariation: 0,

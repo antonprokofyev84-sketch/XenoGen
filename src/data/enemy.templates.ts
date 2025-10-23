@@ -15,7 +15,7 @@ export const ENEMY_TEMPLATES_DB: Record<string, EnemyTemplate> = {
       melee: 30,
       range: 5,
       evasion: 8,
-      initiative: 10,
+      initiative: 6,
       critChance: 5,
     },
     equipment: {
@@ -36,7 +36,7 @@ export const ENEMY_TEMPLATES_DB: Record<string, EnemyTemplate> = {
       melee: 42,
       range: 6,
       evasion: 16,
-      initiative: 13,
+      initiative: 7,
       critChance: 6,
     },
     equipment: {
@@ -58,7 +58,7 @@ export const ENEMY_TEMPLATES_DB: Record<string, EnemyTemplate> = {
       melee: 10,
       range: 38,
       evasion: 14,
-      initiative: 12,
+      initiative: 7,
       critChance: 6,
     },
     equipment: {
@@ -79,7 +79,7 @@ export const ENEMY_TEMPLATES_DB: Record<string, EnemyTemplate> = {
       melee: 10,
       range: 46,
       evasion: 18,
-      initiative: 13,
+      initiative: 7,
       critChance: 6,
     },
     equipment: {
@@ -101,7 +101,7 @@ export const ENEMY_TEMPLATES_DB: Record<string, EnemyTemplate> = {
       melee: 12,
       range: 53,
       evasion: 21,
-      initiative: 14,
+      initiative: 8,
       critChance: 7,
     },
     equipment: {

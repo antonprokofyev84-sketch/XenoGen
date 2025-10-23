@@ -56,7 +56,7 @@ export const TIER_UP_DELTAS = {
   melee: 8,
   range: 8,
   evasion: 4.8,
-  initiative: 1.12,
+  initiative: 0.56,
   critChance: 0.56,
 };
 

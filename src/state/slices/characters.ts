@@ -61,7 +61,7 @@ const calculateMaxStamina = (mainStats: MainStats, baseStats: BaseStats): number
   return baseStats.baseStamina + mainStats.con + Math.floor(mainStats.will / 2);
 };
 const calculateInitiative = (mainStats: MainStats, baseStats: BaseStats): number => {
-  return baseStats.baseInitiative + Math.floor(mainStats.dex / 10) + Math.floor(mainStats.int / 25);
+  return baseStats.baseInitiative + Math.floor(mainStats.dex / 20) + Math.floor(mainStats.int / 50);
 };
 const calculateArmor = (mainStats: MainStats, baseStats: BaseStats): number => {
   return baseStats.baseArmor + Math.floor(mainStats.con / 30);

@@ -12,6 +12,7 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
+    "@formkit/auto-animate": "^0.9.0",
     "immer": "^10.1.3",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
