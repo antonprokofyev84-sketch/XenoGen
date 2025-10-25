@@ -1,0 +1,33 @@
+.enemyArea {
+  border: 2px dashed #a43737;
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  box-sizing: border-box;
+
+  .areaLabel {
+    transform: rotate(-90deg) translate(-50%, -50%);
+    transform-origin: 0 0;
+    position: absolute;
+    top: 50%;
+    left: 0;
+    color: #a43737;
+    background: #1e1e1e;
+    font-weight: bold;
+    font-size: 1.2rem;
+    text-transform: uppercase;
+    padding: 0.5rem 1rem;
+    white-space: nowrap;
+  }
+
+  .unit-container {
+    height: 100%;
+    padding: 1rem;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}

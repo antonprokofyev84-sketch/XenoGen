@@ -1,18 +1,20 @@
 import { Button } from '@/components/Button/Button';
 import { useCombatStore } from '@/state/useCombatStore';
 
+import { EnemyArea } from '../EnemyArea/EnemyArea';
 import { InitiativeBar } from '../InitiativeBar/InitiativeBar';
+import { PlayerArea } from '../PlayerArea/PlayerArea';
 
 import './CombatView.scss';
 
 export const CombatView = () => {
-  const unitsByInstanceId = useCombatStore((state) => state.unitsById);
-  const partyUnitIds = useCombatStore((state) => state.allyIds);
-  const enemyUnitIds = useCombatStore((state) => state.enemyIds);
-  const endTurn = useCombatStore((state) => state.actions.endTurn);
+  const handleAbilityClick = (abilityIndex: number) => {
+    console.log(`Ability ${abilityIndex + 1} clicked`);
+  };
 
-  const handleEndTurn = () => {
-    endTurn();
+  const handleEndTurnClick = () => {
+    console.log('End Turn clicked');
+    useCombatStore.getState().actions.endTurn();
   };
 
   return (
@@ -20,22 +22,16 @@ export const CombatView = () => {
       <aside className="controlsSidebar">
         <h3>Actions</h3>
         <div className="actions-grid">
-          <Button
-            variant="outline"
-            color="green"
-            onClick={() => {
-              handleEndTurn();
-            }}
-          >
+          <Button variant="outline" color="green" onClick={() => handleAbilityClick(0)}>
             Ability 1
           </Button>
-          <Button variant="outline" color="green">
+          <Button variant="outline" color="green" onClick={() => handleAbilityClick(1)}>
             Ability 2
           </Button>
-          <Button variant="outline" color="blue">
+          <Button variant="outline" color="blue" onClick={() => handleAbilityClick(2)}>
             Ability 3
           </Button>
-          <Button variant="outline" color="blue">
+          <Button variant="outline" color="blue" onClick={() => handleAbilityClick(3)}>
             Ability 4
           </Button>
           <Button variant="solid" color="yellow" disabled>
@@ -46,36 +42,15 @@ export const CombatView = () => {
           </Button>
         </div>
         <div className="end-turn-container">
-          <Button variant="ghost" color="red">
+          <Button variant="ghost" color="red" onClick={handleEndTurnClick}>
             End Turn
           </Button>
         </div>
       </aside>
 
       <main className="combatArenas">
-        <section className="enemyArea">
-          <div className="areaLabel">Enemies</div>
-          {enemyUnitIds.map((instanceId) => {
-            const unit = unitsByInstanceId[instanceId];
-            return (
-              <div key={instanceId} data-tid="enemy-card">
-                {unit.templateId} (lvl {unit.level})
-              </div>
-            );
-          })}
-        </section>
-
-        <section className="playerArea">
-          <div className="areaLabel">Allies</div>
-          {partyUnitIds.map((instanceId) => {
-            const unit = unitsByInstanceId[instanceId];
-            return (
-              <div key={instanceId} data-tid="ally-card">
-                {unit.templateId} (lvl {unit.level})
-              </div>
-            );
-          })}
-        </section>
+        <EnemyArea />
+        <PlayerArea />
       </main>
 
       <InitiativeBar />

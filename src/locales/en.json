@@ -61,7 +61,6 @@
       "desc": "A tinkerer and inventor. Provides bonuses to Crafting and Science skills."
     }
   },
-
   "strategicMap": {
     "sectorInfo": "Sector Info",
     "selectSector": "Select a sector on the map to see details.",
@@ -69,14 +68,12 @@
     "scout": "Scout",
     "moveHere": "Move Here",
     "scoutSector": "Scout Sector",
-
     "statusUnexplored": "Unexplored",
     "statusPermanent": "Explored (Permanent)",
     "statusActive": "Scouted ({days} days)",
     "statusOutdated": "Scout Data Outdated",
     "scoutScoreLabel": "Scout Score"
   },
-
   "travelModes": {
     "normal": "Normal",
     "fast": "Fast",
@@ -115,14 +112,27 @@
       "name": "Crashed Drone",
       "desc": "A military-grade drone, half-buried in the dirt. Its cargo might still be intact."
     },
-    "makeshift_cache": { "name": "Makeshift Cache", "desc": "A cleverly hidden stash of supplies." }
+    "makeshift_cache": {
+      "name": "Makeshift Cache",
+      "desc": "A cleverly hidden stash of supplies."
+    }
   },
   "poiDetails": {
     "attackButton": "Attack"
   },
   "characters": {
-    "youngScavenger": { "name": "Young Scavenger" },
-    "scavenger": { "name": "Scavenger" },
-    "veteranScavenger": { "name": "Veteran Scavenger" }
+    "youngScavenger": {
+      "name": "Young Scavenger"
+    },
+    "scavenger": {
+      "name": "Scavenger"
+    },
+    "veteranScavenger": {
+      "name": "Veteran Scavenger"
+    }
+  },
+  "combat": {
+    "moveForward": "Move Forward",
+    "moveBack": "Move Back"
   }
 }

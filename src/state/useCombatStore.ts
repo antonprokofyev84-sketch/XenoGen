@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
+import type { AttackRollResult } from '@/systems/combat/combatHelpers';
 import { calculateAttackResult } from '@/systems/combat/combatHelpers';
 import type { InitiativeItem } from '@/systems/combat/initiativeHelpers';
 import {
@@ -14,6 +15,8 @@ import type { WeaponSlots } from '@/types/equipment.types';
 
 const DEFAULT_TURNS_PER_UNIT = 5;
 
+const POSITION_SWAP_MAP = [1, 0, 3, 2] as const;
+
 export type CombatStore = {
   unitsById: Record<string, CombatUnit>;
 
@@ -21,12 +24,32 @@ export type CombatStore = {
   enemyIds: string[];
   initiativeQueue: InitiativeItem[];
   lastTimeByUnitId: Record<string, number>;
+  attackResultById: Record<string, AttackRollResult[]>;
+
   actions: {
     initializeCombat: (initialUnits: CombatUnit[]) => void;
     endTurn: () => void;
     applyDelay: (unitId: string, delayPoints: number) => void;
     setActiveWeaponSlot: (unitId: string, slot: WeaponSlots) => void;
+    swapPosition: (unitId: string) => void;
+    attack: (attackerId: string, targetId: string) => void;
   };
+};
+
+export const combatSelectors = {
+  selectAllies: (state: CombatStore): CombatUnit[] =>
+    state.allyIds.map((id) => state.unitsById[id]),
+
+  selectEnemies: (state: CombatStore): CombatUnit[] =>
+    state.enemyIds.map((id) => state.unitsById[id]),
+
+  selectCurrentTurnItem: (state: CombatStore) =>
+    state.initiativeQueue.length > 0 ? state.initiativeQueue[0] : null,
+
+  selectCurrentActiveUnit: (state: CombatStore): CombatUnit | null => {
+    const head = state.initiativeQueue.length > 0 ? state.initiativeQueue[0] : null;
+    return head ? state.unitsById[head.unitId] : null;
+  },
 };
 
 export const useCombatStore = create<CombatStore>()(
@@ -36,6 +59,8 @@ export const useCombatStore = create<CombatStore>()(
     enemyIds: [],
     initiativeQueue: [],
     lastTimeByUnitId: {},
+    attackResultById: {},
+
     actions: {
       initializeCombat: (initialUnits) => {
         set((state) => {
@@ -53,6 +78,7 @@ export const useCombatStore = create<CombatStore>()(
 
           state.initiativeQueue = initiativeQueue;
           state.lastTimeByUnitId = lastTimeByUnitId;
+          state.attackResultById = {};
         });
       },
       endTurn: () => {
@@ -104,34 +130,28 @@ export const useCombatStore = create<CombatStore>()(
           }
         });
       },
-      hit: (attackerId, targetId) => {
+      swapPosition: (unitId: string) => {
+        // get().actions.endTurn();
+        set((state) => {
+          const unit = state.unitsById[unitId];
+          if (!unit) return;
+
+          const newPosition = POSITION_SWAP_MAP[unit.position];
+          unit.position = newPosition;
+        });
+      },
+      attack: (attackerId, targetId) => {
         const attacker = get().unitsById[attackerId];
         const target = get().unitsById[targetId];
-
         const result = calculateAttackResult(attacker, target);
 
-        if (hit) {
-          // TODO: В будущем здесь будет вызов экшена dealDamage(targetId, finalDamage)
-          console.log(
-            `[useCombatStore] ${attackerId} dealt ${finalDamage} damage to ${targetId}. Critical: ${crit}`,
-          );
-          // Пока просто лог, но можно временно добавить уменьшение HP для теста:
-          // set((state) => {
-          //   const targetUnit = state.unitsById[targetId];
-          //   if (targetUnit) {
-          //     targetUnit.stats.hp -= finalDamage;
-          //     if (targetUnit.stats.hp < 0) targetUnit.stats.hp = 0;
-          //   }
-          // });
-        } else {
-          console.log(`[useCombatStore] ${attackerId} missed ${targetId}.`);
-        }
+        set((state) => {
+          state.attackResultById[targetId] = result;
+        });
 
-        // TODO: Возможно, здесь нужно будет вызвать endTurn() или применить задержку
-        // get().actions.endTurn();
-        // или
-        // get().actions.applyDelay(attackerId, calculatedDelay);
+        // TODO: Возможно, здесь нужно будет вызвать добавить результаты в лог
       },
+      applyAttackResults: () => {},
     },
   })),
 );
