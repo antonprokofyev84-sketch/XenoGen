@@ -1,8 +1,12 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
-import type { AttackRollResult } from '@/systems/combat/combatHelpers';
-import { calculateAttackResult } from '@/systems/combat/combatHelpers';
+import type { AttackForecast, AttackRollResult } from '@/systems/combat/combatHelpers';
+import {
+  calculateAttackForecast,
+  calculateAttackResult,
+  chooseTargetForecast,
+} from '@/systems/combat/combatHelpers';
 import type { InitiativeItem } from '@/systems/combat/initiativeHelpers';
 import {
   getBaseTurnTime,
@@ -32,16 +36,18 @@ export type CombatStore = {
     applyDelay: (unitId: string, delayPoints: number) => void;
     setActiveWeaponSlot: (unitId: string, slot: WeaponSlots) => void;
     swapPosition: (unitId: string) => void;
-    attack: (attackerId: string, targetId: string) => void;
+    attack: (forecast: AttackForecast) => void;
+    applyAttackResults: () => void;
+    processAITurn: () => void;
   };
 };
 
 export const combatSelectors = {
-  selectAllies: (state: CombatStore): CombatUnit[] =>
-    state.allyIds.map((id) => state.unitsById[id]),
+  selectAliveAllies: (state: CombatStore): CombatUnit[] =>
+    state.allyIds.map((id) => state.unitsById[id]).filter((unit) => unit.status === 'alive'),
 
-  selectEnemies: (state: CombatStore): CombatUnit[] =>
-    state.enemyIds.map((id) => state.unitsById[id]),
+  selectAliveEnemies: (state: CombatStore): CombatUnit[] =>
+    state.enemyIds.map((id) => state.unitsById[id]).filter((unit) => unit.status === 'alive'),
 
   selectCurrentTurnItem: (state: CombatStore) =>
     state.initiativeQueue.length > 0 ? state.initiativeQueue[0] : null,
@@ -49,6 +55,23 @@ export const combatSelectors = {
   selectCurrentActiveUnit: (state: CombatStore): CombatUnit | null => {
     const head = state.initiativeQueue.length > 0 ? state.initiativeQueue[0] : null;
     return head ? state.unitsById[head.unitId] : null;
+  },
+
+  selectIsUnitActive:
+    (unitId: string) =>
+    (state: CombatStore): boolean =>
+      state.initiativeQueue.length > 0 && state.initiativeQueue[0].unitId === unitId,
+
+  selectLinesOccupancyForUnits: (state: CombatStore): [number, number, number, number] => {
+    const counts = [0, 0, 0, 0] as [number, number, number, number];
+
+    for (const unit of Object.values(state.unitsById)) {
+      if (unit.status !== 'alive') continue;
+      const pos = unit.position;
+      counts[pos] += 1;
+    }
+
+    return counts;
   },
 };
 
@@ -140,18 +163,139 @@ export const useCombatStore = create<CombatStore>()(
           unit.position = newPosition;
         });
       },
-      attack: (attackerId, targetId) => {
-        const attacker = get().unitsById[attackerId];
-        const target = get().unitsById[targetId];
-        const result = calculateAttackResult(attacker, target);
+      attack: (forcast) => {
+        const result = calculateAttackResult(forcast);
 
         set((state) => {
-          state.attackResultById[targetId] = result;
+          state.attackResultById[forcast.targetId] = result;
         });
 
-        // TODO: Возможно, здесь нужно будет вызвать добавить результаты в лог
+        setTimeout(() => {
+          get().actions.applyAttackResults();
+        }, 500);
       },
-      applyAttackResults: () => {},
+      applyAttackResults: () => {
+        let anyUnitDied = false;
+
+        set((state) => {
+          // 1. Получаем ID целей, которые получили урон в этом "тике"
+          const resultsByTargetId = state.attackResultById;
+
+          // 2. Пробегаемся по всем, кто получил урон
+          for (const [targetId, resultsArray] of Object.entries(resultsByTargetId)) {
+            if (!resultsArray || resultsArray.length === 0) continue;
+
+            const targetUnit = state.unitsById[targetId];
+            if (!targetUnit || targetUnit.status === 'dead') continue;
+
+            // 3. Суммируем урон
+            const totalDamage = resultsArray.reduce((sum, r) => sum + r.damage, 0);
+            if (totalDamage === 0) continue;
+
+            // 4. Применяем урон
+            targetUnit.stats.hp -= totalDamage;
+            console.log(
+              `[Combat] ${targetId} takes ${totalDamage} damage, ${targetUnit.stats.hp} HP left.`,
+            );
+
+            // 5. Проверяем смерть
+            if (targetUnit.stats.hp <= 0) {
+              targetUnit.stats.hp = 0; // Не уходим в минус
+              targetUnit.status = 'dead';
+              anyUnitDied = true;
+              console.log(`[Combat] ${targetId} is DEAD.`);
+            }
+          }
+
+          // 6. Очищаем результаты (ВАЖНО!)
+          state.attackResultById = {};
+        });
+
+        // 7. Проверяем конец боя, *только если* кто-то умер
+        if (anyUnitDied) {
+          // Используем селекторы с *обновленным* состоянием (state)
+          const aliveAllies = combatSelectors.selectAliveAllies(get());
+          const aliveEnemies = combatSelectors.selectAliveEnemies(get());
+
+          if (aliveAllies.length === 0) {
+            console.log('ПОРАЖЕНИЕ');
+            // TODO: Установить состояние "бой окончен"
+            return;
+          } else if (aliveEnemies.length === 0) {
+            console.log('ПОБЕДА');
+            // TODO: Установить состояние "бой окончен"
+            return;
+          }
+        }
+
+        // 8. Завершаем ход (после того, как урон применен)
+        setTimeout(() => {
+          get().actions.endTurn();
+        }, 1000);
+      },
+      processAITurn: () => {
+        const state = get();
+        const currentActiveUnit = combatSelectors.selectCurrentActiveUnit(state);
+        if (!currentActiveUnit || currentActiveUnit.faction === 'player') return;
+
+        const allies = combatSelectors.selectAliveAllies(state);
+        if (allies.length === 0) {
+          console.log('you loose');
+          return;
+        }
+
+        const occupiedPositions = combatSelectors.selectLinesOccupancyForUnits(state);
+
+        if (
+          currentActiveUnit.position === 3 &&
+          currentActiveUnit.activeWeaponSlot === 'meleeWeapon'
+        ) {
+          get().actions.swapPosition(currentActiveUnit.instanceId);
+          return;
+        }
+
+        if (
+          currentActiveUnit.position === 2 ||
+          (currentActiveUnit.position === 3 &&
+            currentActiveUnit.activeWeaponSlot === 'rangeWeapon' &&
+            currentActiveUnit.equipment.rangeWeapon!.distance === 3)
+        ) {
+          const forecasts_stay = allies
+            .map((ally) => calculateAttackForecast(currentActiveUnit, ally, occupiedPositions))
+            .filter(Boolean) as AttackForecast[];
+          const targetForecast = chooseTargetForecast(forecasts_stay);
+          console.log(targetForecast);
+          if (targetForecast) {
+            get().actions.attack(targetForecast);
+            return;
+          }
+        }
+
+        // this block handles unit position3 and range weapon with distance less than 3
+        const simulatedUnit = structuredClone(currentActiveUnit);
+        simulatedUnit.position = 2;
+
+        const forecasts_move = allies
+          .map((ally) => {
+            return calculateAttackForecast(simulatedUnit, ally, occupiedPositions);
+          })
+          .filter(Boolean) as AttackForecast[];
+        const targetForecast = chooseTargetForecast(forecasts_move);
+        if (targetForecast) {
+          const realForecast = calculateAttackForecast(
+            currentActiveUnit,
+            state.unitsById[targetForecast.targetId],
+            occupiedPositions,
+          )!;
+          if (realForecast.canKill || realForecast.delayPoints === 0) {
+            get().actions.attack(realForecast);
+          } else {
+            get().actions.swapPosition(currentActiveUnit.instanceId);
+          }
+        } else {
+          get().actions.swapPosition(currentActiveUnit.instanceId);
+        }
+      },
     },
   })),
 );

@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import textData from '@/locales/en.json';
 import { combatSelectors, useCombatStore } from '@/state/useCombatStore';
 import { assetsVersion } from '@/utils/assetsVersion';
+
+import { DamageFloatStagger } from '../DamageFloatStagger/DamageFloatStagger';
 
 import './CombatCard.scss';
 
@@ -11,8 +13,9 @@ interface CombatCardProps {
 }
 
 export const CombatCard = ({ unitId }: CombatCardProps) => {
-  // 1. Получаем глобальный unit и его position
   const unit = useCombatStore((state) => state.unitsById[unitId]);
+  const activeUnit = useCombatStore((state) => combatSelectors.selectCurrentActiveUnit(state));
+
   const {
     templateId,
     rarity,
@@ -21,38 +24,37 @@ export const CombatCard = ({ unitId }: CombatCardProps) => {
     equipment,
     activeWeaponSlot,
     position,
+    stats,
   } = unit;
 
   const swapPosition = useCombatStore((state) => state.actions.swapPosition);
+  const processAITurn = useCombatStore((state) => state.actions.processAITurn);
   const endTurn = useCombatStore((state) => state.actions.endTurn);
-  const currentTurnItem = useCombatStore(combatSelectors.selectCurrentTurnItem);
+  const activeTurnKey = useCombatStore(
+    (state) => combatSelectors.selectCurrentTurnItem(state)?.time,
+  );
 
   const [localPosition, setLocalPosition] = useState(position);
 
-  const isActive = currentTurnItem?.unitId === unitId;
+  const isActive = useCombatStore((state) => combatSelectors.selectIsUnitActive(unitId)(state));
   const isAlly = unit.faction === 'player';
 
   const weapon = equipment[activeWeaponSlot]!;
   const characterImageUrl = `/images/characters/${faction}/${templateId}_${appearanceVariation}.png`;
   const weaponImageUrl = `/images/weapon/${weapon.templateId}.png`;
 
-  // 6. Клик (для союзников) просто вызывает swapPosition
+  const lastProcessedKeyRef = useRef<number | null>(null);
+
   const handlePositionClick = () => {
-    // Не меняем localPosition!
-    // Просто меняем глобальный 'position'
     swapPosition(unitId);
-    // Анимация начнется сама, т.к. .combatCard зависит от 'position'
   };
 
-  // 7. Обработчик конца анимации
   const handleTransitionEnd = (e: React.TransitionEvent<HTMLDivElement>) => {
-    // Мы анимируем 'top'. Убедимся, что это та самая анимация
+    if (e.target !== e.currentTarget) return;
     if (e.propertyName !== 'top') {
       return;
     }
 
-    // Если это был наш ход (isActive) и анимация догнала (position !== localPosition)
-    // И мы - инициатор (т.к. мы союзник и это был наш ход)
     if (isActive) {
       endTurn();
       setLocalPosition(position);
@@ -61,11 +63,24 @@ export const CombatCard = ({ unitId }: CombatCardProps) => {
     }
   };
 
+  useEffect(() => {
+    if (
+      !isAlly &&
+      isActive &&
+      Number.isFinite(activeTurnKey) && // activeTurnKey can be 0
+      lastProcessedKeyRef.current !== activeTurnKey
+    ) {
+      // this ref prevents multiple AI processes for the same turn
+      // this is mostly happens in development mode with React StrictMode
+      lastProcessedKeyRef.current = activeTurnKey as number;
+      setTimeout(() => {
+        processAITurn();
+      }, 1000);
+    }
+  }, [isActive, isAlly, activeTurnKey]);
+
   return (
     <div className={`cardPositionContainer`}>
-      {/* Оверлей теперь зависит от localPosition.
-        Он "замрет" на старой позиции, пока карточка анимируется 
-      */}
       {isActive && isAlly && (
         <div className={`move-overlay movePosition${localPosition}`} onClick={handlePositionClick}>
           {localPosition === 0 && (
@@ -81,13 +96,27 @@ export const CombatCard = ({ unitId }: CombatCardProps) => {
         </div>
       )}
 
-      {/* Карточка теперь зависит от position (из стора).
-        Как только 'position' в сторе меняется, карточка НАЧИНАЕТ АНИМАЦИЮ
-      */}
       <div
-        className={`combatCard ${rarity} cardPosition${position}`}
-        onTransitionEnd={handleTransitionEnd} // 8. Привязываем обработчик
+        className={`combatCard ${rarity} cardPosition${position} ${localPosition !== position ? 'isMoving' : ''}`}
+        onTransitionEnd={handleTransitionEnd}
+        onMouseEnter={() => {
+          if (activeUnit) {
+            // console.log(calculateAttackForecast(activeUnit, unit, occupiedPositions));
+          }
+        }}
       >
+        <div className="stats-display">
+          <div className="stat-bubble hp" title={`HP: ${stats.hp}`}>
+            <span>{stats.hp}</span>
+          </div>
+          <div className="stat-bubble armor" title={`Armor: ${stats.armor}`}>
+            <span>{stats.armor}</span>
+          </div>
+          <div className="stat-bubble initiative" title={`Initiative: ${stats.initiative}`}>
+            <span>{stats.initiative}</span>
+          </div>
+        </div>
+
         <div className="image-container">
           <img src={assetsVersion(characterImageUrl)} alt={templateId} loading="lazy" />
         </div>
@@ -100,6 +129,7 @@ export const CombatCard = ({ unitId }: CombatCardProps) => {
           />
           <span className="weapon-name">{weapon.templateId}</span>
         </div>
+        <DamageFloatStagger unitId={unitId} />
       </div>
     </div>
   );
