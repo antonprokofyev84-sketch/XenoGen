@@ -25,18 +25,7 @@
     box-sizing: border-box;
     flex-shrink: 0;
 
-    // transition:
-    //   transform 0.2s ease-out,
-    //   box-shadow 0.2s ease-out;
-
-    transition: all 0.2s ease-in-out 0.1s !important;
-
-    &:first-child {
-      width: 100px !important;
-      height: 100px !important;
-      border-width: 4px;
-      left: 0 !important;
-    }
+    transition: all 0.2s ease-in-out;
 
     &.player {
       border-color: #60708f; // Синий

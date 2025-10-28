@@ -7,23 +7,26 @@ import {
   calculateAttackResult,
   chooseTargetForecast,
 } from '@/systems/combat/combatHelpers';
-import type { InitiativeItem } from '@/systems/combat/initiativeHelpers';
+import type { InitiativeItem } from '@/systems/combat/combatInitiativeHelpers';
 import {
   getBaseTurnTime,
   initInitiativeBarItems,
   insertItemByTimeSortedTail,
   roundToTwoDecimals,
-} from '@/systems/combat/initiativeHelpers';
-import type { CombatUnit } from '@/types/combat.types';
+} from '@/systems/combat/combatInitiativeHelpers';
+import {
+  addDefenseMetrics,
+  addOffenseMetrics,
+  blankMetric,
+} from '@/systems/combat/combatMetricHelpers';
+import type { CombatResult, CombatUnit } from '@/types/combat.types';
 import type { WeaponSlots } from '@/types/equipment.types';
-
-const DEFAULT_TURNS_PER_UNIT = 5;
 
 const POSITION_SWAP_MAP = [1, 0, 3, 2] as const;
 
 export type CombatStore = {
   unitsById: Record<string, CombatUnit>;
-
+  combatResult: CombatResult;
   allyIds: string[];
   enemyIds: string[];
   initiativeQueue: InitiativeItem[];
@@ -78,6 +81,7 @@ export const combatSelectors = {
 export const useCombatStore = create<CombatStore>()(
   immer((set, get) => ({
     unitsById: {},
+    combatResult: { combatStatus: 'ongoing' } as CombatResult,
     allyIds: [],
     enemyIds: [],
     initiativeQueue: [],
@@ -88,20 +92,24 @@ export const useCombatStore = create<CombatStore>()(
       initializeCombat: (initialUnits) => {
         set((state) => {
           state.unitsById = Object.fromEntries(initialUnits.map((unit) => [unit.instanceId, unit]));
-          state.allyIds = initialUnits
+          const allyIds = initialUnits
             .filter((unit) => unit.faction === 'player')
             .map((unit) => unit.instanceId);
+          state.allyIds = allyIds;
           state.enemyIds = initialUnits
             .filter((unit) => unit.faction !== 'player')
             .map((unit) => unit.instanceId);
-          const { initiativeQueue, lastTimeByUnitId } = initInitiativeBarItems(
-            initialUnits,
-            DEFAULT_TURNS_PER_UNIT,
-          );
+          const { initiativeQueue, lastTimeByUnitId } = initInitiativeBarItems(initialUnits);
 
           state.initiativeQueue = initiativeQueue;
           state.lastTimeByUnitId = lastTimeByUnitId;
           state.attackResultById = {};
+          state.combatResult = {
+            combatStatus: 'ongoing',
+            loot: [],
+            capturedEnemies: [],
+            characterMetrics: Object.fromEntries(allyIds.map((id) => [id, blankMetric()])),
+          };
         });
       },
       endTurn: () => {
@@ -124,17 +132,13 @@ export const useCombatStore = create<CombatStore>()(
           const initiative = state.unitsById[unitId].stats.initiative;
           const deltaTime = roundToTwoDecimals((100 / initiative) * (delayPoints / initiative));
 
-          // 1) сдвигаем все будущие ходы этого юнита
-          // item.time + deltaTime уже округлены так что не нужно округлять еще раз
-          state.initiativeQueue = state.initiativeQueue.map((item) =>
-            item.unitId === unitId ? { ...item, time: item.time + deltaTime } : item,
+          state.initiativeQueue = state.initiativeQueue.map((item, index) =>
+            item.unitId === unitId && index !== 0 ? { ...item, time: item.time + deltaTime } : item,
           );
 
-          // 2) обновляем lastTimeByUnitId
           const last = state.lastTimeByUnitId[unitId];
           if (last !== undefined) state.lastTimeByUnitId[unitId] = last + deltaTime;
 
-          // 3) пересортировка очереди
           state.initiativeQueue.sort((a, b) => {
             return a.time - b.time;
           });
@@ -170,6 +174,8 @@ export const useCombatStore = create<CombatStore>()(
           state.attackResultById[forcast.targetId] = result;
         });
 
+        get().actions.applyDelay(forcast.attackerId, forcast.delayPoints);
+
         setTimeout(() => {
           get().actions.applyAttackResults();
         }, 500);
@@ -178,57 +184,72 @@ export const useCombatStore = create<CombatStore>()(
         let anyUnitDied = false;
 
         set((state) => {
-          // 1. Получаем ID целей, которые получили урон в этом "тике"
           const resultsByTargetId = state.attackResultById;
 
-          // 2. Пробегаемся по всем, кто получил урон
           for (const [targetId, resultsArray] of Object.entries(resultsByTargetId)) {
             if (!resultsArray || resultsArray.length === 0) continue;
 
             const targetUnit = state.unitsById[targetId];
             if (!targetUnit || targetUnit.status === 'dead') continue;
 
-            // 3. Суммируем урон
+            const attackerId = resultsArray[0].attackerId;
+            const attackerMetrics = state.combatResult.characterMetrics[attackerId];
+            if (attackerMetrics) {
+              addOffenseMetrics(attackerMetrics, resultsArray);
+            }
+
             const totalDamage = resultsArray.reduce((sum, r) => sum + r.damage, 0);
-            if (totalDamage === 0) continue;
+            const targetMetrics = state.combatResult.characterMetrics[targetId];
 
-            // 4. Применяем урон
-            targetUnit.stats.hp -= totalDamage;
-            console.log(
-              `[Combat] ${targetId} takes ${totalDamage} damage, ${targetUnit.stats.hp} HP left.`,
-            );
+            if (targetMetrics) {
+              addDefenseMetrics(targetMetrics, resultsArray);
+            }
 
-            // 5. Проверяем смерть
+            if (totalDamage > 0) {
+              targetUnit.stats.hp -= totalDamage;
+              console.log(
+                `[Combat] ${targetId} takes ${totalDamage} damage, ${targetUnit.stats.hp} HP left.`,
+              );
+            }
+
             if (targetUnit.stats.hp <= 0) {
-              targetUnit.stats.hp = 0; // Не уходим в минус
+              targetUnit.stats.hp = 0;
               targetUnit.status = 'dead';
               anyUnitDied = true;
               console.log(`[Combat] ${targetId} is DEAD.`);
+
+              if (attackerMetrics) {
+                attackerMetrics.kills += 1;
+              }
             }
           }
 
-          // 6. Очищаем результаты (ВАЖНО!)
           state.attackResultById = {};
+
+          if (anyUnitDied) {
+            state.initiativeQueue = state.initiativeQueue.filter(
+              (item) => state.unitsById[item.unitId].status === 'alive',
+            );
+          }
         });
 
-        // 7. Проверяем конец боя, *только если* кто-то умер
         if (anyUnitDied) {
-          // Используем селекторы с *обновленным* состоянием (state)
           const aliveAllies = combatSelectors.selectAliveAllies(get());
           const aliveEnemies = combatSelectors.selectAliveEnemies(get());
 
           if (aliveAllies.length === 0) {
-            console.log('ПОРАЖЕНИЕ');
-            // TODO: Установить состояние "бой окончен"
+            set((state) => {
+              state.combatResult.combatStatus = 'defeat';
+            });
             return;
           } else if (aliveEnemies.length === 0) {
-            console.log('ПОБЕДА');
-            // TODO: Установить состояние "бой окончен"
+            set((state) => {
+              state.combatResult.combatStatus = 'victory';
+            });
             return;
           }
         }
 
-        // 8. Завершаем ход (после того, как урон применен)
         setTimeout(() => {
           get().actions.endTurn();
         }, 1000);
@@ -239,10 +260,6 @@ export const useCombatStore = create<CombatStore>()(
         if (!currentActiveUnit || currentActiveUnit.faction === 'player') return;
 
         const allies = combatSelectors.selectAliveAllies(state);
-        if (allies.length === 0) {
-          console.log('you loose');
-          return;
-        }
 
         const occupiedPositions = combatSelectors.selectLinesOccupancyForUnits(state);
 

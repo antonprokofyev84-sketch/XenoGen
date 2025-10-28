@@ -2,15 +2,13 @@ import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { useShallow } from 'zustand/react/shallow';
 
 import { useCombatStore } from '@/state/useCombatStore';
-import type { InitiativeItem } from '@/systems/combat/initiativeHelpers';
+import type { InitiativeItem } from '@/systems/combat/combatInitiativeHelpers';
 import type { CombatUnit } from '@/types/combat.types';
 import { assetsVersion } from '@/utils/assetsVersion';
 
 import './InitiativeBar.scss';
 
-const DISPLAY_LIMIT = 14;
-
-const ANIMATION_DURATION = 400;
+const DISPLAY_LIMIT = 12;
 
 interface InitiativeBarProps {
   highlightedUnitId?: string | null;
@@ -58,35 +56,8 @@ export const InitiativeBar = ({ highlightedUnitId }: InitiativeBarProps) => {
 
   const visibleQueue = queue.slice(0, DISPLAY_LIMIT);
 
-  const [animationParent] = useAutoAnimate<HTMLUListElement>((el, action, oldCoords, newCoords) => {
-    let keyframes: Keyframe[] = [];
-    const options: KeyframeAnimationOptions = {
-      duration: ANIMATION_DURATION,
-      easing: 'ease-out',
-    };
-
-    if (action === 'remove') {
-      keyframes = [{ opacity: 1 }, { opacity: 0 }];
-    } else if (action === 'add') {
-      keyframes = [{ opacity: 0 }, { opacity: 1 }];
-    } else if (action === 'remain' && oldCoords && newCoords) {
-      const deltaX = oldCoords.left - newCoords.left;
-      let deltaY = oldCoords.top - newCoords.top;
-      // хак для анимации
-      if (deltaY > 0 && deltaY < 100) deltaY += 30;
-
-      const start: Keyframe = {
-        transform: `translate(${deltaX}px, ${deltaY}px)`,
-      };
-      const end: Keyframe = {
-        transform: `translate(0, 0)`,
-      };
-
-      keyframes = [start, end];
-    }
-
-    return new KeyframeEffect(el, keyframes, options);
-  });
+  const [animationParent] = useAutoAnimate<HTMLUListElement>({ duration: 1000 });
+  // const [animationParent] = useAutoAnimate<HTMLUListElement>();
 
   return (
     <aside className="initiativeBarContainer">

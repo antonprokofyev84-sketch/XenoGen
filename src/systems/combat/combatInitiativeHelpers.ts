@@ -1,5 +1,8 @@
 import type { CombatUnit } from '@/types/combat.types';
 
+const DEFAULT_TURNS_PER_UNIT = 5;
+const DEFAULT_TOTAL_TURNS = 40;
+
 export type InitiativeItem = {
   unitId: string;
   time: number;
@@ -29,10 +32,15 @@ function buildTimesForUnit(unit: CombatUnit, itemsPerUnit: number): InitiativeIt
   return items;
 }
 
-export function initInitiativeBarItems(
-  units: CombatUnit[],
-  turnsPerUnit: number,
-): { initiativeQueue: InitiativeItem[]; lastTimeByUnitId: LastTimeByUnitId } {
+export function initInitiativeBarItems(units: CombatUnit[]): {
+  initiativeQueue: InitiativeItem[];
+  lastTimeByUnitId: LastTimeByUnitId;
+} {
+  const turnsPerUnit = Math.max(
+    Math.floor(DEFAULT_TOTAL_TURNS / units.length),
+    DEFAULT_TURNS_PER_UNIT,
+  );
+
   const initiativeByUnitId: Record<string, number> = {};
   for (const unit of units) {
     initiativeByUnitId[unit.instanceId] = unit.stats.initiative;

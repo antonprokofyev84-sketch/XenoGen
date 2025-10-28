@@ -25,6 +25,17 @@ export const WEAPON_RARITY_MULTIPLIERS_DEFAULT = { uncommon: 1.1, rare: 1.2, uni
 
 export const WEAPON_TEMPLATES_DB: Record<string, WeaponTemplate> = {
   // --- MELEE WEAPONS ---
+  // fists: {
+  //   templateId: 'fists',
+  //   slot: 'meleeWeapon',
+  //   price: 0,
+  //   dropRate: 0.0,
+  //   requiredMelee: 0,
+  //   distance: 1,
+  //   attacksPerTurn: 1,
+  //   damage: [2, 4],
+  //   armorPiercing: 0,
+  // },
   fists: {
     templateId: 'fists',
     slot: 'meleeWeapon',
@@ -32,8 +43,8 @@ export const WEAPON_TEMPLATES_DB: Record<string, WeaponTemplate> = {
     dropRate: 0.0,
     requiredMelee: 0,
     distance: 1,
-    attacksPerTurn: 1,
-    damage: [2, 4],
+    attacksPerTurn: 3,
+    damage: [6, 12],
     armorPiercing: 0,
   },
   makeshiftKnife: {

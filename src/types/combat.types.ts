@@ -36,3 +36,32 @@ export interface CombatUnit {
   equipment: CombatEquipment;
   activeWeaponSlot: WeaponSlots;
 }
+
+export interface AttackStatistic {
+  attacksMade: number;
+  hits: number;
+  misses: number;
+  crits: number;
+  totalDamageDealt: number;
+}
+
+export interface CharacterCombatMetrics {
+  melee: AttackStatistic;
+  range: AttackStatistic;
+  kills: number;
+
+  // Защитная статистика
+  damageTaken: number;
+  hitsReceived: number;
+  hitsEvaded: number;
+  critsReceived: number;
+}
+
+export type CombatStatus = 'victory' | 'defeat' | 'fled' | 'ongoing';
+
+export interface CombatResult {
+  combatStatus: CombatStatus;
+  loot: { id: string; quantity: number; rarity?: Rarity }[];
+  capturedEnemies: { instanceId: string; templateId: string; rarity?: Rarity }[];
+  characterMetrics: Record<string, CharacterCombatMetrics>;
+}

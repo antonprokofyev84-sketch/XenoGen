@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 
+import { useShallow } from 'zustand/react/shallow';
+
 import textData from '@/locales/en.json';
 import { combatSelectors, useCombatStore } from '@/state/useCombatStore';
+import type { AttackForecast } from '@/systems/combat/combatHelpers';
+import { calculateAttackForecast } from '@/systems/combat/combatHelpers';
 import { assetsVersion } from '@/utils/assetsVersion';
 
 import { DamageFloatStagger } from '../DamageFloatStagger/DamageFloatStagger';
@@ -16,6 +20,13 @@ export const CombatCard = ({ unitId }: CombatCardProps) => {
   const unit = useCombatStore((state) => state.unitsById[unitId]);
   const activeUnit = useCombatStore((state) => combatSelectors.selectCurrentActiveUnit(state));
 
+  const { swapPosition, processAITurn, endTurn, attack } = useCombatStore(
+    useShallow((state) => state.actions),
+  );
+  const occupiedPositions = useCombatStore(
+    useShallow(combatSelectors.selectLinesOccupancyForUnits),
+  );
+
   const {
     templateId,
     rarity,
@@ -27,14 +38,12 @@ export const CombatCard = ({ unitId }: CombatCardProps) => {
     stats,
   } = unit;
 
-  const swapPosition = useCombatStore((state) => state.actions.swapPosition);
-  const processAITurn = useCombatStore((state) => state.actions.processAITurn);
-  const endTurn = useCombatStore((state) => state.actions.endTurn);
   const activeTurnKey = useCombatStore(
     (state) => combatSelectors.selectCurrentTurnItem(state)?.time,
   );
 
   const [localPosition, setLocalPosition] = useState(position);
+  const [forecast, setForecast] = useState<AttackForecast | null>(null);
 
   const isActive = useCombatStore((state) => combatSelectors.selectIsUnitActive(unitId)(state));
   const isAlly = unit.faction === 'player';
@@ -63,6 +72,12 @@ export const CombatCard = ({ unitId }: CombatCardProps) => {
     }
   };
 
+  const handleClick = () => {
+    if (forecast) {
+      attack(forecast);
+    }
+  };
+
   useEffect(() => {
     if (
       !isAlly &&
@@ -78,6 +93,19 @@ export const CombatCard = ({ unitId }: CombatCardProps) => {
       }, 1000);
     }
   }, [isActive, isAlly, activeTurnKey]);
+
+  useEffect(() => {
+    if (activeUnit && activeUnit.faction === 'player') {
+      if (unit.faction !== 'player' && unit.status === 'alive') {
+        const result = calculateAttackForecast(activeUnit, unit, occupiedPositions);
+        setForecast(result);
+      } else {
+        setForecast(null);
+      }
+    } else {
+      setForecast(null);
+    }
+  }, [activeUnit, unit, occupiedPositions]);
 
   return (
     <div className={`cardPositionContainer`}>
@@ -99,11 +127,7 @@ export const CombatCard = ({ unitId }: CombatCardProps) => {
       <div
         className={`combatCard ${rarity} cardPosition${position} ${localPosition !== position ? 'isMoving' : ''}`}
         onTransitionEnd={handleTransitionEnd}
-        onMouseEnter={() => {
-          if (activeUnit) {
-            // console.log(calculateAttackForecast(activeUnit, unit, occupiedPositions));
-          }
-        }}
+        onClick={handleClick}
       >
         <div className="stats-display">
           <div className="stat-bubble hp" title={`HP: ${stats.hp}`}>

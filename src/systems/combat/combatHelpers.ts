@@ -2,9 +2,12 @@ import type { CombatStats, CombatUnit } from '@/types/combat.types';
 import type { WeaponSlots } from '@/types/equipment.types';
 import { clamp } from '@/utils/utils';
 
+import { getBaseTurnTime } from './combatInitiativeHelpers';
+
 const BASE_DELAY_PER_POSITION = 3;
 
 export interface AttackRollResult {
+  attackerId: string;
   type: 'hit' | 'miss' | 'crit';
   damage: number;
   weaponType: WeaponSlots;
@@ -86,6 +89,7 @@ export interface AttackForecast {
   averageDamage: number;
   effectiveDamage: number;
   targetId: string;
+  attackerId: string;
 }
 
 export const calculateAttackForecast = (
@@ -133,7 +137,9 @@ export const calculateAttackForecast = (
 
   // delays
   const delayPoints = getDelayPoints(attacker, target, occupiedPositions);
-  const relativeDelay = delayPoints / Math.max(1, attacker.stats.initiative);
+  const relativeDelay =
+    (delayPoints / Math.max(1, attacker.stats.initiative)) *
+    getBaseTurnTime(attacker.stats.initiative);
 
   // kill flag
   const canKill = target.stats.hp <= maxDamage;
@@ -156,6 +162,7 @@ export const calculateAttackForecast = (
     averageDamage: averageDamageAfterArmor,
     effectiveDamage,
     targetId: target.instanceId,
+    attackerId: attacker.instanceId,
   };
 };
 
@@ -166,7 +173,12 @@ export const calculateAttackResult = (forecast: AttackForecast): AttackRollResul
   for (let i = 0; i < attacks; i++) {
     const didHit = Math.random() * 100 <= forecast.hitChancePercent;
     if (!didHit) {
-      results.push({ type: 'miss', damage: 0, weaponType: forecast.weaponType });
+      results.push({
+        attackerId: forecast.attackerId,
+        type: 'miss',
+        damage: 0,
+        weaponType: forecast.weaponType,
+      });
       continue;
     }
 
@@ -185,6 +197,7 @@ export const calculateAttackResult = (forecast: AttackForecast): AttackRollResul
     const damageAfterArmor = Math.max(0, Math.floor(base - effectiveArmor));
 
     results.push({
+      attackerId: forecast.attackerId,
       type: didCrit ? 'crit' : 'hit',
       damage: damageAfterArmor,
       weaponType: forecast.weaponType,

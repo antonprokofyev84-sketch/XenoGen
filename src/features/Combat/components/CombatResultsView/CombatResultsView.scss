@@ -1,0 +1,121 @@
+.combatResultView {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background-color: #1a1a1a;
+  color: #fff;
+  overflow: hidden;
+
+  h1 {
+    font-size: 3rem;
+    margin-bottom: 2rem;
+    text-transform: uppercase;
+    &.victory {
+      color: #4caf50; // green
+      text-shadow: 0 0 10px rgba(76, 175, 80, 0.7);
+    }
+    &.defeat {
+      color: #c53d3d; // red
+      text-shadow: 0 0 10px rgba(197, 61, 61, 0.7);
+    }
+  }
+
+  .resultsContainer {
+    display: flex;
+    width: 100%;
+    max-width: 1200px;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    flex-grow: 1;
+    overflow: hidden; // Предотвращает выход за пределы
+  }
+
+  .metricsBlock {
+    flex: 1;
+    background-color: #2a2a2a;
+    padding: 1.5rem;
+    border-radius: 8px;
+    overflow-y: auto; // Только этот блок скроллится
+
+    h2 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid #444;
+      padding-bottom: 0.5rem;
+    }
+
+    .metricCard {
+      background-color: #3a3a3a;
+      padding: 1rem;
+      border-radius: 6px;
+      margin-bottom: 1rem;
+      h3 {
+        color: #c5b05c;
+        margin: 0 0 0.75rem 0;
+      }
+      p {
+        margin: 0.25rem 0;
+      }
+
+      .metric-grid {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 0.25rem 1rem;
+        span {
+          color: #aaa;
+        }
+        strong {
+          color: #fff;
+        }
+      }
+    }
+  }
+
+  .rewardsBlock {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .lootBlock,
+  .capturedBlock {
+    background-color: #2a2a2a;
+    padding: 1.5rem;
+    border-radius: 8px;
+    overflow-y: auto;
+
+    h2 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    ul {
+      list-style: none;
+      padding-left: 0;
+    }
+    li {
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+      color: #ddd;
+    }
+  }
+
+  .lootBlock.fullHeight {
+    flex-grow: 1; // Растягивается, если нет .capturedBlock
+  }
+
+  .capturedBlock {
+    flex-grow: 1; // Занимает оставшееся место
+  }
+
+  // Стили для кнопки (предполагая, что у тебя есть _buttons.scss)
+  .btn {
+    flex-shrink: 0; // Кнопка не сжимается
+    padding: 0.8rem 2rem;
+    font-size: 1.2rem;
+  }
+}
