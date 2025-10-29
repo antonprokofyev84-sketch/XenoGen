@@ -2,7 +2,7 @@ import React from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
 
-import { mapSelectors } from '@/state/slices/map';
+import { mapSelectors } from '@/state/gameSlices/map';
 import { factionsSelectors, useGameStore } from '@/state/useGameState';
 
 interface GridCellProps {

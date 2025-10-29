@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
 
-import { useCombatStore } from '@/state/useCombatStore';
+import { useCombatState } from '@/state/useCombatState';
 
 import './DamageFloatStagger.scss';
 
@@ -17,7 +17,7 @@ export const DamageFloatStagger = ({
   delayBetweenMs = 600,
   lifeMs = 1000,
 }: DamageFloatStaggerProps) => {
-  const currentAttackResults = useCombatStore(
+  const currentAttackResults = useCombatState(
     useShallow((state) => state.attackResultById[unitId]),
   );
   const [localAttackResult, setLocalAttackResult] = useState(currentAttackResults || []);

@@ -1,7 +1,7 @@
 import { useShallow } from 'zustand/react/shallow';
 
 import textData from '@/locales/en.json';
-import { mapSelectors } from '@/state/slices/map';
+import { mapSelectors } from '@/state/gameSlices/map';
 import { useGameStore } from '@/state/useGameState';
 
 import './ExplorationStatus.scss';

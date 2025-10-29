@@ -1,7 +1,7 @@
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { useShallow } from 'zustand/react/shallow';
 
-import { useCombatStore } from '@/state/useCombatStore';
+import { useCombatState } from '@/state/useCombatState';
 import type { InitiativeItem } from '@/systems/combat/combatInitiativeHelpers';
 import type { CombatUnit } from '@/types/combat.types';
 import { assetsVersion } from '@/utils/assetsVersion';
@@ -47,7 +47,7 @@ const renderInitiativeItem = (
 };
 
 export const InitiativeBar = ({ highlightedUnitId }: InitiativeBarProps) => {
-  const { queue, units } = useCombatStore(
+  const { queue, units } = useCombatState(
     useShallow((state) => ({
       queue: state.initiativeQueue,
       units: state.unitsById,

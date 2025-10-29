@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
 import textData from '@/locales/en.json';
-import { combatSelectors, useCombatStore } from '@/state/useCombatStore';
+import { combatSelectors, useCombatState } from '@/state/useCombatState';
 import type { AttackForecast } from '@/systems/combat/combatHelpers';
 import { calculateAttackForecast } from '@/systems/combat/combatHelpers';
 import { assetsVersion } from '@/utils/assetsVersion';
@@ -17,13 +17,13 @@ interface CombatCardProps {
 }
 
 export const CombatCard = ({ unitId }: CombatCardProps) => {
-  const unit = useCombatStore((state) => state.unitsById[unitId]);
-  const activeUnit = useCombatStore((state) => combatSelectors.selectCurrentActiveUnit(state));
+  const unit = useCombatState((state) => state.unitsById[unitId]);
+  const activeUnit = useCombatState((state) => combatSelectors.selectCurrentActiveUnit(state));
 
-  const { swapPosition, processAITurn, endTurn, attack } = useCombatStore(
+  const { swapPosition, processAITurn, endTurn, attack } = useCombatState(
     useShallow((state) => state.actions),
   );
-  const occupiedPositions = useCombatStore(
+  const occupiedPositions = useCombatState(
     useShallow(combatSelectors.selectLinesOccupancyForUnits),
   );
 
@@ -38,14 +38,14 @@ export const CombatCard = ({ unitId }: CombatCardProps) => {
     stats,
   } = unit;
 
-  const activeTurnKey = useCombatStore(
+  const activeTurnKey = useCombatState(
     (state) => combatSelectors.selectCurrentTurnItem(state)?.time,
   );
 
   const [localPosition, setLocalPosition] = useState(position);
   const [forecast, setForecast] = useState<AttackForecast | null>(null);
 
-  const isActive = useCombatStore((state) => combatSelectors.selectIsUnitActive(unitId)(state));
+  const isActive = useCombatState((state) => combatSelectors.selectIsUnitActive(unitId)(state));
   const isAlly = unit.faction === 'player';
 
   const weapon = equipment[activeWeaponSlot]!;
@@ -55,6 +55,7 @@ export const CombatCard = ({ unitId }: CombatCardProps) => {
   const lastProcessedKeyRef = useRef<number | null>(null);
 
   const handlePositionClick = () => {
+    if (position !== localPosition) return;
     swapPosition(unitId);
   };
 

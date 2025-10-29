@@ -78,7 +78,7 @@ export const combatSelectors = {
   },
 };
 
-export const useCombatStore = create<CombatStore>()(
+export const useCombatState = create<CombatStore>()(
   immer((set, get) => ({
     unitsById: {},
     combatResult: { combatStatus: 'ongoing' } as CombatResult,
@@ -153,7 +153,7 @@ export const useCombatStore = create<CombatStore>()(
           if (hasWeaponInSlot) {
             unit.activeWeaponSlot = slot;
           } else {
-            console.warn(`[useCombatStore] Unit ${unitId} has no weapon in ${slot} slot.`);
+            console.warn(`[useCombatState] Unit ${unitId} has no weapon in ${slot} slot.`);
           }
         });
       },

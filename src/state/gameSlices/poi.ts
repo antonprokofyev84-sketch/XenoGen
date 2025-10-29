@@ -33,7 +33,8 @@ export interface PoiSlice {
     ) => void;
     explorePoisInCell: (cellId: string, explorationLevel: number) => void;
     ensurePoiDetails: (cellId: string, poiId: string) => void;
-    removePoiFromCell: (cellId: string, instanceId: string) => void;
+    changePoiDetails: (cellId: string, poiId: string, newDetails: PoiDetails) => void;
+    removePoiFromCell: (cellId: string, poiId: string) => void;
     modifyPoiProgress: (cellId: string, poiId: string, delta: number) => void;
     processDayEnd: () => Record<string, EffectsMap>;
   };
@@ -175,6 +176,14 @@ export const createPoiSlice: GameSlice<PoiSlice> = (set, get) => ({
         if (newDetails) {
           poi.details = newDetails;
         }
+      });
+    },
+    changePoiDetails: (cellId, poiId, newDetails) => {
+      set((state) => {
+        const poi = state.pois.poisByCellId[cellId]?.find((p) => p.id === poiId);
+        if (!poi) return;
+
+        poi.details = newDetails;
       });
     },
     removePoiFromCell: (cellId, poiId) =>

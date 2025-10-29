@@ -1,11 +1,11 @@
-import { useCombatStore } from '@/state/useCombatStore';
+import { useCombatState } from '@/state/useCombatState';
 
 import { CombatCard } from '../CombatCard/CombatCard';
 
 import './PlayerArea.scss';
 
 export const PlayerArea = () => {
-  const allyIds = useCombatStore((state) => state.allyIds);
+  const allyIds = useCombatState((state) => state.allyIds);
 
   return (
     <section className="playerArea">

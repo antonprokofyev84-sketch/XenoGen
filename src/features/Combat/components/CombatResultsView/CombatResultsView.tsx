@@ -1,17 +1,37 @@
-import { useCombatStore } from '@/state/useCombatStore';
+import { useShallow } from 'zustand/react/shallow';
+
+import { useCombatState } from '@/state/useCombatState';
+import { combatSelectors } from '@/state/useCombatState';
 import { useGameStore } from '@/state/useGameState';
 
 import './CombatResultsView.scss';
 
 export const CombatResultView = () => {
-  const { combatStatus, characterMetrics, loot, capturedEnemies } = useCombatStore(
+  const { combatStatus, characterMetrics, loot, capturedEnemies } = useCombatState(
     (state) => state.combatResult,
+  );
+  const selectedCellId = useGameStore((state) => state.map.selectedCellId);
+  const selectedPoiId = useGameStore((state) => state.map.selectedPoiId);
+  const clearSelectedPoiId = useGameStore((state) => state.map.actions.clearSelectedPoiId);
+  const removePoiFromCell = useGameStore((state) => state.pois.actions.removePoiFromCell);
+  const changePoiDetails = useGameStore((state) => state.pois.actions.changePoiDetails);
+  const aliveEnemies = useCombatState(
+    useShallow((state) => combatSelectors.selectAliveEnemies(state)),
   );
 
   const goToScreen = useGameStore((state) => state.ui.goToScreen);
 
   const handleBackToMap = () => {
-    // TODO: Здесь можно будет вызвать очистку useCombatStore перед уходом
+    if (combatStatus === 'victory') {
+      clearSelectedPoiId();
+      removePoiFromCell(selectedCellId!, selectedPoiId!);
+    }
+
+    if (combatStatus === 'defeat' || combatStatus === 'fled') {
+      clearSelectedPoiId();
+      changePoiDetails(selectedCellId!, selectedPoiId!, { enemyGroup: aliveEnemies });
+    }
+
     goToScreen('strategicMap');
   };
 

@@ -1,4 +1,4 @@
-import type { EnemyInstance } from './enemy.types';
+import type { CombatUnit } from './combat.types';
 
 export type PoiType =
   | 'combat'
@@ -38,7 +38,7 @@ export interface ActivePoi {
 export type PoiDetails = CombatPoiDetails /* | LootPoiDetails */;
 
 export interface CombatPoiDetails {
-  enemyGroup: EnemyInstance[];
+  enemyGroup: CombatUnit[];
 }
 
 export type PoiTriggerRule = {
