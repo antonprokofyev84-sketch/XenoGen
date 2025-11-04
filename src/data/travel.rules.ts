@@ -1,6 +1,6 @@
-import type { CellType } from '@/types/map.types.js';
-import type { MovementMode } from '@/types/travel.types.js';
-import type { ToD, Weather } from '@/types/world.types.js';
+import type { CellType } from '@/types/map.types';
+import type { MovementMode } from '@/types/travel.types';
+import type { ToD, Weather } from '@/types/world.types';
 
 export const BASE_TRAVEL_COST = {
   stamina: 12,

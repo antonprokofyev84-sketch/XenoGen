@@ -1,4 +1,4 @@
-import { DEFAULT_ARMOR_ID, DEFAULT_MELEE_ID } from '@/constants.js';
+import { DEFAULT_ARMOR_ID, DEFAULT_MELEE_ID } from '@/constants';
 import { mainStatKeys, secondaryStatsKeys, skillKeys } from '@/state/constants';
 import type { StoreState } from '@/state/useGameState';
 import { equipmentFactory } from '@/systems/equipment/equipmentFactory';
@@ -22,7 +22,10 @@ const DEFAULT_MELEE_ITEM: Readonly<EquipmentItem> = Object.freeze({
 });
 
 const isWeaponSlot = (slot: EquipmentSlot): slot is WeaponSlots =>
-  slot === 'meleeWeapon' || slot === 'rangeWeapon';
+  slot === 'meleePrimary' ||
+  slot === 'meleeSecondary' ||
+  slot === 'rangePrimary' ||
+  slot === 'rangeSecondary';
 
 const filterModsByKeys = (
   totalMods: Record<string, number>,
@@ -69,8 +72,8 @@ export const equipmentSelectors = {
       }
 
       // Гарантируем наличие дефолтного оружия ближнего боя, если слот пуст
-      if (!result.meleeWeapon) {
-        result.meleeWeapon = DEFAULT_MELEE_ITEM;
+      if (!result.meleePrimary) {
+        result.meleePrimary = DEFAULT_MELEE_ITEM;
       }
 
       return result;
@@ -147,9 +150,11 @@ export const createEquipmentSlice: GameSlice<EquipmentSlice> = (set) => ({
     resetCharacterEquipment: (characterId) => {
       set((state) => {
         state.equipment.equipmentByCharacterId[characterId] = {
-          meleeWeapon: null,
+          meleePrimary: null,
+          meleeSecondary: null,
+          rangePrimary: null,
+          rangeSecondary: null,
           armor: null,
-          rangeWeapon: null,
           gadget: null,
         };
       });

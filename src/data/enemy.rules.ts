@@ -1,4 +1,4 @@
-import type { Rarity } from '@/types/common.types.js';
+import type { Rarity } from '@/types/common.types';
 
 const multiply = (a: number) => (b: number) => a * b;
 const add = (a: number) => (b: number) => a + b;

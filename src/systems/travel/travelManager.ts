@@ -4,10 +4,10 @@ import {
   TERRAIN_RULES,
   TOD_RULES,
   WEATHER_RULES,
-} from '@/data/travel.rules.js';
-import type { CellType } from '@/types/map.types.js';
-import type { MovementMode } from '@/types/travel.types.js';
-import type { ToD, Weather } from '@/types/world.types.js';
+} from '@/data/travel.rules';
+import type { CellType } from '@/types/map.types';
+import type { MovementMode } from '@/types/travel.types';
+import type { ToD, Weather } from '@/types/world.types';
 
 const DIAGONAL_MULT = 1.4;
 const FATIGUE_MULT = 1.3;

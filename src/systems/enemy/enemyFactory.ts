@@ -1,16 +1,16 @@
-import { DEFAULT_ARMOR_ID, DEFAULT_MELEE_ID } from '@/constants.js';
+import { DEFAULT_ARMOR_ID, DEFAULT_MELEE_ID } from '@/constants';
 import { RARITY_RULES } from '@/data/enemy.rules';
 import { ENEMY_RARITY_CHANCE, EQUIPMENT_BY_TIER_CHANCE, TIER_UP_DELTAS } from '@/data/enemy.rules';
 import { MAX_ENEMY_TIER, MIN_ENEMY_TIER } from '@/data/enemy.rules';
 import { ENEMY_TEMPLATES_DB } from '@/data/enemy.templates';
-import type { CombatStats, CombatUnit } from '@/types/combat.types.js';
+import type { CombatStats, CombatUnit } from '@/types/combat.types';
 import type { Rarity } from '@/types/common.types';
 import type { EquipmentItem } from '@/types/equipment.types';
-import type { WeaponSlots } from '@/types/equipment.types.js';
-import type { WeaponInstance } from '@/types/weapon.types.js';
-import { makeInstanceId } from '@/utils/utils.js';
+import type { WeaponSlots } from '@/types/equipment.types';
+import type { WeaponInstance } from '@/types/weapon.types';
+import { makeInstanceId } from '@/utils/utils';
 
-import { equipmentFactory } from '../equipment/equipmentFactory.js';
+import { equipmentFactory } from '../equipment/equipmentFactory';
 
 const RARITY_RANK: Record<Rarity, number> = { common: 0, uncommon: 1, rare: 2, unique: 3 };
 
@@ -108,7 +108,7 @@ export const enemyFactory = {
       }
     }
 
-    // --- Шаг 3: Генерация и интеграция снаряжения (ОБНОВЛЕНО) ---
+    // --- Шаг 3: Генерация и интеграция снаряжения ---
     const tierChances = EQUIPMENT_BY_TIER_CHANCE[tier as keyof typeof EQUIPMENT_BY_TIER_CHANCE];
 
     // Вспомогательная функция для чистоты кода
@@ -119,10 +119,10 @@ export const enemyFactory = {
     };
 
     let meleeInstance = createWeapon(template.equipment.meleeId);
-    let rangedInstance = createWeapon(template.equipment.rangedId);
+    let rangeInstance = createWeapon(template.equipment.rangeId);
 
     // Дефолтное оружие, если ни одного не указано
-    if (!meleeInstance && !rangedInstance) {
+    if (!meleeInstance && !rangeInstance) {
       meleeInstance = createWeapon(DEFAULT_MELEE_ID);
     }
 
@@ -140,21 +140,21 @@ export const enemyFactory = {
 
     // Применяем моды от всей экипировки
     applyMods(finalStats, meleeInstance?.mods);
-    applyMods(finalStats, rangedInstance?.mods);
+    applyMods(finalStats, rangeInstance?.mods);
     applyMods(finalStats, armorInstance?.mods);
     // applyMods(finalStats, gadgetInstance?.mods);
 
     // --- Шаг 4: Сборка финального объекта (ОБНОВЛЕНО) ---
 
     const finalMelee = meleeInstance ? { ...meleeInstance, mods: {} } : null;
-    const finalRanged = rangedInstance ? { ...rangedInstance, mods: {} } : null;
+    const finalRange = rangeInstance ? { ...rangeInstance, mods: {} } : null;
 
     const finalArmor = armorInstance
       ? { templateId: armorInstance.templateId, rarity: armorInstance.rarity }
       : null;
     const finalGadget = gadgetInstance;
 
-    const activeWeaponSlot: WeaponSlots = finalRanged ? 'rangeWeapon' : 'meleeWeapon';
+    const activeWeaponSlot: WeaponSlots = finalRange ? 'rangePrimary' : 'meleePrimary';
 
     for (const key in finalStats) {
       const statKey = key as keyof CombatStats;
@@ -172,8 +172,10 @@ export const enemyFactory = {
       status: 'alive',
       position: 3,
       equipment: {
-        meleeWeapon: finalMelee,
-        rangeWeapon: finalRanged,
+        meleePrimary: finalMelee,
+        rangePrimary: finalRange,
+        meleeSecondary: null,
+        rangeSecondary: null,
         armor: finalArmor,
         gadget: finalGadget,
       },

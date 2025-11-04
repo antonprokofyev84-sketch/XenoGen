@@ -4,7 +4,7 @@ import { WEAPON_RARITY_MULTIPLIERS_DEFAULT, WEAPON_TEMPLATES_DB } from '@/data/w
 import type { ArmorInstance } from '@/types/armor.types';
 import type { Rarity } from '@/types/common.types';
 import type { WeaponInstance } from '@/types/weapon.types';
-import { makeInstanceId } from '@/utils/utils.js';
+import { makeInstanceId } from '@/utils/utils';
 
 /**
  * Учитывает редкость: положительные модификаторы умножаются,

@@ -31,23 +31,44 @@ const getEquipmentForCharacterSnapshot = (
 ): CombatEquipment => {
   const equipment = equipmentSelectors.selectEquipmentByCharacterId(characterId)(state);
 
-  const meleeWeapon = equipment.meleeWeapon
-    ? equipmentFactory.createWeaponInstance(
-        equipment.meleeWeapon.templateId,
-        equipment.meleeWeapon.rarity,
-      )
-    : null;
+  // const meleePrimary = equipment.meleePrimary
+  //   ? equipmentFactory.createWeaponInstance(
+  //       equipment.meleePrimary.templateId,
+  //       equipment.meleePrimary.rarity,
+  //     )
+  //   : null;
 
-  const rangeWeapon = equipment.rangeWeapon
-    ? equipmentFactory.createWeaponInstance(
-        equipment.rangeWeapon.templateId,
-        equipment.rangeWeapon.rarity,
-      )
-    : null;
+  // const meleeSecondary = equipment.meleeSecondary
+  //   ? equipmentFactory.createWeaponInstance(
+  //       equipment.meleeSecondary.templateId,
+  //       equipment.meleeSecondary.rarity,
+  //     )
+  //   : null;
+
+  // const rangePrimary = equipment.rangePrimary
+  //   ? equipmentFactory.createWeaponInstance(
+  //       equipment.rangePrimary.templateId,
+  //       equipment.rangePrimary.rarity,
+  //     )
+  //   : null;
+
+  // const rangeSecondary = equipment.rangeSecondary
+  //   ? equipmentFactory.createWeaponInstance(
+  //       equipment.rangeSecondary.templateId,
+  //       equipment.rangeSecondary.rarity,
+  //     )
+  //   : null;
+
+  const meleePrimary = equipmentFactory.createWeaponInstance('makeshiftKnife', 'common');
+  const rangePrimary = equipmentFactory.createWeaponInstance('beretta92', 'common');
+  const meleeSecondary = null;
+  const rangeSecondary = null;
 
   return {
-    meleeWeapon,
-    rangeWeapon,
+    meleePrimary,
+    meleeSecondary,
+    rangePrimary,
+    rangeSecondary,
     armor: equipment.armor || null,
     gadget: equipment.gadget || null,
   };
@@ -68,7 +89,7 @@ export const makeCombatUnitForCharacterSnapshot = (
     templateId: character.templateId,
     stats,
     equipment,
-    activeWeaponSlot: 'meleeWeapon',
+    activeWeaponSlot: 'meleePrimary',
     status: 'alive',
     position: 0,
     // TODO: поменять если понадобится

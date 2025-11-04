@@ -15,7 +15,7 @@ export interface EnemyTemplate {
 
   equipment: {
     meleeId?: string;
-    rangedId?: string;
+    rangeId?: string;
     armorId?: string;
     gadgetId?: string;
   };

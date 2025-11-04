@@ -62,7 +62,7 @@ export const ENEMY_TEMPLATES_DB: Record<string, EnemyTemplate> = {
       critChance: 6,
     },
     equipment: {
-      rangedId: 'crossbow',
+      rangeId: 'crossbow',
     },
   },
   scavengerScout: {
@@ -83,7 +83,7 @@ export const ENEMY_TEMPLATES_DB: Record<string, EnemyTemplate> = {
       critChance: 6,
     },
     equipment: {
-      rangedId: 'beretta92',
+      rangeId: 'beretta92',
       armorId: 'travelDuster',
     },
   },
@@ -105,7 +105,7 @@ export const ENEMY_TEMPLATES_DB: Record<string, EnemyTemplate> = {
       critChance: 7,
     },
     equipment: {
-      rangedId: 'makeshiftRifle',
+      rangeId: 'makeshiftRifle',
       armorId: 'lightLeatherArmor',
     },
   },

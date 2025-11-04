@@ -1,4 +1,4 @@
-import type { Rarity } from '@/types/common.types.js';
+import type { Rarity } from '@/types/common.types';
 
 export interface ArmorTemplate {
   templateId: string;

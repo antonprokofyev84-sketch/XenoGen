@@ -47,10 +47,6 @@ export interface Character {
   skills: Skills;
 }
 
-// templates types
-
-export type Rarity = 'common' | 'rare' | 'unique';
-
 export type TemplateStat = number | [base: number, random: number];
 
 export interface ArchetypeTemplate {

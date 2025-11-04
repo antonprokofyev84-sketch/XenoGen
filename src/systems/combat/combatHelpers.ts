@@ -1,5 +1,6 @@
 import type { CombatStats, CombatUnit } from '@/types/combat.types';
 import type { WeaponSlots } from '@/types/equipment.types';
+import type { WeaponType } from '@/types/weapon.types';
 import { clamp } from '@/utils/utils';
 
 import { getBaseTurnTime } from './combatInitiativeHelpers';
@@ -10,7 +11,7 @@ export interface AttackRollResult {
   attackerId: string;
   type: 'hit' | 'miss' | 'crit';
   damage: number;
-  weaponType: WeaponSlots;
+  weaponType: WeaponType;
 }
 
 // === Shared helpers ===
@@ -20,7 +21,7 @@ export const computeHitChancePercent = (
   slot: WeaponSlots,
 ): number => {
   let hitChancePercent: number;
-  if (slot === 'meleeWeapon') {
+  if (slot === 'meleePrimary' || slot === 'meleeSecondary') {
     hitChancePercent = attackerStats.melee - targetStats.evasion;
   } else {
     hitChancePercent = attackerStats.range - Math.floor(targetStats.evasion / 2);
@@ -77,7 +78,7 @@ export interface AttackForecast {
   maxDamage: number;
   armorPiercing: number;
   attackPerTurn: number;
-  weaponType: WeaponSlots;
+  weaponType: WeaponType;
   // шансы
   hitChancePercent: number;
   critChancePercent: number;
@@ -109,7 +110,10 @@ export const calculateAttackForecast = (
   }
 
   // Melee attack from backline is not possible
-  if (activeSlot === 'meleeWeapon' && (attacker.position === 0 || attacker.position === 3)) {
+  if (
+    (activeSlot === 'meleePrimary' || activeSlot === 'meleeSecondary') &&
+    (attacker.position === 0 || attacker.position === 3)
+  ) {
     return null;
   }
 
@@ -125,7 +129,10 @@ export const calculateAttackForecast = (
   const hitChancePercent = computeHitChancePercent(attackerStatsWithMods, target.stats, activeSlot);
 
   // inline damage range after armor (no crit)
-  const meleeBonus = activeSlot === 'meleeWeapon' ? attackerStatsWithMods.baseMeleeDamage : 0;
+  const meleeBonus =
+    activeSlot === 'meleePrimary' || activeSlot === 'meleeSecondary'
+      ? attackerStatsWithMods.baseMeleeDamage
+      : 0;
   const baseMinBeforeArmor = weaponInstance.damage[0] + meleeBonus;
   const baseMaxBeforeArmor = weaponInstance.damage[1] + meleeBonus;
 
@@ -152,7 +159,7 @@ export const calculateAttackForecast = (
     maxDamage: baseMaxBeforeArmor,
     attackPerTurn: weaponInstance.attacksPerTurn,
     armorPiercing: weaponInstance.armorPiercing,
-    weaponType: activeSlot,
+    weaponType: weaponInstance.type,
     hitChancePercent,
     critChancePercent: attackerStatsWithMods.critChance,
     targetDefense: target.stats.armor,

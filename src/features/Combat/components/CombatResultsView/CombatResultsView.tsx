@@ -4,6 +4,8 @@ import { useCombatState } from '@/state/useCombatState';
 import { combatSelectors } from '@/state/useCombatState';
 import { useGameStore } from '@/state/useGameState';
 
+import { LootDisplay } from '../LootDisplay/LootDisplay';
+
 import './CombatResultsView.scss';
 
 export const CombatResultView = () => {
@@ -67,15 +69,7 @@ export const CombatResultView = () => {
 
         <div className="rewardsBlock">
           <div className={`lootBlock ${!hasEnemies ? 'fullHeight' : ''}`}>
-            <h2>Loot</h2>
-            <ul>
-              {loot.map((item, index) => (
-                <li key={index}>
-                  {item.id} (x{item.quantity})
-                </li>
-              ))}
-              {loot.length === 0 && <li>No loot found.</li>}
-            </ul>
+            <LootDisplay />
           </div>
 
           {hasEnemies && (

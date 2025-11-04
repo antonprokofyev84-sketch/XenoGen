@@ -1,5 +1,5 @@
-import type { Rarity } from './common.types.js';
-import type { EquipmentItem, WeaponSlots } from './equipment.types.js';
+import type { Rarity } from './common.types';
+import type { EquipmentItem, WeaponSlots } from './equipment.types';
 import type { WeaponInstance } from './weapon.types';
 
 export interface CombatStats {
@@ -14,8 +14,10 @@ export interface CombatStats {
 }
 
 export interface CombatEquipment {
-  meleeWeapon: WeaponInstance | null;
-  rangeWeapon: WeaponInstance | null;
+  meleePrimary: WeaponInstance | null;
+  meleeSecondary: WeaponInstance | null;
+  rangePrimary: WeaponInstance | null;
+  rangeSecondary: WeaponInstance | null;
   armor: EquipmentItem | null;
   gadget: EquipmentItem | null;
 }
@@ -64,4 +66,19 @@ export interface CombatResult {
   loot: { id: string; quantity: number; rarity?: Rarity }[];
   capturedEnemies: { instanceId: string; templateId: string; rarity?: Rarity }[];
   characterMetrics: Record<string, CharacterCombatMetrics>;
+}
+
+export type LootItem = {
+  id: string;
+  quantity: number;
+  rarity?: Rarity;
+};
+
+export interface AggregatedLootResult {
+  weapons: LootItem[];
+  armors: LootItem[];
+  gadgets: LootItem[];
+  items: LootItem[];
+  money: LootItem[];
+  scrap: LootItem[];
 }

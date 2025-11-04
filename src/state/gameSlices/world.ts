@@ -2,7 +2,7 @@ import { DEFAULT_EXPLORATION_DURATION } from '@/constants';
 import { STAMINA_RECOVERY_PER_HOUR } from '@/constants';
 import { EffectManager } from '@/systems/effects/effectManager';
 import { TravelManager } from '@/systems/travel/travelManager';
-import type { ToD, Weather } from '@/types/world.types.js';
+import type { ToD, Weather } from '@/types/world.types';
 
 import type { GameSlice } from '../types';
 import { partySelectors } from '../useGameState';

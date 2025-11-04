@@ -11,7 +11,6 @@ interface LootEntry {
 }
 
 export interface LootRule {
-  baseLoot: LootEntry[];
-  rarityBonusLoot?: Partial<Record<Exclude<Rarity, 'common'>, LootEntry[]>>;
-  cascadeBonuses?: boolean; // по умолчанию true: unique включает rare+uncommon
+  tiers: Partial<Record<Rarity, LootEntry[]>>; // common/uncommon/rare/unique
+  cascade: boolean; // если true — берём все уровни редкости до текущего включительно
 }

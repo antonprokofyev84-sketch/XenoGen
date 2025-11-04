@@ -1,7 +1,7 @@
 import { LOWER_LEVEL_CHANCE, MAX_MEMBERS, SAME_LEVEL_CHANCE } from '@/data/combat.rules';
 import type { EnemyTemplate } from '@/types/enemy.types';
 
-import { enemyFactory } from '../enemy/enemyFactory.js';
+import { enemyFactory } from '../enemy/enemyFactory';
 
 // type GroupGenOptions = {
 //   difficultyLevel: number; // целевой уровень боя

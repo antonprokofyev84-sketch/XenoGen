@@ -27,7 +27,7 @@ export const WEAPON_TEMPLATES_DB: Record<string, WeaponTemplate> = {
   // --- MELEE WEAPONS ---
   // fists: {
   //   templateId: 'fists',
-  //   slot: 'meleeWeapon',
+  //   type: 'meleeWeapon',
   //   price: 0,
   //   dropRate: 0.0,
   //   requiredMelee: 0,
@@ -38,7 +38,7 @@ export const WEAPON_TEMPLATES_DB: Record<string, WeaponTemplate> = {
   // },
   fists: {
     templateId: 'fists',
-    slot: 'meleeWeapon',
+    type: 'meleeWeapon',
     price: 0,
     dropRate: 0.0,
     requiredMelee: 0,
@@ -49,7 +49,7 @@ export const WEAPON_TEMPLATES_DB: Record<string, WeaponTemplate> = {
   },
   makeshiftKnife: {
     templateId: 'makeshiftKnife',
-    slot: 'meleeWeapon',
+    type: 'meleeWeapon',
     price: 40,
     dropRate: 0.5,
     requiredMelee: 15,
@@ -61,7 +61,7 @@ export const WEAPON_TEMPLATES_DB: Record<string, WeaponTemplate> = {
 
   spear: {
     templateId: 'spear',
-    slot: 'meleeWeapon',
+    type: 'meleeWeapon',
     price: 110,
     dropRate: 0.3,
     requiredStrength: 30,
@@ -74,7 +74,7 @@ export const WEAPON_TEMPLATES_DB: Record<string, WeaponTemplate> = {
 
   fireAxe: {
     templateId: 'fireAxe',
-    slot: 'meleeWeapon',
+    type: 'meleeWeapon',
     price: 90,
     dropRate: 0.3,
     requiredStrength: 45,
@@ -89,7 +89,7 @@ export const WEAPON_TEMPLATES_DB: Record<string, WeaponTemplate> = {
 
   beretta92: {
     templateId: 'beretta92',
-    slot: 'rangeWeapon',
+    type: 'rangeWeapon',
     price: 250,
     dropRate: 0.28,
     requiredRanged: 25,
@@ -101,7 +101,7 @@ export const WEAPON_TEMPLATES_DB: Record<string, WeaponTemplate> = {
 
   pumpShotgun: {
     templateId: 'pumpShotgun',
-    slot: 'rangeWeapon',
+    type: 'rangeWeapon',
     price: 400,
     dropRate: 0.2,
     requiredStrength: 45,
@@ -117,7 +117,7 @@ export const WEAPON_TEMPLATES_DB: Record<string, WeaponTemplate> = {
 
   makeshiftRifle: {
     templateId: 'makeshiftRifle',
-    slot: 'rangeWeapon',
+    type: 'rangeWeapon',
     price: 350,
     dropRate: 0.25,
     requiredRanged: 35,
@@ -129,7 +129,7 @@ export const WEAPON_TEMPLATES_DB: Record<string, WeaponTemplate> = {
 
   crossbow: {
     templateId: 'crossbow',
-    slot: 'rangeWeapon',
+    type: 'rangeWeapon',
     price: 150,
     dropRate: 0.22,
     requiredStrength: 35,

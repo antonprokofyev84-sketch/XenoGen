@@ -1,0 +1,91 @@
+// --- Цвета Редкости для Рамок ---
+$rarity-common: #888;
+$rarity-uncommon: #6e7c5a;
+$rarity-rare: #60708f;
+$rarity-unique: #c8a658;
+
+.lootDisplay {
+  width: 100%;
+  height: 100%;
+}
+
+.loot-section {
+  margin-bottom: 1.5rem;
+
+  h3 {
+    color: #aaa;
+    font-size: 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0 0 0.75rem 0;
+    border-bottom: 1px solid #444;
+    padding-bottom: 0.5rem;
+  }
+}
+
+.loot-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+// --- Базовый стиль для иконки 100x100 ---
+.loot-item {
+  position: relative;
+  background-color: #222;
+  border: 2px solid #555;
+  border-radius: 6px;
+  padding: 5px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+
+  // Размеры по умолчанию
+  width: 100px;
+  height: 100px;
+
+  // Рамки редкости
+  &.rarity-common {
+    border-color: $rarity-common;
+  }
+  &.rarity-uncommon {
+    border-color: $rarity-uncommon;
+  }
+  &.rarity-rare {
+    border-color: $rarity-rare;
+  }
+  &.rarity-unique {
+    border-color: $rarity-unique;
+  }
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .item-quantity {
+    position: absolute;
+    bottom: 2px;
+    right: 4px;
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+  }
+}
+
+.resource-list {
+  div {
+    padding: 0.25rem 0;
+    font-weight: 500;
+    text-transform: capitalize;
+  }
+
+  .resource-money {
+    color: #c5b05c; // Желтый
+  }
+  .resource-scrap {
+    color: #9e9e9e; // Серый
+  }
+}

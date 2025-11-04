@@ -1,0 +1,124 @@
+.weapon-selector-frame {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  border: 2px solid #444;
+  border-radius: 8px;
+  background-color: #333;
+}
+
+.weapon-group {
+  width: 100%;
+
+  // Заголовки "Melee" / "Ranged"
+  legend {
+    color: #a0a0a0;
+    font-weight: bold;
+    text-align: center;
+    width: 100%;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+  }
+}
+
+// Сетка 2x1 для кнопок (внутри .weapon-group)
+.weapon-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+// Стилизация самой кнопки
+.radio-option {
+  // Скрываем настоящий radio input
+  input[type='radio'] {
+    opacity: 0;
+    position: fixed;
+    width: 0;
+  }
+
+  label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    aspect-ratio: 1 / 1; // Квадратная кнопка
+    background-color: #2a2a2a;
+    border: 2px solid #555;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0.5rem;
+    box-sizing: border-box;
+    overflow: hidden;
+    position: relative; // Для .empty-slot-text
+
+    &:hover {
+      border-color: #888;
+    }
+
+    img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+  }
+
+  // Стили для ВЫБРАННОЙ кнопки
+  label.active {
+    border-color: #c5b05c; // Yellow accent
+    background-color: #4a4a4a;
+    box-shadow: 0 0 8px rgba(197, 176, 92, 0.5);
+  }
+
+  // Стили для ПУСТОЙ / ОТКЛЮЧЕННОЙ кнопки
+  label.no-weapon {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: repeating-linear-gradient(45deg, #3a3a3a, #3a3a3a 10px, #383838 10px, #383838 20px);
+
+    &:hover {
+      border-color: #555;
+    }
+
+    // Не может быть активной, если нет оружия
+    &.active {
+      border-color: #555;
+      background-color: #3a3a3a; // Возвращаем полосатый фон
+      box-shadow: none;
+    }
+  }
+
+  .empty-slot-text {
+    color: #777;
+    font-weight: bold;
+    font-size: 1.1rem;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  }
+}
+
+// --- СТИЛИ ДЛЯ КНОПКИ END TURN (ВЕРНУЛИСЬ) ---
+.end-turn-container {
+  margin-top: 0.5rem; // Отступ от Ranged-группы
+  width: 100%;
+  padding-top: 1rem;
+  border-top: 1px solid #444;
+
+  .btn {
+    width: 100%;
+  }
+}
+// ---
+
+// Заглушка, если не наш ход
+.weapon-selector-frame-placeholder {
+  width: 100%;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  // (Высота 2-х квадратных кнопок + отступы + кнопка)
+  height: 300px; // Примерная высота
+  box-sizing: border-box;
+}

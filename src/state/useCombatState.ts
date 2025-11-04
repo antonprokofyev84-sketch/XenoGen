@@ -52,6 +52,9 @@ export const combatSelectors = {
   selectAliveEnemies: (state: CombatStore): CombatUnit[] =>
     state.enemyIds.map((id) => state.unitsById[id]).filter((unit) => unit.status === 'alive'),
 
+  selectAllEnemies: (state: CombatStore): CombatUnit[] =>
+    state.enemyIds.map((id) => state.unitsById[id]),
+
   selectCurrentTurnItem: (state: CombatStore) =>
     state.initiativeQueue.length > 0 ? state.initiativeQueue[0] : null,
 
@@ -265,7 +268,7 @@ export const useCombatState = create<CombatStore>()(
 
         if (
           currentActiveUnit.position === 3 &&
-          currentActiveUnit.activeWeaponSlot === 'meleeWeapon'
+          currentActiveUnit.activeWeaponSlot === 'meleePrimary' // for now enemies could have only Primary slots
         ) {
           get().actions.swapPosition(currentActiveUnit.instanceId);
           return;
@@ -274,8 +277,8 @@ export const useCombatState = create<CombatStore>()(
         if (
           currentActiveUnit.position === 2 ||
           (currentActiveUnit.position === 3 &&
-            currentActiveUnit.activeWeaponSlot === 'rangeWeapon' &&
-            currentActiveUnit.equipment.rangeWeapon!.distance === 3)
+            currentActiveUnit.activeWeaponSlot === 'rangePrimary' &&
+            currentActiveUnit.equipment.rangePrimary!.distance === 3)
         ) {
           const forecasts_stay = allies
             .map((ally) => calculateAttackForecast(currentActiveUnit, ally, occupiedPositions))
