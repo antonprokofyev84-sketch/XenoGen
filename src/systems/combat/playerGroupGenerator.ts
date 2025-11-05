@@ -31,19 +31,19 @@ const getEquipmentForCharacterSnapshot = (
 ): CombatEquipment => {
   const equipment = equipmentSelectors.selectEquipmentByCharacterId(characterId)(state);
 
-  // const meleePrimary = equipment.meleePrimary
-  //   ? equipmentFactory.createWeaponInstance(
-  //       equipment.meleePrimary.templateId,
-  //       equipment.meleePrimary.rarity,
-  //     )
-  //   : null;
+  const meleePrimary = equipment.meleePrimary
+    ? equipmentFactory.createWeaponInstance(
+        equipment.meleePrimary.templateId,
+        equipment.meleePrimary.rarity,
+      )
+    : null;
 
-  // const meleeSecondary = equipment.meleeSecondary
-  //   ? equipmentFactory.createWeaponInstance(
-  //       equipment.meleeSecondary.templateId,
-  //       equipment.meleeSecondary.rarity,
-  //     )
-  //   : null;
+  const meleeSecondary = equipment.meleeSecondary
+    ? equipmentFactory.createWeaponInstance(
+        equipment.meleeSecondary.templateId,
+        equipment.meleeSecondary.rarity,
+      )
+    : null;
 
   // const rangePrimary = equipment.rangePrimary
   //   ? equipmentFactory.createWeaponInstance(
@@ -59,9 +59,9 @@ const getEquipmentForCharacterSnapshot = (
   //     )
   //   : null;
 
-  const meleePrimary = equipmentFactory.createWeaponInstance('makeshiftKnife', 'common');
+  // const meleePrimary = equipmentFactory.createWeaponInstance('makeshiftKnife', 'common');
   const rangePrimary = equipmentFactory.createWeaponInstance('beretta92', 'common');
-  const meleeSecondary = null;
+  // const meleeSecondary = null;
   const rangeSecondary = null;
 
   return {

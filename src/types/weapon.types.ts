@@ -15,6 +15,7 @@ export interface WeaponTemplate {
   damage: [min: number, max: number];
   armorPiercing: number;
   mods?: Record<string, number>;
+  lethality: number;
   rarityMultipliers?: {
     uncommon?: number;
     rare?: number;

@@ -11,6 +11,7 @@ export interface AttackRollResult {
   attackerId: string;
   type: 'hit' | 'miss' | 'crit';
   damage: number;
+  lethality: number;
   weaponType: WeaponType;
 }
 
@@ -79,6 +80,7 @@ export interface AttackForecast {
   armorPiercing: number;
   attackPerTurn: number;
   weaponType: WeaponType;
+  lethality: number;
   // шансы
   hitChancePercent: number;
   critChancePercent: number;
@@ -159,6 +161,7 @@ export const calculateAttackForecast = (
     maxDamage: baseMaxBeforeArmor,
     attackPerTurn: weaponInstance.attacksPerTurn,
     armorPiercing: weaponInstance.armorPiercing,
+    lethality: weaponInstance.lethality,
     weaponType: weaponInstance.type,
     hitChancePercent,
     critChancePercent: attackerStatsWithMods.critChance,
@@ -184,6 +187,7 @@ export const calculateAttackResult = (forecast: AttackForecast): AttackRollResul
         attackerId: forecast.attackerId,
         type: 'miss',
         damage: 0,
+        lethality: 0,
         weaponType: forecast.weaponType,
       });
       continue;
@@ -207,6 +211,7 @@ export const calculateAttackResult = (forecast: AttackForecast): AttackRollResul
       attackerId: forecast.attackerId,
       type: didCrit ? 'crit' : 'hit',
       damage: damageAfterArmor,
+      lethality: forecast.lethality,
       weaponType: forecast.weaponType,
     });
   }

@@ -4,14 +4,14 @@ import { useCombatState } from '@/state/useCombatState';
 import { combatSelectors } from '@/state/useCombatState';
 import { useGameStore } from '@/state/useGameState';
 
-import { LootDisplay } from '../LootDisplay/LootDisplay';
+import { CapturedSection } from '../CapturedSection/CapturedSection';
+import { LootSection } from '../LootSection/LootSection';
 
 import './CombatResultsView.scss';
 
 export const CombatResultView = () => {
-  const { combatStatus, characterMetrics, loot, capturedEnemies } = useCombatState(
-    (state) => state.combatResult,
-  );
+  const { combatStatus, characterMetrics } = useCombatState((state) => state.combatResult);
+  console.log(characterMetrics);
   const selectedCellId = useGameStore((state) => state.map.selectedCellId);
   const selectedPoiId = useGameStore((state) => state.map.selectedPoiId);
   const clearSelectedPoiId = useGameStore((state) => state.map.actions.clearSelectedPoiId);
@@ -36,8 +36,6 @@ export const CombatResultView = () => {
 
     goToScreen('strategicMap');
   };
-
-  const hasEnemies = capturedEnemies && capturedEnemies.length > 0;
 
   return (
     <div className="combatResultView">
@@ -68,20 +66,8 @@ export const CombatResultView = () => {
         </div>
 
         <div className="rewardsBlock">
-          <div className={`lootBlock ${!hasEnemies ? 'fullHeight' : ''}`}>
-            <LootDisplay />
-          </div>
-
-          {hasEnemies && (
-            <div className="capturedBlock">
-              <h2>Captured</h2>
-              <ul>
-                {capturedEnemies.map((enemy, index) => (
-                  <li key={index}>{enemy.templateId}</li>
-                ))}
-              </ul>
-            </div>
-          )}
+          <LootSection />
+          <CapturedSection />
         </div>
       </div>
 

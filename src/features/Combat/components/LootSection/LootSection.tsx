@@ -8,7 +8,7 @@ import { assetsVersion } from '@/utils/assetsVersion';
 
 // Предполагаемый импорт
 
-import './LootDisplay.scss';
+import './LootSection.scss';
 
 // --- Новый внутренний компонент ---
 interface LootSectionProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -21,7 +21,7 @@ interface LootSectionProps extends React.HTMLAttributes<HTMLDivElement> {
 /**
  * Вспомогательный компонент для отрисовки секции лута (оружие, броня и т.д.)
  */
-const LootSection = ({ items, header, imageFolder, className, ...rest }: LootSectionProps) => {
+const LootBlock = ({ items, header, imageFolder, className, ...rest }: LootSectionProps) => {
   if (items.length === 0) return null;
 
   const combinedClassName = `loot-section ${className || ''}`;
@@ -49,9 +49,11 @@ const LootSection = ({ items, header, imageFolder, className, ...rest }: LootSec
   );
 };
 
-export const LootDisplay = () => {
+export const LootSection = () => {
   const allEnemies = useCombatState(useShallow((state) => combatSelectors.selectAllEnemies(state)));
+  console.log(JSON.stringify(allEnemies));
   const loot = generateLoot(allEnemies);
+  console.log(JSON.stringify(loot));
 
   // Проверка, есть ли вообще какой-либо лут
   const hasLoot =
@@ -68,25 +70,25 @@ export const LootDisplay = () => {
         <p>No loot found.</p>
       ) : (
         <>
-          <LootSection
+          <LootBlock
             items={loot.weapons}
             header="Weapons"
             imageFolder="/images/weapon/"
             className="weapon-list"
           />
-          <LootSection
+          <LootBlock
             items={loot.armors}
             header="Armor"
             imageFolder="/images/armor/"
             className="armor-list"
           />
-          <LootSection
+          <LootBlock
             items={loot.gadgets}
             header="Gadgets"
             imageFolder="/images/gadget/"
             className="gadget-list"
           />
-          <LootSection
+          <LootBlock
             items={loot.items}
             header="Items"
             imageFolder="/images/items/"

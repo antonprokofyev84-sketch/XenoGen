@@ -52,6 +52,9 @@ export const combatSelectors = {
   selectAliveEnemies: (state: CombatStore): CombatUnit[] =>
     state.enemyIds.map((id) => state.unitsById[id]).filter((unit) => unit.status === 'alive'),
 
+  selectUnconsciousEnemies: (state: CombatStore): CombatUnit[] =>
+    state.enemyIds.map((id) => state.unitsById[id]).filter((unit) => unit.status === 'unconscious'),
+
   selectAllEnemies: (state: CombatStore): CombatUnit[] =>
     state.enemyIds.map((id) => state.unitsById[id]),
 
@@ -109,8 +112,6 @@ export const useCombatState = create<CombatStore>()(
           state.attackResultById = {};
           state.combatResult = {
             combatStatus: 'ongoing',
-            loot: [],
-            capturedEnemies: [],
             characterMetrics: Object.fromEntries(allyIds.map((id) => [id, blankMetric()])),
           };
         });
@@ -197,6 +198,7 @@ export const useCombatState = create<CombatStore>()(
 
             const attackerId = resultsArray[0].attackerId;
             const attackerMetrics = state.combatResult.characterMetrics[attackerId];
+            //metrics only exist for player characters
             if (attackerMetrics) {
               addOffenseMetrics(attackerMetrics, resultsArray);
             }
@@ -217,9 +219,14 @@ export const useCombatState = create<CombatStore>()(
 
             if (targetUnit.stats.hp <= 0) {
               targetUnit.stats.hp = 0;
-              targetUnit.status = 'dead';
+
+              if (targetUnit.faction === 'player' || Math.random() > resultsArray[0].lethality) {
+                targetUnit.status = 'unconscious';
+              } else {
+                targetUnit.status = 'dead';
+              }
+
               anyUnitDied = true;
-              console.log(`[Combat] ${targetId} is DEAD.`);
 
               if (attackerMetrics) {
                 attackerMetrics.kills += 1;

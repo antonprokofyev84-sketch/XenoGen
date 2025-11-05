@@ -153,7 +153,7 @@ export const generateLoot = (enemies: CombatUnit[]): AggregatedLootResult => {
   };
 
   for (const enemy of enemies) {
-    if (enemy.status !== 'dead') continue;
+    if (enemy.status !== 'dead' && enemy.status !== 'unconscious') continue;
 
     // эквип (сразу по корзинам)
     const eq = checkEquipmentDrop(enemy.equipment);

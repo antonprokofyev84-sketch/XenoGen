@@ -19,7 +19,8 @@ export const ARMOR_TEMPLATES_DB: Record<string, ArmorTemplate> = {
     templateId: 'travelDuster',
     slot: 'armor',
     price: 60,
-    dropRate: 0.3,
+    dropRate: 0.95,
+    // dropRate: 0.3,
     mods: {
       armor: 3,
       evasion: 1,
@@ -29,7 +30,8 @@ export const ARMOR_TEMPLATES_DB: Record<string, ArmorTemplate> = {
     templateId: 'lightLeatherArmor',
     slot: 'armor',
     price: 150,
-    dropRate: 0.15,
+    dropRate: 0.95,
+    // dropRate: 0.15,
     mods: {
       armor: 8,
       evasion: -2,
@@ -39,7 +41,8 @@ export const ARMOR_TEMPLATES_DB: Record<string, ArmorTemplate> = {
     templateId: 'reinforcedLeatherArmor',
     slot: 'armor',
     price: 250,
-    dropRate: 0.1,
+    dropRate: 0.95,
+    // dropRate: 0.1,
     mods: {
       armor: 13,
       evasion: -3,

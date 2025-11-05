@@ -63,8 +63,6 @@ export type CombatStatus = 'victory' | 'defeat' | 'fled' | 'ongoing';
 
 export interface CombatResult {
   combatStatus: CombatStatus;
-  loot: { id: string; quantity: number; rarity?: Rarity }[];
-  capturedEnemies: { instanceId: string; templateId: string; rarity?: Rarity }[];
   characterMetrics: Record<string, CharacterCombatMetrics>;
 }
 
