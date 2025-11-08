@@ -3,7 +3,7 @@ import { useShallow } from 'zustand/shallow';
 import { Button } from '@/components/Button/Button';
 import { DEFAULT_EXPLORATION_DURATION } from '@/constants';
 import textData from '@/locales/en.json';
-import { partySelectors, useGameStore, worldSelectors } from '@/state/useGameState';
+import { partySelectors, useGameState, worldSelectors } from '@/state/useGameState';
 import { TravelManager } from '@/systems/travel/travelManager';
 
 import './LeftPanelFooter.scss';
@@ -12,21 +12,21 @@ const SCOUT_BONUS_DURATION = 2;
 const SCOUT_BONUS_SCORE = 20;
 
 export const LeftPanelFooter = () => {
-  const selectedCellId = useGameStore((state) => state.map.selectedCellId);
+  const selectedCellId = useGameState((state) => state.map.selectedCellId);
   if (!selectedCellId) return null;
-  const { type } = useGameStore((state) => state.map.cells[selectedCellId]);
-  const currentPartyPosition = useGameStore((state) => state.party.currentPartyPosition);
-  const partyPerception = useGameStore(
+  const { type } = useGameState((state) => state.map.cells[selectedCellId]);
+  const currentPartyPosition = useGameState((state) => state.party.currentPartyPosition);
+  const partyPerception = useGameState(
     useShallow((state) => partySelectors.selectHighestEffectiveMainStat('per')(state)),
   );
-  const isFatigued = useGameStore((state) => partySelectors.selectIsPartyFatigued(state));
+  const isFatigued = useGameState((state) => partySelectors.selectIsPartyFatigued(state));
 
-  const travelToCell = useGameStore((state) => state.world.actions.travelToCell);
-  const scoutCell = useGameStore((state) => state.world.actions.scoutCell);
+  const travelToCell = useGameState((state) => state.world.actions.travelToCell);
+  const scoutCell = useGameState((state) => state.world.actions.scoutCell);
 
-  const { travelMode } = useGameStore((state) => state.party);
-  const weather = useGameStore((state) => state.world.weather);
-  const timeOfDay = useGameStore((state) => worldSelectors.selectTimeOfDay(state));
+  const { travelMode } = useGameState((state) => state.party);
+  const weather = useGameState((state) => state.world.weather);
+  const timeOfDay = useGameState((state) => worldSelectors.selectTimeOfDay(state));
 
   const travelCost = TravelManager.computeTravelCost({
     currentCellId: currentPartyPosition,

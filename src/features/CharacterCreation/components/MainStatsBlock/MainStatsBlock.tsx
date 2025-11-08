@@ -4,7 +4,7 @@ import { useShallow } from 'zustand/react/shallow';
 
 import textData from '@/locales/en.json';
 import { initialMainStatValue, mainStatKeys } from '@/state/constants';
-import { characterSelectors, useGameStore } from '@/state/useGameState';
+import { characterSelectors, useGameState } from '@/state/useGameState';
 import type { MainStatKey } from '@/types/character.types';
 
 import './MainStatsBlock.scss';
@@ -25,9 +25,9 @@ export const MainStatsBlock = ({
   maxStat = 70,
 }: MainStatsBlockProps) => {
   console.log('MainStatsBlock render');
-  const protagonistId = useGameStore((state) => state.characters.protagonistId);
-  const mainStats = useGameStore(useShallow(characterSelectors.selectMainStats(protagonistId)));
-  const mainStatsEffective = useGameStore(
+  const protagonistId = useGameState((state) => state.characters.protagonistId);
+  const mainStats = useGameState(useShallow(characterSelectors.selectMainStats(protagonistId)));
+  const mainStatsEffective = useGameState(
     useShallow(characterSelectors.selectEffectiveMainStats(protagonistId)),
   );
 

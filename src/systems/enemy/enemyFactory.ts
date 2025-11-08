@@ -162,7 +162,7 @@ export const enemyFactory = {
     }
 
     const instance: CombatUnit = {
-      instanceId: makeInstanceId(),
+      id: makeInstanceId(),
       templateId: template.templateId,
       faction: template.faction,
       appearanceVariation: Math.floor(Math.random() * (template.appearanceVariation ?? 1)),

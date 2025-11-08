@@ -36,7 +36,7 @@ export type StoreState = {
   equipment: EquipmentSlice;
 };
 
-export const useGameStore = create<StoreState>()(
+export const useGameState = create<StoreState>()(
   immer((set, get, api) => ({
     world: createWorldSlice(set, get, api),
     ui: createUISlice(set, get, api),

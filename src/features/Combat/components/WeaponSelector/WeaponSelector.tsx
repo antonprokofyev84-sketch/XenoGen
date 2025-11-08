@@ -2,6 +2,7 @@ import { useShallow } from 'zustand/react/shallow';
 
 import { Button } from '@/components/Button/Button';
 import { combatSelectors, useCombatState } from '@/state/useCombatState';
+import type { CombatUnit } from '@/types/combat.types';
 import type { WeaponSlots } from '@/types/equipment.types';
 import { assetsVersion } from '@/utils/assetsVersion';
 
@@ -14,7 +15,7 @@ const WeaponSlotButton = ({
   currentActiveSlot,
   onSelect,
 }: {
-  unit: any;
+  unit: CombatUnit;
   label: string;
   slot: WeaponSlots;
   currentActiveSlot: WeaponSlots;
@@ -28,14 +29,14 @@ const WeaponSlotButton = ({
     <div className="radio-option">
       <input
         type="radio"
-        id={`weapon-${slot}-${unit.instanceId}`}
-        name={`weapon-select-${unit.instanceId}`}
+        id={`weapon-${slot}-${unit.id}`}
+        name={`weapon-select-${unit.id}`}
         checked={isChecked}
         onChange={() => onSelect(slot)}
         disabled={isDisabled}
       />
       <label
-        htmlFor={`weapon-${slot}-${unit.instanceId}`}
+        htmlFor={`weapon-${slot}-${unit.id}`}
         title={weapon?.templateId || 'Empty Slot'}
         className={`${isDisabled ? 'no-weapon' : ''} ${isChecked ? 'active' : ''}`}
       >
@@ -58,7 +59,7 @@ export const WeaponSelector = () => {
   const endTurn = useCombatState((state) => state.actions.endTurn);
   const activeWeaponSlot = useCombatState(
     useShallow((state) =>
-      activeUnit ? state.unitsById[activeUnit.instanceId].activeWeaponSlot : undefined,
+      activeUnit ? state.unitsById[activeUnit.id].activeWeaponSlot : undefined,
     ),
   );
 
@@ -66,10 +67,10 @@ export const WeaponSelector = () => {
     return <div className="weapon-selector-frame-placeholder" />;
   }
 
-  const { instanceId } = activeUnit;
+  const { id } = activeUnit;
 
   const handleSlotChange = (slot: WeaponSlots) => {
-    setActiveWeaponSlot(instanceId, slot);
+    setActiveWeaponSlot(id, slot);
   };
 
   const handleEndTurnClick = () => {

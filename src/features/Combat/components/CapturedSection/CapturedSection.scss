@@ -14,17 +14,11 @@
     padding-bottom: 1rem;
   }
 
-  ul {
-    list-style-type: none;
-    padding: 0;
-    margin: 0;
-  }
-  li {
-    background-color: #333;
-    padding: 0.5rem 1rem;
-    border-radius: 4px;
-    margin-bottom: 0.5rem;
-    text-transform: capitalize;
-    font-weight: 500;
+  .captive-grid {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 1rem;
+    justify-content: center;
   }
 }

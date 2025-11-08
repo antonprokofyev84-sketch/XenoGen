@@ -1,7 +1,7 @@
 import { useShallow } from 'zustand/react/shallow';
 
 import textData from '@/locales/en.json';
-import { traitsSelectors, useGameStore } from '@/state/useGameState';
+import { traitsSelectors, useGameState } from '@/state/useGameState';
 import { traitsManager } from '@/systems/traits/traitsManager';
 import { traitsRegistry } from '@/systems/traits/traitsRegistry';
 
@@ -14,9 +14,9 @@ interface TraitBlockProps {
 }
 
 export const TraitBlock = ({ freePoints, onTraitAdd, onTraitRemove }: TraitBlockProps) => {
-  const protagonistId = useGameStore(useShallow((state) => state.characters.protagonistId));
+  const protagonistId = useGameState(useShallow((state) => state.characters.protagonistId));
   const protagonistTraits =
-    useGameStore(traitsSelectors.selectTraitsByCharacterId(protagonistId)) ?? [];
+    useGameState(traitsSelectors.selectTraitsByCharacterId(protagonistId)) ?? [];
   const startingTraits = traitsRegistry.getStartingChoices();
 
   const handleTraitToggle = (

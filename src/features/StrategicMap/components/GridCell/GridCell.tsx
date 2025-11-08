@@ -3,7 +3,7 @@ import React from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
 import { mapSelectors } from '@/state/gameSlices/map';
-import { factionsSelectors, useGameStore } from '@/state/useGameState';
+import { factionsSelectors, useGameState } from '@/state/useGameState';
 
 interface GridCellProps {
   col: number;
@@ -14,9 +14,9 @@ interface GridCellProps {
 export const GridCell = React.memo(function GridCell({ col, row, cellSize }: GridCellProps) {
   const cellId = `${col}-${row}`;
 
-  const cellData = useGameStore(useShallow(mapSelectors.selectCellById(cellId)));
-  const cellIcon = useGameStore(useShallow(mapSelectors.selectCellIcon(cellId)));
-  const icontatus = useGameStore(
+  const cellData = useGameState(useShallow(mapSelectors.selectCellById(cellId)));
+  const cellIcon = useGameState(useShallow(mapSelectors.selectCellIcon(cellId)));
+  const icontatus = useGameState(
     useShallow(factionsSelectors.selectStatus(cellIcon?.faction || 'neutral')),
   );
 

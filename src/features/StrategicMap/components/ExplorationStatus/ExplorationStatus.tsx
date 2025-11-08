@@ -2,13 +2,13 @@ import { useShallow } from 'zustand/react/shallow';
 
 import textData from '@/locales/en.json';
 import { mapSelectors } from '@/state/gameSlices/map';
-import { useGameStore } from '@/state/useGameState';
+import { useGameState } from '@/state/useGameState';
 
 import './ExplorationStatus.scss';
 
 export const ExplorationStatus = () => {
-  const selectedCellId = useGameStore((state) => state.map.selectedCellId);
-  const cellData = useGameStore(useShallow(mapSelectors.selectCellById(selectedCellId!)));
+  const selectedCellId = useGameState((state) => state.map.selectedCellId);
+  const cellData = useGameState(useShallow(mapSelectors.selectCellById(selectedCellId!)));
 
   const getStatus = () => {
     if (!cellData.isVisited) {

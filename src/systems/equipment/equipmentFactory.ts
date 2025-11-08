@@ -145,7 +145,7 @@ export const equipmentFactory = {
 
     const armorInstance: ArmorInstance = {
       ...templateFields,
-      instanceId: makeInstanceId(),
+      id: makeInstanceId(),
       rarity,
       price: computed.price,
       mods: computed.mods,
@@ -169,7 +169,7 @@ export const equipmentFactory = {
 
     const weaponInstance: WeaponInstance = {
       ...templateFields,
-      instanceId: makeInstanceId(),
+      id: makeInstanceId(),
       rarity,
       price: computed.price,
       damage: computed.damage,

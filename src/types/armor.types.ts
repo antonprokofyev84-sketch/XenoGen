@@ -15,6 +15,6 @@ export interface ArmorTemplate {
 }
 
 export interface ArmorInstance extends Omit<ArmorTemplate, 'dropRate' | 'rarityMultipliers'> {
-  instanceId: string; // A unique ID for this specific item instance
+  id: string; // A unique ID for this specific item instance
   rarity: Rarity;
 }

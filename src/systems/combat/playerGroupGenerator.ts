@@ -85,7 +85,7 @@ export const makeCombatUnitForCharacterSnapshot = (
   const equipment = getEquipmentForCharacterSnapshot(state, characterId);
 
   const combatUnit: CombatUnit = {
-    instanceId: characterId,
+    id: characterId,
     templateId: character.templateId,
     stats,
     equipment,

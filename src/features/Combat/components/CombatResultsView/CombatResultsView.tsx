@@ -2,7 +2,7 @@ import { useShallow } from 'zustand/react/shallow';
 
 import { useCombatState } from '@/state/useCombatState';
 import { combatSelectors } from '@/state/useCombatState';
-import { useGameStore } from '@/state/useGameState';
+import { useGameState } from '@/state/useGameState';
 
 import { CapturedSection } from '../CapturedSection/CapturedSection';
 import { LootSection } from '../LootSection/LootSection';
@@ -12,16 +12,16 @@ import './CombatResultsView.scss';
 export const CombatResultView = () => {
   const { combatStatus, characterMetrics } = useCombatState((state) => state.combatResult);
   console.log(characterMetrics);
-  const selectedCellId = useGameStore((state) => state.map.selectedCellId);
-  const selectedPoiId = useGameStore((state) => state.map.selectedPoiId);
-  const clearSelectedPoiId = useGameStore((state) => state.map.actions.clearSelectedPoiId);
-  const removePoiFromCell = useGameStore((state) => state.pois.actions.removePoiFromCell);
-  const changePoiDetails = useGameStore((state) => state.pois.actions.changePoiDetails);
+  const selectedCellId = useGameState((state) => state.map.selectedCellId);
+  const selectedPoiId = useGameState((state) => state.map.selectedPoiId);
+  const clearSelectedPoiId = useGameState((state) => state.map.actions.clearSelectedPoiId);
+  const removePoiFromCell = useGameState((state) => state.pois.actions.removePoiFromCell);
+  const changePoiDetails = useGameState((state) => state.pois.actions.changePoiDetails);
   const aliveEnemies = useCombatState(
     useShallow((state) => combatSelectors.selectAliveEnemies(state)),
   );
 
-  const goToScreen = useGameStore((state) => state.ui.goToScreen);
+  const goToScreen = useGameState((state) => state.ui.goToScreen);
 
   const handleBackToMap = () => {
     if (combatStatus === 'victory') {
@@ -39,10 +39,9 @@ export const CombatResultView = () => {
 
   return (
     <div className="combatResultView">
-      <h1 className={combatStatus}>{combatStatus === 'victory' ? 'Victory' : 'Defeat'}</h1>
-
       <div className="resultsContainer">
         <div className="metricsBlock">
+          <h1 className={combatStatus}>{combatStatus === 'victory' ? 'Victory' : 'Defeat'}</h1>
           <h2>Combat Metrics</h2>
           {Object.entries(characterMetrics).map(([charId, metrics]) => (
             <div key={charId} className="metricCard">
@@ -63,6 +62,9 @@ export const CombatResultView = () => {
               </div>
             </div>
           ))}
+          <button className="btn btn-solid btn-blue" onClick={handleBackToMap}>
+            Back to Map
+          </button>
         </div>
 
         <div className="rewardsBlock">
@@ -70,10 +72,6 @@ export const CombatResultView = () => {
           <CapturedSection />
         </div>
       </div>
-
-      <button className="btn btn-solid btn-blue" onClick={handleBackToMap}>
-        Back to Map
-      </button>
     </div>
   );
 };

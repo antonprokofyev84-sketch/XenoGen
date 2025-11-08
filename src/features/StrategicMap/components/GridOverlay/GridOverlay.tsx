@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { CELL_SIZE, GRID_COLS, GRID_ROWS } from '@/constants';
-import { useGameStore } from '@/state/useGameState';
+import { useGameState } from '@/state/useGameState';
 
 import { CellSelection } from '../CellSelection/CellSelection';
 import { GridCell } from '../GridCell/GridCell';
@@ -12,7 +12,7 @@ import './GridOverlay.scss';
 interface GridOverlayProps {}
 
 export const GridOverlay: React.FC<GridOverlayProps> = () => {
-  const setSelectedCellId = useGameStore((state) => state.map.actions.setSelectedCellId);
+  const setSelectedCellId = useGameState((state) => state.map.actions.setSelectedCellId);
   const mapWidth = GRID_COLS * CELL_SIZE;
   const mapHeight = GRID_ROWS * CELL_SIZE;
 

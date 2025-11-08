@@ -3,7 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 import textData from '@/locales/en.json';
 import { mapSelectors } from '@/state/gameSlices/map';
 import { poiSelectors } from '@/state/gameSlices/poi';
-import { useGameStore } from '@/state/useGameState';
+import { useGameState } from '@/state/useGameState';
 
 import { ExplorationStatus } from '../ExplorationStatus/ExplorationStatus';
 import { LeftPanelFooter } from '../LeftPanelFooter/LeftPanelFooter';
@@ -41,13 +41,13 @@ const StatProgressBar = ({
 );
 
 export const LeftPanel = () => {
-  const partyPosition = useGameStore((state) => state.party.currentPartyPosition);
-  const selectedCellId = useGameStore((state) => state.map.selectedCellId);
-  const cellData = useGameStore(useShallow(mapSelectors.selectCellById(selectedCellId!)));
-  const poisToDisplay = useGameStore(
+  const partyPosition = useGameState((state) => state.party.currentPartyPosition);
+  const selectedCellId = useGameState((state) => state.map.selectedCellId);
+  const cellData = useGameState(useShallow(mapSelectors.selectCellById(selectedCellId!)));
+  const poisToDisplay = useGameState(
     useShallow(poiSelectors.selectVisiblePoisByCellId(selectedCellId!)),
   );
-  const setSelectedPoiId = useGameStore((state) => state.map.actions.setSelectedPoiId);
+  const setSelectedPoiId = useGameState((state) => state.map.actions.setSelectedPoiId);
 
   console.log('LeftPanel rendered');
 

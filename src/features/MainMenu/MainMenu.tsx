@@ -1,12 +1,12 @@
 import { useShallow } from 'zustand/react/shallow';
 
 import { Button } from '@/components/Button/Button';
-import { useGameStore } from '@/state/useGameState.ts';
+import { useGameState } from '@/state/useGameState.ts';
 
 import './MainMenu.scss';
 
 export const MainMenu = () => {
-  const { characterActions, goToScreen } = useGameStore(
+  const { characterActions, goToScreen } = useGameState(
     useShallow((state) => ({
       characterActions: state.characters.actions,
       goToScreen: state.ui.goToScreen,

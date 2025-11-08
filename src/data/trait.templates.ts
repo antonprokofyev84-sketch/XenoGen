@@ -92,6 +92,90 @@ export const TRAIT_TEMPLATES_DB: Trait[] = [
     },
   },
 
+  {
+    id: 'heavyInjured',
+    nameKey: 'traits.heavyInjured.name',
+    descriptionKey: 'traits.heavyInjured.desc',
+    tags: ['status', 'injury', 'negative'],
+    isVisible: true,
+    duration: 3,
+    mods: {
+      str: -15,
+      dex: -15,
+      con: -15,
+      int: -15,
+      per: -15,
+      will: -15,
+      initiative: -5,
+      evasion: -20,
+      melee: -20,
+      range: -20,
+      crafting: -20,
+      science: -20,
+      medicine: -20,
+      charisma: -20,
+      survival: -20,
+    },
+    triggers: {
+      onDurationEnd: [
+        {
+          do: [{ kind: 'replaceTrait', id: 'heavyInjured', toId: 'injured' }],
+        },
+      ],
+    },
+  },
+  {
+    id: 'injured',
+    nameKey: 'traits.injured.name',
+    descriptionKey: 'traits.injured.desc',
+    tags: ['status', 'injury', 'negative'],
+    isVisible: true,
+    duration: 3,
+    mods: {
+      str: -10,
+      dex: -10,
+      con: -10,
+      int: -10,
+      per: -10,
+      will: -10,
+      initiative: -3,
+      evasion: -10,
+      melee: -10,
+      range: -10,
+      crafting: -10,
+      science: -10,
+      medicine: -10,
+    },
+    triggers: {
+      onDurationEnd: [
+        {
+          do: [{ kind: 'replaceTrait', id: 'injured', toId: 'lightInjured' }],
+        },
+      ],
+    },
+  },
+  {
+    id: 'lightInjured',
+    nameKey: 'traits.lightInjured.name',
+    descriptionKey: 'traits.lightInjured.desc',
+    tags: ['status', 'injury', 'negative'],
+    isVisible: true,
+    duration: 2,
+    mods: {
+      str: -5,
+      dex: -5,
+      con: -5,
+      int: -5,
+      per: -5,
+      will: -5,
+      initiative: -1,
+      evasion: -5,
+      melee: -5,
+      range: -5,
+    },
+    // Нет триггеров: просто исчезает
+  },
+
   // --- PROFESSIONS ---
   {
     id: 'medic1',

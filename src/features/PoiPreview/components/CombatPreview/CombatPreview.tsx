@@ -1,13 +1,12 @@
 import { useShallow } from 'zustand/react/shallow';
 
-import { poiSelectors, useGameStore } from '@/state/useGameState';
-
-import { CharacterCard } from '../CharacterCard/CharacterCard';
+import { CharacterCard } from '@/components/CharacterCard/CharacterCard';
+import { poiSelectors, useGameState } from '@/state/useGameState';
 
 import './CombatPreview.scss';
 
 export const CombatPreview = () => {
-  const selectedPoi = useGameStore(useShallow(poiSelectors.selectSelectedPoi));
+  const selectedPoi = useGameState(useShallow(poiSelectors.selectSelectedPoi));
 
   const enemyGroup = selectedPoi?.details?.enemyGroup || [];
 
@@ -24,7 +23,14 @@ export const CombatPreview = () => {
     <div className="combatPreview">
       <div className="enemy-group-container">
         {enemyGroup.map((enemy) => (
-          <CharacterCard key={enemy.instanceId} character={enemy} />
+          <CharacterCard
+            key={enemy.id}
+            templateId={enemy.templateId}
+            appearanceVariation={enemy.appearanceVariation}
+            faction={enemy.faction}
+            level={enemy.level}
+            rarity={enemy.rarity}
+          />
         ))}
       </div>
     </div>

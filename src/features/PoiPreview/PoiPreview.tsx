@@ -2,7 +2,7 @@ import { useShallow } from 'zustand/react/shallow';
 
 import { Button } from '@/components/Button/Button';
 import textData from '@/locales/en.json';
-import { poiSelectors, useGameStore } from '@/state/useGameState';
+import { poiSelectors, useGameState } from '@/state/useGameState';
 import { assetsVersion } from '@/utils/assetsVersion';
 
 import { CombatPreview } from './components/CombatPreview/CombatPreview';
@@ -10,9 +10,9 @@ import { CombatPreview } from './components/CombatPreview/CombatPreview';
 import './PoiPreview.scss';
 
 export const PoiPreview = () => {
-  const clearSelectedPoiId = useGameStore((state) => state.map.actions.clearSelectedPoiId);
-  const goToScreen = useGameStore((state) => state.ui.goToScreen);
-  const poi = useGameStore(useShallow(poiSelectors.selectSelectedPoi));
+  const clearSelectedPoiId = useGameState((state) => state.map.actions.clearSelectedPoiId);
+  const goToScreen = useGameState((state) => state.ui.goToScreen);
+  const poi = useGameState(useShallow(poiSelectors.selectSelectedPoi));
 
   //Todo add variation into poi generation
   const variation = Math.floor(Math.random() * 3);

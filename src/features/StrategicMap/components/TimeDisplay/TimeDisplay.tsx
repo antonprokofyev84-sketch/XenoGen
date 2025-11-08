@@ -1,4 +1,4 @@
-import { useGameStore } from '@/state/useGameState';
+import { useGameState } from '@/state/useGameState';
 
 import './TimeDisplay.scss';
 
@@ -16,7 +16,7 @@ const formatTime = (timestamp: number): { day: number; time: string } => {
 };
 
 export const TimeDisplay = () => {
-  const currentTime = useGameStore((state) => state.world.currentTime);
+  const currentTime = useGameState((state) => state.world.currentTime);
   const { day, time } = formatTime(currentTime);
 
   return (

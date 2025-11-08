@@ -1,6 +1,5 @@
 import type { StoreState } from '@/state/useGameState';
 import type { MainStatKey } from '@/types/character.types';
-import type { Rarity } from '@/types/character.types';
 import type { Character } from '@/types/character.types';
 import type { Captive } from '@/types/party.types';
 import type { MovementMode } from '@/types/travel.types';
@@ -31,7 +30,7 @@ export interface PartySlice {
     moveToCell: (targetCellId: string) => void;
     setTravelMode: (mode: MovementMode) => void;
     changeStamina: (delta: number) => void;
-    addCaptive: (templateId: string, rarity: Rarity) => void;
+    addCaptive: (captive: Captive) => void;
     removeCaptive: (captiveId: string) => void;
   };
 }
@@ -147,16 +146,11 @@ export const createPartySlice: GameSlice<PartySlice> = (set, get) => ({
         get().characters.actions.changeStamina(memberId, delta);
       }
     },
-    addCaptive: (templateId, rarity) =>
+    addCaptive: (captive) =>
       set((state) => {
         const maxCaptives = partySelectors.selectMaxCaptives(state);
         if (state.party.captives.length < maxCaptives) {
-          const newCaptive: Captive = {
-            id: `captive_${Date.now()}`,
-            templateId,
-            rarity,
-          };
-          state.party.captives.push(newCaptive);
+          state.party.captives.push(captive);
         }
       }),
     removeCaptive: (captiveId) =>

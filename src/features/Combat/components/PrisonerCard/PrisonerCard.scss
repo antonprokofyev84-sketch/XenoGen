@@ -1,0 +1,51 @@
+.prisonerCardWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min-content;
+
+  .cardContainer {
+    position: relative;
+    // transition: transform 0.2s ease;
+
+    // &:hover {
+    //   transform: translateY(-2px);
+    // }
+  }
+
+  .capturedIcon {
+    position: absolute;
+    bottom: 12px;
+    right: 10px;
+    width: 44px;
+    height: 44px;
+    background-color: #fff;
+    border: 2px solid #c53d3d;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+
+    // Теперь стилизуем svg вместо img
+    svg {
+      width: 40px;
+      height: 40px;
+      color: #c53d3d;
+      // Если нужно, чтобы иконка наследовала цвет текста:
+      // fill: currentColor;
+    }
+  }
+
+  .actionBtn {
+    width: 100%;
+    border-radius: 0 0 8px 8px;
+    border-width: 0 4px 4px 4px;
+  }
+
+  .characterCard {
+    height: 310px;
+    border-radius: 8px 8px 0 0;
+  }
+}

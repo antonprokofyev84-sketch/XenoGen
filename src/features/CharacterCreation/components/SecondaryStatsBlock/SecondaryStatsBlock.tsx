@@ -1,14 +1,14 @@
 import { useShallow } from 'zustand/react/shallow';
 
 import textData from '@/locales/en.json';
-import { characterSelectors, useGameStore } from '@/state/useGameState';
+import { characterSelectors, useGameState } from '@/state/useGameState';
 
 import './SecondaryStatsBlock.scss';
 
 export const SecondaryStatsBlock = () => {
   console.log('SecondaryStatsBlock render');
-  const protagonistId = useGameStore((state) => state.characters.protagonistId);
-  const stats = useGameStore(useShallow(characterSelectors.selectSecondaryStats(protagonistId)));
+  const protagonistId = useGameState((state) => state.characters.protagonistId);
+  const stats = useGameState(useShallow(characterSelectors.selectSecondaryStats(protagonistId)));
 
   return (
     <div className="secondaryStatsBlock">

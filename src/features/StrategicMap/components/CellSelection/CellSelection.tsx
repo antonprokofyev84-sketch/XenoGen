@@ -1,12 +1,12 @@
-import { useGameStore } from '@/state/useGameState';
+import { useGameState } from '@/state/useGameState';
 
 interface CellSelectionProps {
   cellSize: number;
 }
 
 export const CellSelection = ({ cellSize }: CellSelectionProps) => {
-  const selectedCellId = useGameStore((state) => state.map.selectedCellId);
-  const travelToCell = useGameStore((state) => state.world.actions.travelToCell);
+  const selectedCellId = useGameState((state) => state.map.selectedCellId);
+  const travelToCell = useGameState((state) => state.world.actions.travelToCell);
 
   const handleCellSelectionClick = () => {
     travelToCell(selectedCellId!);

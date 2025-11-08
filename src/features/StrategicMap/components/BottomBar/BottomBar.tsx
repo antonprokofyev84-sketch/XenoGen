@@ -1,18 +1,18 @@
 import { useShallow } from 'zustand/react/shallow';
 
 import { Button } from '@/components/Button/Button';
-import { useGameStore } from '@/state/useGameState';
+import { useGameState } from '@/state/useGameState';
 
 import { TimeDisplay } from '../TimeDisplay/TimeDisplay';
 
 import './BottomBar.scss';
 
 export const BottomBar = () => {
-  const { restForMinutes, restUntilMorning } = useGameStore(
+  const { restForMinutes, restUntilMorning } = useGameState(
     useShallow((state) => state.world.actions),
   );
 
-  const { stamina } = useGameStore((state) => state.characters.byId['protagonist']);
+  const { stamina } = useGameState((state) => state.characters.byId['protagonist']);
 
   const handleRestOneHour = () => {
     restForMinutes(60);

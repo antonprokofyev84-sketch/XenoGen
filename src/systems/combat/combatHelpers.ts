@@ -103,7 +103,7 @@ export const calculateAttackForecast = (
   const activeSlot = attacker.activeWeaponSlot;
   const weaponInstance = attacker.equipment[activeSlot];
 
-  if (attacker.instanceId === target.instanceId) {
+  if (attacker.id === target.id) {
     return null;
   }
 
@@ -121,7 +121,7 @@ export const calculateAttackForecast = (
 
   if (!weaponInstance) {
     console.error(
-      `[combatCalculator] Attacker ${attacker.instanceId} has no active weapon in slot ${activeSlot}`,
+      `[combatCalculator] Attacker ${attacker.id} has no active weapon in slot ${activeSlot}`,
     );
     return null;
   }
@@ -171,8 +171,8 @@ export const calculateAttackForecast = (
     canKill,
     averageDamage: averageDamageAfterArmor,
     effectiveDamage,
-    targetId: target.instanceId,
-    attackerId: attacker.instanceId,
+    targetId: target.id,
+    attackerId: attacker.id,
   };
 };
 

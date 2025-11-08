@@ -1,7 +1,7 @@
 import { useShallow } from 'zustand/react/shallow';
 
 import textData from '@/locales/en.json';
-import { characterSelectors, useGameStore } from '@/state/useGameState';
+import { characterSelectors, useGameState } from '@/state/useGameState';
 import type { SkillKey } from '@/types/character.types';
 
 import './SkillsBlock.scss';
@@ -22,12 +22,12 @@ export const SkillsBlock = ({
   maxSkill = 50,
 }: SkillsBlockProps) => {
   console.log('SkillsBlock render');
-  const protagonistId = useGameStore(useShallow((state) => state.characters.protagonistId));
-  const skills = useGameStore(useShallow(characterSelectors.selectSkills(protagonistId)));
-  const effectiveSkills = useGameStore(
+  const protagonistId = useGameState(useShallow((state) => state.characters.protagonistId));
+  const skills = useGameState(useShallow(characterSelectors.selectSkills(protagonistId)));
+  const effectiveSkills = useGameState(
     useShallow(characterSelectors.selectEffectiveSkills(protagonistId)),
   );
-  const baseSkills = useGameStore(useShallow(characterSelectors.selectBaseSkills(protagonistId)));
+  const baseSkills = useGameState(useShallow(characterSelectors.selectBaseSkills(protagonistId)));
   const skillKeys = Object.keys(skills) as SkillKey[];
 
   return (

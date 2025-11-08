@@ -97,14 +97,14 @@ export const useCombatState = create<CombatStore>()(
     actions: {
       initializeCombat: (initialUnits) => {
         set((state) => {
-          state.unitsById = Object.fromEntries(initialUnits.map((unit) => [unit.instanceId, unit]));
+          state.unitsById = Object.fromEntries(initialUnits.map((unit) => [unit.id, unit]));
           const allyIds = initialUnits
             .filter((unit) => unit.faction === 'player')
-            .map((unit) => unit.instanceId);
+            .map((unit) => unit.id);
           state.allyIds = allyIds;
           state.enemyIds = initialUnits
             .filter((unit) => unit.faction !== 'player')
-            .map((unit) => unit.instanceId);
+            .map((unit) => unit.id);
           const { initiativeQueue, lastTimeByUnitId } = initInitiativeBarItems(initialUnits);
 
           state.initiativeQueue = initiativeQueue;
@@ -277,7 +277,7 @@ export const useCombatState = create<CombatStore>()(
           currentActiveUnit.position === 3 &&
           currentActiveUnit.activeWeaponSlot === 'meleePrimary' // for now enemies could have only Primary slots
         ) {
-          get().actions.swapPosition(currentActiveUnit.instanceId);
+          get().actions.swapPosition(currentActiveUnit.id);
           return;
         }
 
@@ -317,10 +317,10 @@ export const useCombatState = create<CombatStore>()(
           if (realForecast.canKill || realForecast.delayPoints === 0) {
             get().actions.attack(realForecast);
           } else {
-            get().actions.swapPosition(currentActiveUnit.instanceId);
+            get().actions.swapPosition(currentActiveUnit.id);
           }
         } else {
-          get().actions.swapPosition(currentActiveUnit.instanceId);
+          get().actions.swapPosition(currentActiveUnit.id);
         }
       },
     },

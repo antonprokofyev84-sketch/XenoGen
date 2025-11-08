@@ -26,7 +26,7 @@ export type CombatUnitStatus = 'dead' | 'alive' | 'unconscious';
 
 // Финальный объект врага, готовый для боя
 export interface CombatUnit {
-  instanceId: string;
+  id: string;
   templateId: string; // ID из ENEMY_TEMPLATES_DB, например 'youngScavenger'
   appearanceVariation: number;
   faction: string;

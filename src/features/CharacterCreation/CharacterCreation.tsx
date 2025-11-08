@@ -5,7 +5,7 @@ import { INITIAL_FACTIONS } from '@/data/initialFaction';
 import { INITIAL_MAP } from '@/data/initialMap';
 import { INITIAL_POI } from '@/data/initialPoi';
 import textData from '@/locales/en.json';
-import { useGameStore } from '@/state/useGameState';
+import { useGameState } from '@/state/useGameState';
 import type { MainStatKey, SkillKey } from '@/types/character.types';
 
 import { MainStatsBlock } from './components/MainStatsBlock/MainStatsBlock';
@@ -27,13 +27,13 @@ export const CharacterCreation = () => {
   const [creationPoints, setCreationPoints] = useState(INITIAL_CREATION_POINTS);
   const [pointStep, setPointStep] = useState<number>(5);
 
-  const protagonistId = useGameStore((state) => state.characters.protagonistId);
-  const characterActions = useGameStore((state) => state.characters.actions);
-  const traitActions = useGameStore((state) => state.traits.actions);
-  const goToScreen = useGameStore((state) => state.ui.goToScreen);
-  const initializeFactions = useGameStore((state) => state.factions.actions.initializeFactions);
-  const initializeMap = useGameStore((state) => state.map.actions.initializeMap);
-  const initializePois = useGameStore((state) => state.pois.actions.initializePois);
+  const protagonistId = useGameState((state) => state.characters.protagonistId);
+  const characterActions = useGameState((state) => state.characters.actions);
+  const traitActions = useGameState((state) => state.traits.actions);
+  const goToScreen = useGameState((state) => state.ui.goToScreen);
+  const initializeFactions = useGameState((state) => state.factions.actions.initializeFactions);
+  const initializeMap = useGameState((state) => state.map.actions.initializeMap);
+  const initializePois = useGameState((state) => state.pois.actions.initializePois);
 
   const handleStatChange = (statKey: MainStatKey, delta: number) => {
     characterActions.changeMainStat(protagonistId, statKey, delta);

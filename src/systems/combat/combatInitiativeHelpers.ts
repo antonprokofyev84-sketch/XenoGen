@@ -26,7 +26,7 @@ function buildTimesForUnit(unit: CombatUnit, itemsPerUnit: number): InitiativeIt
 
   for (let i = 0; i < itemsPerUnit; i++) {
     const time = roundToTwoDecimals(step * i); // стартуем с 0, шаг кратный step
-    items.push({ unitId: unit.instanceId, time });
+    items.push({ unitId: unit.id, time });
   }
 
   return items;
@@ -43,7 +43,7 @@ export function initInitiativeBarItems(units: CombatUnit[]): {
 
   const initiativeByUnitId: Record<string, number> = {};
   for (const unit of units) {
-    initiativeByUnitId[unit.instanceId] = unit.stats.initiative;
+    initiativeByUnitId[unit.id] = unit.stats.initiative;
   }
 
   const initiativeQueue: InitiativeItem[] = [];
@@ -53,7 +53,7 @@ export function initInitiativeBarItems(units: CombatUnit[]): {
     const times = buildTimesForUnit(unit, turnsPerUnit);
     if (times.length > 0) {
       initiativeQueue.push(...times);
-      lastTimeByUnitId[unit.instanceId] = times[times.length - 1].time;
+      lastTimeByUnitId[unit.id] = times[times.length - 1].time;
     }
   }
 

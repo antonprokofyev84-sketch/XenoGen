@@ -24,6 +24,6 @@ export interface WeaponTemplate {
 }
 
 export type WeaponInstance = Omit<WeaponTemplate, 'dropRate' | 'rarityMultipliers'> & {
-  instanceId: string;
+  id: string;
   rarity: Rarity;
 };
