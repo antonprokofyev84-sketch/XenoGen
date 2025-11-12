@@ -27,7 +27,6 @@
   .resultsContainer {
     display: flex;
     width: 100%;
-    max-width: 1200px;
     gap: 2rem;
     flex-grow: 1;
     overflow: hidden; // Предотвращает выход за пределы
@@ -74,14 +73,21 @@
     }
   }
 
-  .rewardsBlock {
-    flex: 1;
+  .lootBlock {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    flex: 1;
+    padding: 1.5rem 1.5rem 1rem;
+    border-radius: 8px;
+    overflow-y: auto;
+    border: 2px solid #444;
+    justify-content: space-between;
+
+    h2 {
+      margin: 0 0 1.5rem 0;
+    }
   }
 
-  .lootBlock,
   .capturedBlock {
     background-color: #2a2a2a;
     padding: 1.5rem;
@@ -101,10 +107,6 @@
       margin-bottom: 0.5rem;
       color: #ddd;
     }
-  }
-
-  .lootBlock.fullHeight {
-    flex-grow: 1; // Растягивается, если нет .capturedBlock
   }
 
   .capturedBlock {

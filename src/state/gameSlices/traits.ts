@@ -2,6 +2,7 @@ import { mainStatKeys, secondaryStatsKeys, skillKeys } from '@/state/constants';
 import type { StoreState } from '@/state/useGameState';
 import { traitsManager } from '@/systems/traits/traitsManager';
 import { traitsRegistry } from '@/systems/traits/traitsRegistry';
+import type { CombatStatus } from '@/types/combat.types';
 import type { ActiveTrait, TraitId, TriggerRule } from '@/types/traits.types';
 
 import type { GameSlice } from '../types';
@@ -12,9 +13,7 @@ const filterModsByKeys = (
 ): Record<string, number> => {
   const filteredMods: Record<string, number> = {};
   for (const key of validKeys) {
-    if (totalMods[key]) {
-      filteredMods[key] = totalMods[key];
-    }
+    if (totalMods[key]) filteredMods[key] = totalMods[key];
   }
   return filteredMods;
 };
@@ -23,20 +22,24 @@ export interface TraitsSlice {
   traitsByCharacterId: Record<string, ActiveTrait[]>;
 
   actions: {
-    addTraitToCharacter: (characterId: string, traitId: TraitId) => boolean;
+    addTraitToCharacter: (
+      characterId: string,
+      traitId: TraitId,
+      params?: { level?: number },
+    ) => boolean;
     removeTraitFromCharacter: (characterId: string, traitId: TraitId) => void;
     resetCharacterTraits: (characterId: string) => void;
     modifyTrait: (characterId: string, traitId: TraitId, props: Partial<ActiveTrait>) => void;
     processDayEnd: () => Record<string, TriggerRule[]>;
+    processBattleEnd: (combatStatus: CombatStatus) => Record<string, TriggerRule[]>;
   };
 }
 
 export const traitsSelectors = {
   selectTraitsByCharacterId:
     (characterId: string) =>
-    (state: StoreState): ActiveTrait[] => {
-      return state.traits.traitsByCharacterId[characterId];
-    },
+    (state: StoreState): ActiveTrait[] =>
+      state.traits.traitsByCharacterId[characterId] ?? [],
 
   selectTotalModsByCharacterId:
     (characterId: string) =>
@@ -45,14 +48,12 @@ export const traitsSelectors = {
       const total: Record<string, number> = {};
 
       for (const inst of active) {
-        const def = traitsRegistry.getById(inst.id);
-        if (!def?.mods) continue;
-
-        for (const [key, val] of Object.entries(def.mods)) {
+        const lvl = traitsRegistry.resolveLevel(inst.id, inst.level);
+        if (!lvl?.mods) continue;
+        for (const [key, val] of Object.entries(lvl.mods)) {
           total[key] = (total[key] ?? 0) + (val as number);
         }
       }
-
       return total;
     },
 
@@ -76,26 +77,31 @@ export const createTraitsSlice: GameSlice<TraitsSlice> = (set, get) => ({
   traitsByCharacterId: {},
 
   actions: {
-    addTraitToCharacter: (characterId, traitId) => {
-      const def = traitsRegistry.getById(traitId);
-      if (!def) return false;
+    addTraitToCharacter: (characterId, traitId, params) => {
+      // проверка существования шаблона
+      if (!traitsRegistry.getById(traitId)) return false;
 
       set((state) => {
         const currentTraits = state.traits.traitsByCharacterId[characterId] ?? [];
-        if (!traitsManager.canAddTrait(traitId, currentTraits)) {
-          return false;
-        }
+        if (!traitsManager.canAddTrait(traitId, currentTraits)) return;
 
-        const { id, duration, progress, group, category, maxCategoryCount, progressMax } = def;
+        const level = params?.level ?? 0;
+        const lvl = traitsRegistry.resolveLevel(traitId, level);
+        if (!lvl) return;
+
+        const tpl = traitsRegistry.getById(traitId)!;
+
         const newTrait: ActiveTrait = {
-          id,
-          duration,
-          progress: progress,
-          group,
-          category,
-          maxCategoryCount,
-          progressMax,
+          id: traitId,
+          level,
+          duration: lvl.duration,
+          progress: lvl.progress,
+          // кэши — по желанию; удобно для быстрых проверок
+          category: tpl.category ?? null,
+          maxCategoryCount: tpl.maxCategoryCount ?? null,
+          progressMax: lvl.progressMax ?? null,
         };
+
         currentTraits.push(newTrait);
         state.traits.traitsByCharacterId[characterId] = currentTraits;
       });
@@ -106,9 +112,7 @@ export const createTraitsSlice: GameSlice<TraitsSlice> = (set, get) => ({
     removeTraitFromCharacter: (characterId, traitId) => {
       set((state) => {
         const list = state.traits.traitsByCharacterId[characterId] ?? [];
-        state.traits.traitsByCharacterId[characterId] = list.filter(
-          (trait) => trait.id !== traitId,
-        );
+        state.traits.traitsByCharacterId[characterId] = list.filter((t) => t.id !== traitId);
       });
     },
 
@@ -124,13 +128,24 @@ export const createTraitsSlice: GameSlice<TraitsSlice> = (set, get) => ({
         const trait = list.find((t) => t.id === traitId);
         if (!trait) return;
 
+        // смена уровня → подложить дефолты нового уровня, если не переданы явно
+        if (props.level !== undefined && props.level !== trait.level) {
+          const lvl = traitsRegistry.resolveLevel(trait.id, props.level);
+          if (lvl) {
+            trait.level = props.level;
+            trait.duration = props.duration ?? lvl.duration;
+            trait.progress = props.progress ?? lvl.progress;
+            trait.progressMax = props.progressMax ?? lvl.progressMax ?? null;
+          }
+        }
+
         Object.assign(trait, props);
       });
     },
 
     processDayEnd: (): Record<string, TriggerRule[]> => {
       const { traitsByCharacterId } = get().traits;
-      const charIds = Object.keys(traitsByCharacterId); //change this to direct character ids from character slice in future
+      const charIds = Object.keys(traitsByCharacterId);
       const allEffects: Record<string, TriggerRule[]> = {};
 
       set((state) => {
@@ -138,8 +153,25 @@ export const createTraitsSlice: GameSlice<TraitsSlice> = (set, get) => ({
           const currentTraits = state.traits.traitsByCharacterId[id] ?? [];
           const { updatedTraits, effects } =
             traitsManager.computeOnDayPassForCharacter(currentTraits);
-
           state.traits.traitsByCharacterId[id] = updatedTraits;
+          allEffects[id] = effects;
+        }
+      });
+
+      return allEffects;
+    },
+
+    processBattleEnd: (combatStatus) => {
+      const activeIds = get().party.memberIds; // только активный отряд
+      const allEffects: Record<string, TriggerRule[]> = {};
+
+      set((state) => {
+        for (const id of activeIds) {
+          const currentTraits = state.traits.traitsByCharacterId[id] ?? [];
+          const { effects } = traitsManager.computeOnBattleEndForCharacter(
+            currentTraits,
+            combatStatus,
+          );
           allEffects[id] = effects;
         }
       });

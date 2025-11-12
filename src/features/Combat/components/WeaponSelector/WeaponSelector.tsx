@@ -37,7 +37,7 @@ const WeaponSlotButton = ({
       />
       <label
         htmlFor={`weapon-${slot}-${unit.id}`}
-        title={weapon?.templateId || 'Empty Slot'}
+        title={label || 'Empty Slot'}
         className={`${isDisabled ? 'no-weapon' : ''} ${isChecked ? 'active' : ''}`}
       >
         {weapon ? (

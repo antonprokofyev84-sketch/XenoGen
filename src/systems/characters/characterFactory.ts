@@ -6,11 +6,11 @@ import type {
   CharacterTemplate,
   MainStatKey,
   MainStats,
-  Rarity,
   SkillKey,
   Skills,
   TemplateStat,
 } from '@/types/character.types';
+import type { Rarity } from '@/types/common.types';
 
 /**
  * Normalizes a stat/skill value (number or [base, random] array) into a consistent [base, random] tuple.

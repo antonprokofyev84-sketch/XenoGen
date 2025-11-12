@@ -2,6 +2,7 @@ import { DEFAULT_EXPLORATION_DURATION } from '@/constants';
 import { STAMINA_RECOVERY_PER_HOUR } from '@/constants';
 import { EffectManager } from '@/systems/effects/effectManager';
 import { TravelManager } from '@/systems/travel/travelManager';
+import type { CombatStatus } from '@/types/combat.types';
 import type { ToD, Weather } from '@/types/world.types';
 
 import type { GameSlice } from '../types';
@@ -14,6 +15,7 @@ export interface WorldSlice {
   currentTime: number;
   weather: Weather;
   actions: {
+    endBattle: (combatResult: CombatStatus) => void;
     endDay: () => void;
     changeTime: (minutes: number) => void;
     scoutCell: (cellId: string, maxRollValue: number, bonus: number, duration: number) => void;
@@ -38,6 +40,11 @@ export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
   weather: 'clear',
 
   actions: {
+    endBattle: (combatResult) => {
+      const stateSnapshot = get();
+      const traitEffects = get().traits.actions.processBattleEnd(combatResult);
+      EffectManager.processTraitEffects(traitEffects, { state: stateSnapshot });
+    },
     endDay: () => {
       // This logic remains the same
       console.log(`--- A new day has begun ---`);

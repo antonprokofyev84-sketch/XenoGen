@@ -29,7 +29,7 @@ export const CombatResultView = () => {
       removePoiFromCell(selectedCellId!, selectedPoiId!);
     }
 
-    if (combatStatus === 'defeat' || combatStatus === 'fled') {
+    if (combatStatus === 'defeat' || combatStatus === 'retreat') {
       clearSelectedPoiId();
       changePoiDetails(selectedCellId!, selectedPoiId!, { enemyGroup: aliveEnemies });
     }
@@ -67,8 +67,11 @@ export const CombatResultView = () => {
           </button>
         </div>
 
-        <div className="rewardsBlock">
-          <LootSection />
+        <div className="lootBlock">
+          <div>
+            <h2>Loot Acquired</h2>
+            <LootSection />
+          </div>
           <CapturedSection />
         </div>
       </div>

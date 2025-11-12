@@ -142,8 +142,17 @@ function checkEquipmentDrop(equipment: CombatEquipment): EquipmentBuckets {
   return buckets;
 }
 
+type LootBin = {
+  weapons: LootItem[];
+  armors: LootItem[];
+  gadgets: LootItem[];
+  items: LootItem[];
+  money: LootItem[];
+  scrap: LootItem[];
+};
+
 export const generateLoot = (enemies: CombatUnit[]): AggregatedLootResult => {
-  const lootBin: AggregatedLootResult = {
+  const lootBin: LootBin = {
     weapons: [],
     armors: [],
     gadgets: [],
@@ -179,7 +188,7 @@ export const generateLoot = (enemies: CombatUnit[]): AggregatedLootResult => {
     armors: aggregateLoot(lootBin.armors),
     gadgets: aggregateLoot(lootBin.gadgets),
     items: aggregateLoot(lootBin.items),
-    money: aggregateLoot(lootBin.money),
-    scrap: aggregateLoot(lootBin.scrap),
+    money: aggregateLoot(lootBin.money)[0],
+    scrap: aggregateLoot(lootBin.scrap)[0],
   };
 };

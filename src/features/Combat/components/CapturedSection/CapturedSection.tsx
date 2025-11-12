@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
 
-import { Button } from '@/components/Button/Button';
 import { combatSelectors, useCombatState } from '@/state/useCombatState';
 import { partySelectors, useGameState } from '@/state/useGameState';
 import type { CombatUnit } from '@/types/combat.types';
@@ -33,16 +32,11 @@ export const CapturedSection = () => {
 
   const [frozenAlreadyCaptured] = useState<Captive[]>(structuredClone(alreadyCaptured));
 
-  const [showAlreadyCaptured, setShowAlreadyCaptured] = useState(false);
-
   const captiveIdsSet = useMemo(() => new Set(alreadyCaptured.map((c) => c.id)), [alreadyCaptured]);
 
   const currentCaptivesCount = alreadyCaptured.length;
   const freeSlots = Math.max(0, maxCaptives - currentCaptivesCount);
   const canCaptureMore = freeSlots > 0;
-
-  const uncapturedCandidates = unconsciousEnemies.filter((u) => !captiveIdsSet.has(u.id));
-  const canCaptureAll = uncapturedCandidates.length > 0 && uncapturedCandidates.length <= freeSlots;
 
   const handleToggle = (unit: CombatUnit | Captive) => {
     const id = unit.id;
@@ -60,83 +54,40 @@ export const CapturedSection = () => {
     }
   };
 
-  const handleCaptureAll = () => {
-    uncapturedCandidates.forEach((unit) => {
-      addCaptive(toCaptive(unit));
-    });
-  };
-
   if (combatStatus !== 'victory' || unconsciousEnemies.length === 0) {
     return null;
   }
 
-  const captureAllTitle =
-    uncapturedCandidates.length === 0
-      ? 'All available enemies already captured'
-      : !canCaptureAll
-        ? `Not enough free slots (${freeSlots} free, need ${uncapturedCandidates.length})`
-        : 'Capture all remaining candidates';
-
   return (
-    <div className="capturedBlock">
+    <div className="capturedSection">
       <header className="capturedHeader">
-        <h2>
-          Captured ({currentCaptivesCount}/{maxCaptives})
-        </h2>
-        <div className="headerActions">
-          <Button
-            variant="outline"
-            color="green"
-            className="smallBtn"
-            onClick={handleCaptureAll}
-            disabled={!canCaptureAll}
-            title={captureAllTitle}
-          >
-            Capture All
-          </Button>
-          {frozenAlreadyCaptured.length > 0 && (
-            <Button
-              variant="ghost"
-              className="smallBtn"
-              onClick={() => setShowAlreadyCaptured(!showAlreadyCaptured)}
-            >
-              {showAlreadyCaptured ? 'Hide Old' : `Show Old (${frozenAlreadyCaptured.length})`}
-            </Button>
-          )}
-        </div>
+        Some enemies can be captured. Already captured ({currentCaptivesCount}/{maxCaptives})
       </header>
 
-      <div className="captiveContent">
-        {unconsciousEnemies.length > 0 && (
-          <div className="captiveSection">
-            <div className="captiveGrid">
-              {unconsciousEnemies.map((unit) => (
-                <PrisonerCard
-                  key={unit.id}
-                  unit={unit}
-                  isCaptured={captiveIdsSet.has(unit.id)}
-                  isLimitReached={!canCaptureMore}
-                  onToggle={() => handleToggle(unit)}
-                />
-              ))}
-            </div>
-          </div>
-        )}
+      <div className="capturedContent">
+        <div className="capturedList">
+          {unconsciousEnemies.map((unit) => (
+            <PrisonerCard
+              key={unit.id}
+              unit={unit}
+              isCaptured={captiveIdsSet.has(unit.id)}
+              isLimitReached={!canCaptureMore}
+              onToggle={() => handleToggle(unit)}
+            />
+          ))}
+        </div>
 
-        {showAlreadyCaptured && frozenAlreadyCaptured.length > 0 && (
-          <div className="captiveSection oldCaptives">
-            <h3>Already in Party</h3>
-            <div className="captiveGrid">
-              {frozenAlreadyCaptured.map((captive) => (
-                <PrisonerCard
-                  key={captive.id}
-                  unit={captive}
-                  isCaptured={captiveIdsSet.has(captive.id)}
-                  isLimitReached={!canCaptureMore}
-                  onToggle={() => handleToggle(captive)}
-                />
-              ))}
-            </div>
+        {frozenAlreadyCaptured.length > 0 && (
+          <div className="capturedList alreadyCaptured">
+            {frozenAlreadyCaptured.map((captive) => (
+              <PrisonerCard
+                key={captive.id}
+                unit={captive}
+                isCaptured={captiveIdsSet.has(captive.id)}
+                isLimitReached={!canCaptureMore}
+                onToggle={() => handleToggle(captive)}
+              />
+            ))}
           </div>
         )}
       </div>

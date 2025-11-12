@@ -59,7 +59,7 @@ export interface CharacterCombatMetrics {
   critsReceived: number;
 }
 
-export type CombatStatus = 'victory' | 'defeat' | 'fled' | 'ongoing';
+export type CombatStatus = 'victory' | 'defeat' | 'retreat' | 'ongoing';
 
 export interface CombatResult {
   combatStatus: CombatStatus;
@@ -77,6 +77,6 @@ export interface AggregatedLootResult {
   armors: LootItem[];
   gadgets: LootItem[];
   items: LootItem[];
-  money: LootItem[];
-  scrap: LootItem[];
+  money: LootItem;
+  scrap: LootItem;
 }

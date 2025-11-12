@@ -20,6 +20,6 @@ export const shelterSelectors = {
 /**
  * Creates the slice for managing the player's shelter state.
  */
-export const createShelterSlice: GameSlice<ShelterSlice> = (set, get, api) => ({
+export const createShelterSlice: GameSlice<ShelterSlice> = (/*set, get, api*/) => ({
   location: '3-0',
 });

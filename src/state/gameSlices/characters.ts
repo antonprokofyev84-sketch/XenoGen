@@ -9,6 +9,7 @@ import type {
   SkillKey,
   Skills,
 } from '@/types/character.types';
+import type { CombatResult } from '@/types/combat.types';
 
 import { skillKeys } from '../constants';
 import type { GameSlice } from '../types';
@@ -285,6 +286,44 @@ export const createCharactersSlice: GameSlice<CharactersSlice> = (set, get) => (
         char.stamina = Math.max(-maxStamina, Math.min(newStamina, maxStamina));
       });
       console.log(get().characters.byId[characterId]);
+    },
+
+    processBattleEnd: (combatResult: CombatResult) => {
+      const { combatStatus, characterMetrics } = combatResult;
+
+      set((state) => {
+        for (const [characterId, metrics] of Object.entries(characterMetrics)) {
+          const character = state.characters.byId[characterId];
+          if (!character) continue;
+
+          // 1) гарантируем статистику
+          if (!character.statistics) {
+            character.statistics = {
+              battlesWon: 0,
+              battlesLost: 0,
+              battlesRetreated: 0,
+              enemiesKilled: 0,
+              damageDealt: 0,
+              damageTaken: 0,
+            };
+          }
+
+          const stat = character.statistics;
+
+          if (combatStatus === 'victory') stat.battlesWon += 1;
+          else if (combatStatus === 'defeat') stat.battlesLost += 1;
+          else if (combatStatus === 'retreat') stat.battlesRetreated += 1;
+
+          const kills = metrics.kills ?? 0;
+          const dealt =
+            (metrics.melee?.totalDamageDealt ?? 0) + (metrics.range?.totalDamageDealt ?? 0);
+          const taken = metrics.damageTaken ?? 0;
+
+          stat.enemiesKilled += kills;
+          stat.damageDealt += dealt;
+          stat.damageTaken += taken;
+        }
+      });
     },
   },
 });

@@ -16,8 +16,8 @@ interface TraitBlockProps {
 export const TraitBlock = ({ freePoints, onTraitAdd, onTraitRemove }: TraitBlockProps) => {
   const protagonistId = useGameState(useShallow((state) => state.characters.protagonistId));
   const protagonistTraits =
-    useGameState(traitsSelectors.selectTraitsByCharacterId(protagonistId)) ?? [];
-  const startingTraits = traitsRegistry.getStartingChoices();
+    useGameState(useShallow(traitsSelectors.selectTraitsByCharacterId(protagonistId))) ?? [];
+  const startingTemplates = traitsRegistry.getStartingChoices(); // TraitTemplate[]
 
   const handleTraitToggle = (
     traitId: string,
@@ -34,32 +34,39 @@ export const TraitBlock = ({ freePoints, onTraitAdd, onTraitRemove }: TraitBlock
   return (
     <section className="traitBlock">
       <h2 className="traitBlockTitle">{textData.characterCreation.traitsTitle}</h2>
+
       <div className="traitGrid">
-        {startingTraits.map((trait) => {
-          const isPicked = protagonistTraits.some((t) => t.id === trait.id);
-          const traitCost = trait.cost ?? 0;
+        {startingTemplates.map((template) => {
+          const levelZero = traitsRegistry.resolveLevel(template.id, 0);
+          const traitCost = levelZero?.cost ?? 0;
+
+          const isPicked = protagonistTraits.some((t) => t.id === template.id);
 
           let isDisabled = false;
           if (!isPicked) {
             const hasEnoughPoints = freePoints >= traitCost;
             isDisabled =
-              !hasEnoughPoints || traitsManager.canAddTrait(trait.id, protagonistTraits) === false;
+              !hasEnoughPoints ||
+              traitsManager.canAddTrait(template.id, protagonistTraits) === false;
           }
 
+          const nameFromLocale =
+            textData.traits[template.id as keyof typeof textData.traits]?.name ?? template.nameKey;
+
           return (
-            <div key={trait.id} className="traitItem">
+            <div key={template.id} className="traitItem">
               <input
-                type="checkbox"
-                id={`trait-${trait.id}`}
+                id={`trait-${template.id}`}
                 className="traitCheckbox"
+                type="checkbox"
                 checked={isPicked}
                 disabled={isDisabled}
-                onChange={() => handleTraitToggle(trait.id, trait.cost, isPicked)}
+                onChange={() => handleTraitToggle(template.id, traitCost, isPicked)}
               />
-              <label htmlFor={`trait-${trait.id}`} className="traitLabel">
-                <span className="traitName">
-                  {textData.traits[trait.id as keyof typeof textData.traits]?.name || trait.nameKey}
-                </span>
+              <label htmlFor={`trait-${template.id}`} className="traitLabel">
+                <span className="traitName">{nameFromLocale}</span>
+                {/* при желании можно вывести цену:
+                <span className="traitCost">{traitCost > 0 ? `+${traitCost}` : traitCost}</span> */}
               </label>
             </div>
           );

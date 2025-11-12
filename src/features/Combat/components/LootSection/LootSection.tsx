@@ -3,14 +3,10 @@ import { useShallow } from 'zustand/react/shallow';
 import { combatSelectors, useCombatState } from '@/state/useCombatState';
 import { generateLoot } from '@/systems/combat/combatLootGenerator';
 import type { LootItem } from '@/types/combat.types';
-// Предполагаемый импорт
 import { assetsVersion } from '@/utils/assetsVersion';
-
-// Предполагаемый импорт
 
 import './LootSection.scss';
 
-// --- Новый внутренний компонент ---
 interface LootSectionProps extends React.HTMLAttributes<HTMLDivElement> {
   items: LootItem[];
   imageFolder: string;
@@ -51,9 +47,7 @@ const LootBlock = ({ items, header, imageFolder, className, ...rest }: LootSecti
 
 export const LootSection = () => {
   const allEnemies = useCombatState(useShallow((state) => combatSelectors.selectAllEnemies(state)));
-  console.log(JSON.stringify(allEnemies));
   const loot = generateLoot(allEnemies);
-  console.log(JSON.stringify(loot));
 
   // Проверка, есть ли вообще какой-либо лут
   const hasLoot =
@@ -61,8 +55,13 @@ export const LootSection = () => {
     loot.armors.length > 0 ||
     loot.gadgets.length > 0 ||
     loot.items.length > 0 ||
-    loot.money.length > 0 ||
-    loot.scrap.length > 0;
+    loot.money ||
+    loot.scrap;
+
+  const currency = [
+    loot.money ? { id: 'money', quantity: loot.money.quantity } : null,
+    loot.scrap ? { id: 'scrap', quantity: loot.scrap.quantity } : null,
+  ].filter(Boolean) as LootItem[];
 
   return (
     <div className="lootDisplay">
@@ -70,44 +69,38 @@ export const LootSection = () => {
         <p>No loot found.</p>
       ) : (
         <>
-          <LootBlock
-            items={loot.weapons}
-            header="Weapons"
-            imageFolder="/images/weapon/"
-            className="weapon-list"
-          />
-          <LootBlock
-            items={loot.armors}
-            header="Armor"
-            imageFolder="/images/armor/"
-            className="armor-list"
-          />
-          <LootBlock
-            items={loot.gadgets}
-            header="Gadgets"
-            imageFolder="/images/gadget/"
-            className="gadget-list"
-          />
-          <LootBlock
-            items={loot.items}
-            header="Items"
-            imageFolder="/images/items/"
-            className="item-list"
-          />
+          <div className="equipment">
+            <LootBlock
+              items={loot.weapons}
+              // header="Weapons"
+              imageFolder="/images/weapon/"
+              className="weapon-list"
+            />
+            <LootBlock
+              items={loot.armors}
+              // header="Armor"
+              imageFolder="/images/armor/"
+              className="armor-list"
+            />
+            <LootBlock
+              items={loot.gadgets}
+              // header="Gadgets"
+              imageFolder="/images/gadget/"
+              className="gadget-list"
+            />
+          </div>
 
-          <div className="loot-section resource-list">
-            <h3>Resources</h3>
+          <div className="otherItems">
+            {currency.length > 0 && (
+              <LootBlock items={currency} imageFolder="/images/items/" className="item-list" />
+            )}
 
-            {loot.money.map((item) => (
-              <div key={item.id} className="resource-money">
-                MONEY (x{item.quantity})
-              </div>
-            ))}
-            {loot.scrap.map((item) => (
-              <div key={item.id} className="resource-scrap">
-                SCRAP (x{item.quantity})
-              </div>
-            ))}
+            <LootBlock
+              items={loot.items}
+              // header="Items"
+              imageFolder="/images/items/"
+              className="item-list"
+            />
           </div>
         </>
       )}

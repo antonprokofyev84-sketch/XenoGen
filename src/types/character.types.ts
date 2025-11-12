@@ -36,6 +36,15 @@ export type BaseStatsKey =
   | 'baseAccuracy';
 export type BaseStats = Record<BaseStatsKey, number>;
 
+export type CharacterStatistic = {
+  battlesWon: number;
+  battlesLost: number;
+  battlesRetreated: number;
+  enemiesKilled: number;
+  damageDealt: number;
+  damageTaken: number;
+};
+
 export interface Character {
   id: string;
   templateId: string;
@@ -45,6 +54,7 @@ export interface Character {
   baseStats: BaseStats;
   mainStats: MainStats;
   skills: Skills;
+  statistics?: CharacterStatistic;
 }
 
 export type TemplateStat = number | [base: number, random: number];
@@ -59,7 +69,7 @@ export interface ArchetypeTemplate {
 }
 
 export interface CharacterTemplate {
-  id: string;
+  templateId: string;
   name: string;
   baseStats: Record<BaseStatsKey, TemplateStat>;
   mainStats: Record<MainStatKey, TemplateStat>;
