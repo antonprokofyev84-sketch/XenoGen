@@ -1,5 +1,6 @@
 import type { StoreState } from '@/state/useGameState';
 import type { MainStatKey, SkillKey } from '@/types/character.types';
+import type { EffectLog } from '@/types/logs.types';
 import type { CellProgressKey } from '@/types/map.types';
 import type { EffectsMap, PoiAction } from '@/types/poi.types';
 import type { Action, Condition, TriggerRule } from '@/types/traits.types';
@@ -8,12 +9,23 @@ import { traitsRegistry } from '../traits/traitsRegistry';
 
 type EffectContext = { state: StoreState };
 
+type ActionOutcome = {
+  followUps?: TriggerRule[];
+  log?: EffectLog;
+};
+
 const rng = Math.random;
 
 export const EffectManager = {
-  processTraitEffects(effectsByCharacter: Record<string, TriggerRule[]>, context: EffectContext) {
+  processTraitEffects(
+    effectsByCharacter: Record<string, TriggerRule[]>,
+    context: EffectContext,
+  ): Record<string, EffectLog[]> {
+    const allLogs: Record<string, EffectLog[]> = {};
+
     for (const characterId of Object.keys(effectsByCharacter)) {
       const queue = [...(effectsByCharacter[characterId] ?? [])];
+      const charLogs: EffectLog[] = [];
 
       while (queue.length) {
         const rule = queue.shift()!;
@@ -22,11 +34,24 @@ export const EffectManager = {
         for (const action of rule.do ?? []) {
           if (action.chance !== undefined && rng() > action.chance) continue;
 
-          const followUps = applyTraitAction(action, characterId, context.state);
-          if (followUps && followUps.length) queue.push(...followUps);
+          const outcome = applyTraitAction(action, characterId, context.state);
+          if (!outcome) continue;
+
+          if (outcome.log) {
+            charLogs.push(outcome.log);
+          }
+          if (outcome.followUps?.length) {
+            queue.push(...outcome.followUps);
+          }
         }
       }
+
+      if (charLogs.length) {
+        allLogs[characterId] = charLogs;
+      }
     }
+
+    return allLogs;
   },
 
   processPoiEffects(effectsByCell: Record<string, EffectsMap>, context: EffectContext) {
@@ -83,8 +108,9 @@ function applyTraitAction(
   action: Action,
   characterId: string,
   state: StoreState,
-): TriggerRule[] | void {
+): ActionOutcome | void {
   switch (action.kind) {
+    // --- PROGRESS ---
     case 'modifyProgress': {
       const inst = state.traits.traitsByCharacterId[characterId]?.find((t) => t.id === action.id);
       if (!inst) return;
@@ -98,90 +124,183 @@ function applyTraitAction(
 
       state.traits.actions.modifyTrait(characterId, inst.id, { progress: next });
 
+      let followUps: TriggerRule[] | undefined;
       if (max !== undefined && next >= max) {
-        const onProgressMax = lvlCfg?.triggers?.onProgressMax;
-        return onProgressMax;
+        followUps = lvlCfg?.triggers?.onProgressMax;
       }
-      return;
+
+      return {
+        followUps,
+        log: {
+          type: 'modifyProgress',
+          traitId: inst.id,
+          delta: action.delta,
+          newValue: next,
+        },
+      };
     }
 
     case 'setProgress': {
       const inst = state.traits.traitsByCharacterId[characterId]?.find((t) => t.id === action.id);
       if (!inst) return;
 
-      const value = Math.max(0, action.value);
-      state.traits.actions.modifyTrait(characterId, inst.id, { progress: value });
+      const next = Math.max(0, action.value);
+      state.traits.actions.modifyTrait(characterId, inst.id, { progress: next });
 
       const lvlCfg = traitsRegistry.resolveLevel(inst.id, inst.level);
       const max = inst.progressMax ?? lvlCfg?.progressMax ?? undefined;
-      if (max !== undefined && value >= max) {
-        const onProgressMax = lvlCfg?.triggers?.onProgressMax;
-        return onProgressMax;
+
+      let followUps: TriggerRule[] | undefined;
+      if (max !== undefined && next >= max) {
+        followUps = lvlCfg?.triggers?.onProgressMax;
       }
-      return;
+
+      return {
+        followUps,
+        log: {
+          type: 'setProgress',
+          traitId: inst.id,
+          newValue: next,
+        },
+      };
     }
 
     case 'setDuration': {
       const exists = state.traits.traitsByCharacterId[characterId]?.some((t) => t.id === action.id);
       if (!exists) return;
+
       state.traits.actions.modifyTrait(characterId, action.id, { duration: action.value });
-      return;
+
+      return {
+        log: {
+          type: 'setDuration',
+          traitId: action.id,
+          newValue: action.value,
+        },
+      };
     }
 
-    // ---- персонаж: статы / скиллы ----
+    // --- СТАТЫ / СКИЛЛЫ ---
     case 'modifyMainStat': {
-      state.characters.actions.changeMainStat(
-        characterId,
-        action.stat as MainStatKey,
-        action.delta,
-      );
-      return;
-    }
-    case 'setMainStat': {
-      state.characters.actions.setMainStat(characterId, action.stat as MainStatKey, action.value);
-      return;
-    }
-    case 'modifySkill': {
-      state.characters.actions.changeSkill(characterId, action.skill as SkillKey, action.delta);
-      return;
-    }
-    case 'setSkill': {
-      state.characters.actions.setSkill(characterId, action.skill as SkillKey, action.value);
-      return;
+      const statKey = action.stat as MainStatKey;
+      const before = state.characters.byId[characterId]?.mainStats?.[statKey] ?? 0;
+
+      state.characters.actions.changeMainStat(characterId, statKey, action.delta);
+
+      const after =
+        state.characters.byId[characterId]?.mainStats?.[statKey] ?? before + action.delta;
+
+      return {
+        log: {
+          type: 'modifyMainStat',
+          stat: statKey,
+          delta: after - before,
+          newValue: after,
+        },
+      };
     }
 
-    // ---- трейты ----
+    case 'setMainStat': {
+      const statKey = action.stat as MainStatKey;
+      state.characters.actions.setMainStat(characterId, statKey, action.value);
+
+      const after = state.characters.byId[characterId]?.mainStats?.[statKey] ?? action.value;
+
+      return {
+        log: {
+          type: 'setMainStat',
+          stat: statKey,
+          newValue: after,
+        },
+      };
+    }
+
+    case 'modifySkill': {
+      const skillKey = action.skill as SkillKey;
+      const before = state.characters.byId[characterId]?.skills?.[skillKey] ?? 0;
+
+      state.characters.actions.changeSkill(characterId, skillKey, action.delta);
+
+      const after = state.characters.byId[characterId]?.skills?.[skillKey] ?? before + action.delta;
+
+      return {
+        log: {
+          type: 'modifySkill',
+          skill: skillKey,
+          delta: after - before,
+          newValue: after,
+        },
+      };
+    }
+
+    case 'setSkill': {
+      const skillKey = action.skill as SkillKey;
+      state.characters.actions.setSkill(characterId, skillKey, action.value);
+
+      const after = state.characters.byId[characterId]?.skills?.[skillKey] ?? action.value;
+
+      return {
+        log: {
+          type: 'setSkill',
+          skill: skillKey,
+          newValue: after,
+        },
+      };
+    }
+
+    // --- ТРЕЙТЫ ---
     case 'addTrait': {
       const ok = state.traits.actions.addTraitToCharacter(characterId, action.id, {
         level: action.params?.level,
       });
       if (!ok) return;
 
-      // Если передали ручные оверрайды — применим сразу после добавления
       if (action.params?.duration !== undefined || action.params?.progress !== undefined) {
         state.traits.actions.modifyTrait(characterId, action.id, {
           duration:
             typeof action.params.duration === 'number'
               ? action.params.duration
-              : // (поддержка объектной формы, если введёшь)
-                (action.params.duration as any),
+              : (action.params.duration as any),
           progress: action.params.progress,
         });
       }
-      return;
+
+      const inst = state.traits.traitsByCharacterId[characterId]?.find((t) => t.id === action.id);
+
+      return {
+        log: {
+          type: 'addTrait',
+          traitId: action.id,
+          level: inst?.level ?? 0,
+        },
+      };
     }
 
     case 'removeTrait': {
       state.traits.actions.removeTraitFromCharacter(characterId, action.id);
-      return;
+
+      return {
+        log: {
+          type: 'removeTrait',
+          traitId: action.id,
+        },
+      };
     }
 
     case 'replaceTrait': {
       const exists = state.traits.traitsByCharacterId[characterId]?.some((t) => t.id === action.id);
       if (!exists) return;
+
       state.traits.actions.removeTraitFromCharacter(characterId, action.id);
       state.traits.actions.addTraitToCharacter(characterId, action.toId);
-      return;
+
+      return {
+        log: {
+          type: 'replaceTrait',
+          fromId: action.id,
+          toId: action.toId,
+        },
+      };
     }
 
     case 'levelUpTrait': {
@@ -191,22 +310,40 @@ function applyTraitAction(
       const maxIdx = traitsRegistry.getMaxLevelIndex(inst.id);
       if (maxIdx === undefined) return;
 
-      const nextLevel = Math.min(inst.level + 1, maxIdx);
-      if (nextLevel === inst.level) return;
+      const from = inst.level;
+      const to = Math.min(inst.level + 1, maxIdx);
+      if (to === from) return;
 
-      state.traits.actions.modifyTrait(characterId, inst.id, { level: nextLevel });
-      return;
+      state.traits.actions.modifyTrait(characterId, inst.id, { level: to });
+
+      return {
+        log: {
+          type: 'levelUpTrait',
+          traitId: inst.id,
+          deltaLevel: to - from,
+          newLevel: to,
+        },
+      };
     }
 
     case 'levelDownTrait': {
       const inst = state.traits.traitsByCharacterId[characterId]?.find((t) => t.id === action.id);
       if (!inst) return;
 
-      const nextLevel = Math.max(inst.level - 1, 0);
-      if (nextLevel === inst.level) return;
+      const from = inst.level;
+      const to = Math.max(inst.level - 1, 0);
+      if (to === from) return;
 
-      state.traits.actions.modifyTrait(characterId, inst.id, { level: nextLevel });
-      return;
+      state.traits.actions.modifyTrait(characterId, inst.id, { level: to });
+
+      return {
+        log: {
+          type: 'levelDownTrait',
+          traitId: inst.id,
+          deltaLevel: to - from,
+          newLevel: to,
+        },
+      };
     }
 
     case 'setTraitLevel': {
@@ -215,15 +352,20 @@ function applyTraitAction(
 
       const maxIdx = traitsRegistry.getMaxLevelIndex(inst.id) ?? 0;
       const clamped = Math.max(0, Math.min(action.level, maxIdx));
-
       if (clamped === inst.level) return;
+
       state.traits.actions.modifyTrait(characterId, inst.id, { level: clamped });
-      return;
+
+      return {
+        log: {
+          type: 'setTraitLevel',
+          traitId: inst.id,
+          newLevel: clamped,
+        },
+      };
     }
 
-    // ---- UI / события (заглушки под твои системы) ----
-    // case 'showToast': { /* ... */ return; }
-    // case 'emitEvent': { /* ... */ return; }
+    // showToast / emitEvent — можно добавить лог позже, если захочешь
   }
 }
 

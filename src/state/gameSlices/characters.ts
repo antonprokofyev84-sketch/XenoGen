@@ -1,5 +1,9 @@
 import { PROTAGONIST_TEMPLATE } from '@/data/character.templates';
 import type { StoreState } from '@/state/useGameState';
+import {
+  processBattleGrowth,
+  updateBattleStatistics,
+} from '@/systems/characters/combatGrowthSystem';
 import type {
   BaseStats,
   Character,
@@ -10,6 +14,7 @@ import type {
   Skills,
 } from '@/types/character.types';
 import type { CombatResult } from '@/types/combat.types';
+import type { EffectLog } from '@/types/logs.types';
 
 import { skillKeys } from '../constants';
 import type { GameSlice } from '../types';
@@ -33,6 +38,7 @@ export interface CharactersSlice {
     changeStamina: (characterId: string, delta: number) => void;
     resetStaminaToMax: (characterId: string) => void;
     resetProtagonist: () => void;
+    processBattleEnd: (combatResult: CombatResult) => Record<string, EffectLog[]>;
   };
 }
 
@@ -55,7 +61,7 @@ const applyMods = <T extends Record<string, number>>(
 
 // --- Pure Calculation Functions ---
 
-const calculateMaxHp = (mainStats: MainStats, baseStats: BaseStats): number => {
+export const calculateMaxHp = (mainStats: MainStats, baseStats: BaseStats): number => {
   return baseStats.baseHp + Math.floor(mainStats.con / 1.5) + Math.floor(mainStats.str / 5);
 };
 const calculateMaxStamina = (mainStats: MainStats, baseStats: BaseStats): number => {
@@ -288,42 +294,27 @@ export const createCharactersSlice: GameSlice<CharactersSlice> = (set, get) => (
       console.log(get().characters.byId[characterId]);
     },
 
-    processBattleEnd: (combatResult: CombatResult) => {
+    processBattleEnd: (combatResult: CombatResult): Record<string, EffectLog[]> => {
       const { combatStatus, characterMetrics } = combatResult;
+      const logs: Record<string, EffectLog[]> = {};
 
       set((state) => {
         for (const [characterId, metrics] of Object.entries(characterMetrics)) {
           const character = state.characters.byId[characterId];
           if (!character) continue;
 
-          // 1) гарантируем статистику
-          if (!character.statistics) {
-            character.statistics = {
-              battlesWon: 0,
-              battlesLost: 0,
-              battlesRetreated: 0,
-              enemiesKilled: 0,
-              damageDealt: 0,
-              damageTaken: 0,
-            };
+          logs[characterId] ??= [];
+
+          updateBattleStatistics(character, combatStatus, metrics);
+
+          const growthLogs = processBattleGrowth(state, characterId, metrics);
+          if (growthLogs.length) {
+            logs[characterId].push(...growthLogs);
           }
-
-          const stat = character.statistics;
-
-          if (combatStatus === 'victory') stat.battlesWon += 1;
-          else if (combatStatus === 'defeat') stat.battlesLost += 1;
-          else if (combatStatus === 'retreat') stat.battlesRetreated += 1;
-
-          const kills = metrics.kills ?? 0;
-          const dealt =
-            (metrics.melee?.totalDamageDealt ?? 0) + (metrics.range?.totalDamageDealt ?? 0);
-          const taken = metrics.damageTaken ?? 0;
-
-          stat.enemiesKilled += kills;
-          stat.damageDealt += dealt;
-          stat.damageTaken += taken;
         }
       });
+
+      return logs;
     },
   },
 });

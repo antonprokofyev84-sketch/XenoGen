@@ -78,34 +78,21 @@ export const createTraitsSlice: GameSlice<TraitsSlice> = (set, get) => ({
 
   actions: {
     addTraitToCharacter: (characterId, traitId, params) => {
-      // проверка существования шаблона
-      if (!traitsRegistry.getById(traitId)) return false;
-
       set((state) => {
         const currentTraits = state.traits.traitsByCharacterId[characterId] ?? [];
+
+        // Проверка лимитов (предполагаем, что traitsManager.canAddTrait существует)
         if (!traitsManager.canAddTrait(traitId, currentTraits)) return;
 
         const level = params?.level ?? 0;
-        const lvl = traitsRegistry.resolveLevel(traitId, level);
-        if (!lvl) return;
 
-        const tpl = traitsRegistry.getById(traitId)!;
+        const newTrait = traitsRegistry.createActiveTrait(traitId, level);
 
-        const newTrait: ActiveTrait = {
-          id: traitId,
-          level,
-          duration: lvl.duration,
-          progress: lvl.progress,
-          // кэши — по желанию; удобно для быстрых проверок
-          category: tpl.category ?? null,
-          maxCategoryCount: tpl.maxCategoryCount ?? null,
-          progressMax: lvl.progressMax ?? null,
-        };
-
-        currentTraits.push(newTrait);
-        state.traits.traitsByCharacterId[characterId] = currentTraits;
+        if (newTrait) {
+          currentTraits.push(newTrait);
+          state.traits.traitsByCharacterId[characterId] = currentTraits;
+        }
       });
-
       return true;
     },
 

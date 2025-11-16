@@ -191,6 +191,63 @@ export const TRAIT_TEMPLATES_DB: TraitTemplate[] = [
     },
   },
 
+  // === SCARS ===
+  {
+    id: 'battleScars',
+    nameKey: 'trait.battleScars.name',
+    descriptionKey: 'trait.battleScars.desc',
+    category: 'scars',
+    maxCategoryCount: 1,
+    levels: {
+      0: {
+        tags: ['scar', 'cosmetic', 'positive'],
+        isVisible: true,
+        mods: {
+          cha: 5,
+          beauty: 5,
+        },
+      },
+      1: {
+        tags: ['scar', 'cosmetic', 'positive'],
+        isVisible: true,
+        mods: {
+          cha: 10,
+          beauty: 10,
+        },
+      },
+    },
+  },
+
+  {
+    id: 'uglyScars',
+    nameKey: 'trait.uglyScars.name',
+    descriptionKey: 'trait.uglyScars.desc',
+    category: 'scars',
+    maxCategoryCount: 1,
+    levels: {
+      0: {
+        tags: ['scar', 'cosmetic', 'negative'],
+        isVisible: true,
+        mods: {
+          cha: -2,
+          intimidate: 7,
+          will: 5,
+          beauty: -5,
+        },
+      },
+      1: {
+        tags: ['scar', 'cosmetic', 'negative'],
+        isVisible: true,
+        mods: {
+          cha: -5,
+          intimidate: 10,
+          will: 10,
+          beauty: -10,
+        },
+      },
+    },
+  },
+
   // === PROFESSIONS (объединены в уровневые, категория на шаблоне) ===
   {
     id: 'medic',

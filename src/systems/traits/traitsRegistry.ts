@@ -1,5 +1,5 @@
 import { TRAIT_TEMPLATES_DB } from '@/data/trait.templates';
-import type { TraitFields, TraitId, TraitTemplate } from '@/types/traits.types';
+import type { ActiveTrait, TraitFields, TraitId, TraitTemplate } from '@/types/traits.types';
 
 const templatesById: Record<string, TraitTemplate> = Object.create(null);
 const templatesByTag: Record<string, TraitTemplate[]> = Object.create(null);
@@ -31,20 +31,37 @@ export const traitsRegistry = {
   all: TRAIT_TEMPLATES_DB,
 
   /** Вернёт конфиг для указанного уровня (fallback на 0-й). */
-  resolveLevel(traitId: TraitId, level: number): TraitFields | undefined {
+  resolveLevel(traitId: TraitId, level: number): TraitFields {
     const tpl = templatesById[traitId];
-    if (!tpl) return undefined;
     const idx = level ?? 0;
     return tpl.levels[idx] ?? tpl.levels[0];
   },
 
   /** Максимальный индекс уровня у трейта. */
-  getMaxLevelIndex(traitId: TraitId): number | undefined {
+  getMaxLevelIndex(traitId: TraitId): number {
     const tpl = templatesById[traitId];
-    if (!tpl) return;
 
     // уровни идут подряд с 0 и без пропусков
     const keys = Object.keys(tpl.levels).map(Number);
     return keys.length - 1;
+  },
+
+  createActiveTrait(traitId: string, level: number = 0): ActiveTrait | null {
+    const tpl = templatesById[traitId];
+    if (!tpl) return null;
+
+    const lvlConfig = this.resolveLevel(traitId, level);
+    if (!lvlConfig) return null;
+
+    return {
+      id: traitId,
+      level,
+      duration: lvlConfig.duration,
+      progress: lvlConfig.progress ?? 0,
+
+      category: tpl.category ?? null,
+      maxCategoryCount: tpl.maxCategoryCount ?? null,
+      progressMax: lvlConfig.progressMax ?? null,
+    };
   },
 };
