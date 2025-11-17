@@ -28,7 +28,7 @@ const LootBlock = ({ items, header, imageFolder, className, ...rest }: LootSecti
       <div className="loot-grid">
         {items.map((item) => (
           <div
-            key={item.id}
+            key={`${item.id}-${item.rarity || 'common'}`}
             className={`loot-item rarity-${item.rarity || 'common'}`}
             title={`${item.id} (x${item.quantity})`}
           >

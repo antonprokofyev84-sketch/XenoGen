@@ -149,7 +149,7 @@ export const createTraitsSlice: GameSlice<TraitsSlice> = (set, get) => ({
     },
 
     processBattleEnd: (combatStatus) => {
-      const activeIds = get().party.memberIds; // только активный отряд
+      const activeIds = get().party.activeIds; // только активный отряд
       const allEffects: Record<string, TriggerRule[]> = {};
 
       set((state) => {

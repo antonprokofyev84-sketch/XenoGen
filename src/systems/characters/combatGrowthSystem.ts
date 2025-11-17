@@ -147,74 +147,68 @@ export function tryGainDex(
 
 export function applyInjuryAndWill(
   logs: EffectLog[],
-  state: StoreState,
+  state: StoreState, // Это WritableDraft от Immer
   characterId: string,
   character: Character,
 ) {
-  // ------------------------------
-  // 0. Базовый шанс вообще получить травму: 80%
-  // ------------------------------
-  if (Math.random() >= 0.8) {
-    return; // в этот раз травмы нет, дальше ничего не делаем
+  // 0. Базовый шанс: 80%
+  if (Math.random() >= 0.8) return;
+
+  if (!state.traits.traitsByCharacterId[characterId]) {
+    state.traits.traitsByCharacterId[characterId] = [];
   }
+  const traits = state.traits.traitsByCharacterId[characterId];
+  const existingIndex = traits.findIndex((t) => t.id === 'injury');
+  const existing = traits[existingIndex];
 
-  const traits = state.traits.traitsByCharacterId[characterId] ?? [];
-  const existing = traits.find((t) => t.id === 'injury');
-  // ------------------------------
-  // 1. Определяем КАКАЯ травма выпала
-  //    0: 80%, 1: 15%, 2: 5%
-  // ------------------------------
+  // 1. Ролл уровня травмы
   const roll = Math.random();
-  let rolledLevel = 0; // 0 = мелкая
+  let rolledLevel = 0;
+  if (roll >= 0.95) rolledLevel = 2;
+  else if (roll >= 0.85) rolledLevel = 1;
 
-  if (roll >= 0.95)
-    rolledLevel = 2; // 5%
-  else if (roll >= 0.85)
-    rolledLevel = 1; // 10%
-  else rolledLevel = 0; // 85%
+  const maxLevel = traitsRegistry.getMaxLevelIndex('injury');
 
-  const maxLevel = traitsRegistry.getMaxLevelIndex('injury')!;
-  const maxLevelCfg = traitsRegistry.resolveLevel('injury', maxLevel)!;
-
-  // ------------------------------
-  // 2. Если травмы нет — создаём
-  // ------------------------------
+  // 2. Логика добавления/апгрейда
   if (!existing) {
+    // --- СОЗДАНИЕ НОВОГО ---
     const levelToSet = Math.min(rolledLevel, maxLevel);
 
-    state.traits.actions.addTraitToCharacter(characterId, 'injury', { level: levelToSet });
+    const newTrait = traitsRegistry.createActiveTrait('injury', levelToSet);
 
-    logs.push({
-      type: 'addTrait',
-      traitId: 'injury',
-      level: levelToSet,
-    });
+    if (newTrait) {
+      traits.push(newTrait);
+
+      logs.push({
+        type: 'addTrait',
+        traitId: 'injury',
+        level: levelToSet,
+      });
+    }
   } else {
-    // ------------------------------
-    // 3. Травма есть → усиливаем
-    //    newLevel = oldLevel + (rolledLevel + 1)
-    // ------------------------------
+    // --- ОБНОВЛЕНИЕ СУЩЕСТВУЮЩЕГО ---
     const combinedLevel = existing.level + (rolledLevel + 1);
 
     if (combinedLevel <= maxLevel) {
-      state.traits.actions.modifyTrait(characterId, 'injury', { level: combinedLevel });
+      const newTrait = traitsRegistry.createActiveTrait('injury', combinedLevel);
 
-      logs.push({
-        type: 'levelUpTrait',
-        traitId: 'injury',
-        deltaLevel: combinedLevel - existing.level,
-        newLevel: combinedLevel,
-      });
+      if (newTrait) {
+        traits[existingIndex] = newTrait;
+
+        logs.push({
+          type: 'levelUpTrait',
+          traitId: 'injury',
+          deltaLevel: combinedLevel - existing.level,
+          newLevel: combinedLevel,
+        });
+      }
     } else {
+      const newTrait = traitsRegistry.createActiveTrait('injury', maxLevel)!;
       const overflow = combinedLevel - maxLevel;
-      const extraDuration = overflow * (maxLevelCfg.duration ?? 0);
+      const extraDuration = overflow * newTrait.duration!;
       const currentDuration = existing.duration ?? 0;
       const newDuration = currentDuration + extraDuration;
-
-      state.traits.actions.modifyTrait(characterId, 'injury', {
-        level: maxLevel,
-        duration: newDuration,
-      });
+      newTrait.duration = newDuration;
 
       if (existing.level < maxLevel) {
         logs.push({
@@ -230,24 +224,22 @@ export function applyInjuryAndWill(
         traitId: 'injury',
         newValue: newDuration,
       });
+
+      traits[existingIndex] = newTrait;
     }
   }
 
-  // ------------------------------
-  // 4. Шанс получить WILL:
-  //    30% + rolledLevel * 30%
-  //    (срабатывает только если травма таки выпала)
-  // ------------------------------
+  // 4. Шанс на Willpower
   const willChance = 0.3 + rolledLevel * 0.3;
-
   if (Math.random() < willChance) {
-    character.mainStats.will += 1;
+    const newWill = (character.mainStats.will ?? 0) + 1;
+    character.mainStats.will = newWill;
 
     logs.push({
       type: 'modifyMainStat',
       stat: 'will',
       delta: 1,
-      newValue: character.mainStats.will,
+      newValue: newWill,
     });
   }
 }

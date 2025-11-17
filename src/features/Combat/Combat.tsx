@@ -12,6 +12,8 @@ import { CombatView } from './components/CombatView/CombatView';
 
 export const Combat = () => {
   const selectedPoi = useGameState(useShallow(poiSelectors.selectSelectedPoi));
+  const endBattle = useGameState((state) => state.world.actions.endBattle);
+  const setCharacterUpdates = useCombatState((state) => state.actions.setCharacterUpdates);
   const enemyGroup = selectedPoi?.details?.enemyGroup || [];
 
   const combatStatus = useCombatState((state) => state.combatResult.combatStatus);
@@ -19,9 +21,7 @@ export const Combat = () => {
   useEffect(() => {
     const allies = makeActivePartyCombatUnitsSnapshot(useGameState.getState());
     const enemies: CombatUnit[] = structuredClone(enemyGroup);
-    const allUnits: CombatUnit[] = [...allies, ...enemies];
-
-    useCombatState.getState().actions.initializeCombat(allUnits);
+    useCombatState.getState().actions.initializeCombat([...allies, ...enemies]);
   }, []);
 
   if (combatStatus === 'ongoing') {

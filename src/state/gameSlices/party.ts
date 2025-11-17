@@ -16,7 +16,7 @@ const NON_LEADER_STAT_PENALTY = 20;
 
 export interface PartySlice {
   leaderId: string;
-  memberIds: string[];
+  activeIds: string[];
   reserveIds: string[];
   captives: Captive[];
   currentPartyPosition: string;
@@ -39,7 +39,7 @@ export interface PartySlice {
 
 export const partySelectors = {
   selectAllMemberIds: (state: StoreState) => {
-    return [...state.party.memberIds, ...state.party.reserveIds];
+    return [...state.party.activeIds, ...state.party.reserveIds];
   },
   /** Возвращает полные данные всех членов отряда */
   selectAllPartyMembers: (state: StoreState) => {
@@ -50,7 +50,7 @@ export const partySelectors = {
   },
 
   selectActivePartyMembers: (state: StoreState) => {
-    return state.party.memberIds
+    return state.party.activeIds
       .map((id) => characterSelectors.selectCharacterById(id)(state))
       .filter((char): char is Character => !!char);
   },
@@ -109,7 +109,7 @@ export const partySelectors = {
 };
 
 export const createPartySlice: GameSlice<PartySlice> = (set, get) => ({
-  memberIds: ['protagonist'], // Начинаем только с протагониста
+  activeIds: ['protagonist'], // Начинаем только с протагониста
   leaderId: 'protagonist',
   reserveIds: [],
   captives: [],
@@ -122,14 +122,14 @@ export const createPartySlice: GameSlice<PartySlice> = (set, get) => ({
       set((state) => {
         const maxPartySize = partySelectors.selectMaxPartySize(state);
         const isAlreadyInParty = partySelectors.selectAllMemberIds(state).includes(characterId);
-        if (state.party.memberIds.length < maxPartySize && !isAlreadyInParty) {
-          state.party.memberIds.push(characterId);
+        if (state.party.activeIds.length < maxPartySize && !isAlreadyInParty) {
+          state.party.activeIds.push(characterId);
           // Можно также убрать из резерва, если нужно
         }
       }),
     removeMember: (characterId) =>
       set((state) => {
-        state.party.memberIds = state.party.memberIds.filter((id) => id !== characterId);
+        state.party.activeIds = state.party.activeIds.filter((id) => id !== characterId);
       }),
     moveToCell: (targetCellId) =>
       set((state) => {

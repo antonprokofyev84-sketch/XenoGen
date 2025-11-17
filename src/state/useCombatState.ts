@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
+import { useGameState } from '@/state/useGameState';
 import type { AttackForecast, AttackRollResult } from '@/systems/combat/combatHelpers';
 import {
   calculateAttackForecast,
@@ -19,19 +20,20 @@ import {
   addOffenseMetrics,
   blankMetric,
 } from '@/systems/combat/combatMetricHelpers';
-import type { CombatResult, CombatUnit } from '@/types/combat.types';
+import type { CharacterUpdates, CombatResult, CombatUnit } from '@/types/combat.types';
 import type { WeaponSlots } from '@/types/equipment.types';
 
 const POSITION_SWAP_MAP = [1, 0, 3, 2] as const;
 
 export type CombatStore = {
   unitsById: Record<string, CombatUnit>;
-  combatResult: CombatResult;
   allyIds: string[];
   enemyIds: string[];
   initiativeQueue: InitiativeItem[];
   lastTimeByUnitId: Record<string, number>;
   attackResultById: Record<string, AttackRollResult[]>;
+  combatResult: CombatResult;
+  characterUpdates: CharacterUpdates;
 
   actions: {
     initializeCombat: (initialUnits: CombatUnit[]) => void;
@@ -42,6 +44,8 @@ export type CombatStore = {
     attack: (forecast: AttackForecast) => void;
     applyAttackResults: () => void;
     processAITurn: () => void;
+    finishBattle: () => void; // <-- 2. ДОБАВЛЕН НОВЫЙ ЭКШЕН
+    setCharacterUpdates: (updates: CharacterUpdates) => void;
   };
 };
 
@@ -87,12 +91,14 @@ export const combatSelectors = {
 export const useCombatState = create<CombatStore>()(
   immer((set, get) => ({
     unitsById: {},
-    combatResult: { combatStatus: 'ongoing' } as CombatResult,
+
     allyIds: [],
     enemyIds: [],
     initiativeQueue: [],
     lastTimeByUnitId: {},
     attackResultById: {},
+    combatResult: { combatStatus: 'ongoing' } as CombatResult,
+    characterUpdates: null,
 
     actions: {
       initializeCombat: (initialUnits) => {
@@ -114,6 +120,7 @@ export const useCombatState = create<CombatStore>()(
             combatStatus: 'ongoing',
             characterMetrics: Object.fromEntries(allyIds.map((id) => [id, blankMetric()])),
           };
+          state.characterUpdates = null;
         });
       },
       endTurn: () => {
@@ -151,9 +158,7 @@ export const useCombatState = create<CombatStore>()(
       setActiveWeaponSlot: (unitId, slot) => {
         set((state) => {
           const unit = state.unitsById[unitId];
-
           const hasWeaponInSlot = unit.equipment[slot];
-
           if (hasWeaponInSlot) {
             unit.activeWeaponSlot = slot;
           } else {
@@ -162,11 +167,9 @@ export const useCombatState = create<CombatStore>()(
         });
       },
       swapPosition: (unitId: string) => {
-        // get().actions.endTurn();
         set((state) => {
           const unit = state.unitsById[unitId];
           if (!unit) return;
-
           const newPosition = POSITION_SWAP_MAP[unit.position];
           unit.position = newPosition;
         });
@@ -251,11 +254,13 @@ export const useCombatState = create<CombatStore>()(
             set((state) => {
               state.combatResult.combatStatus = 'defeat';
             });
+            get().actions.finishBattle();
             return;
           } else if (aliveEnemies.length === 0) {
             set((state) => {
               state.combatResult.combatStatus = 'victory';
             });
+            get().actions.finishBattle();
             return;
           }
         }
@@ -322,6 +327,19 @@ export const useCombatState = create<CombatStore>()(
         } else {
           get().actions.swapPosition(currentActiveUnit.id);
         }
+      },
+
+      finishBattle: () => {
+        const combatResult = get().combatResult;
+        const logs = useGameState.getState().world.actions.endBattle(combatResult);
+
+        get().actions.setCharacterUpdates(logs);
+      },
+
+      setCharacterUpdates: (updates) => {
+        set((state) => {
+          state.characterUpdates = updates;
+        });
       },
     },
   })),

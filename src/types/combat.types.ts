@@ -1,5 +1,6 @@
 import type { Rarity } from './common.types';
 import type { EquipmentItem, WeaponSlots } from './equipment.types';
+import type { EffectLog } from './logs.types';
 import type { WeaponInstance } from './weapon.types';
 
 export interface CombatStats {
@@ -61,9 +62,12 @@ export interface CharacterCombatMetrics {
 
 export type CombatStatus = 'victory' | 'defeat' | 'retreat' | 'ongoing';
 
+export type CharacterMetrics = Record<string, CharacterCombatMetrics>;
+export type CharacterUpdates = Record<string, EffectLog[]> | null;
+
 export interface CombatResult {
   combatStatus: CombatStatus;
-  characterMetrics: Record<string, CharacterCombatMetrics>;
+  characterMetrics: CharacterMetrics;
 }
 
 export type LootItem = {

@@ -2,7 +2,8 @@ import { DEFAULT_EXPLORATION_DURATION } from '@/constants';
 import { STAMINA_RECOVERY_PER_HOUR } from '@/constants';
 import { EffectManager } from '@/systems/effects/effectManager';
 import { TravelManager } from '@/systems/travel/travelManager';
-import type { CombatStatus } from '@/types/combat.types';
+import type { CombatResult } from '@/types/combat.types';
+import type { EffectLog } from '@/types/logs.types';
 import type { ToD, Weather } from '@/types/world.types';
 
 import type { GameSlice } from '../types';
@@ -15,13 +16,13 @@ export interface WorldSlice {
   currentTime: number;
   weather: Weather;
   actions: {
-    endBattle: (combatResult: CombatStatus) => void;
+    endBattle: (combatResult: CombatResult) => Record<string, EffectLog[]>;
     endDay: () => void;
     changeTime: (minutes: number) => void;
     scoutCell: (cellId: string, maxRollValue: number, bonus: number, duration: number) => void;
     travelToCell: (targetCellId: string) => void;
     restUntilMorning: () => void;
-    restForMinutes: (minutes: number) => void; // <-- 1. Новый, более универсальный экшен
+    restForMinutes: (minutes: number) => void;
   };
 }
 
@@ -41,9 +42,29 @@ export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
 
   actions: {
     endBattle: (combatResult) => {
+      console.log('---');
+      console.log(combatResult);
       const stateSnapshot = get();
-      const traitEffects = get().traits.actions.processBattleEnd(combatResult);
-      EffectManager.processTraitEffects(traitEffects, { state: stateSnapshot });
+      const traitEffects = get().traits.actions.processBattleEnd(combatResult.combatStatus);
+      const charactersEffectLogs = EffectManager.processTraitEffects(traitEffects, {
+        state: stateSnapshot,
+      });
+      const characterGrowthLogs = get().characters.actions.processBattleEnd(combatResult);
+
+      const mergedLogs: Record<string, EffectLog[]> = {};
+
+      console.log(characterGrowthLogs);
+      console.log(charactersEffectLogs);
+
+      const allCharacterIds = new Set([
+        ...Object.keys(charactersEffectLogs),
+        ...Object.keys(characterGrowthLogs),
+      ]);
+
+      allCharacterIds.forEach((id) => {
+        mergedLogs[id] = [...(charactersEffectLogs[id] || []), ...(characterGrowthLogs[id] || [])];
+      });
+      return mergedLogs;
     },
     endDay: () => {
       // This logic remains the same
