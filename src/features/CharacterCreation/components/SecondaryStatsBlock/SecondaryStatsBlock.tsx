@@ -33,8 +33,8 @@ export const SecondaryStatsBlock = () => {
         <span className="statValue">{stats.evasion}</span>
       </div>
       <div className="statRow">
-        <span className="statName">{textData.secondaryStats.damageModifier}</span>
-        <span className="statValue">{stats.damageModifier}</span>
+        <span className="statName">{textData.secondaryStats.meleeAttackPower}</span>
+        <span className="statValue">{stats.meleeAttackPower}</span>
       </div>
       <div className="statRow">
         <span className="statName">{textData.secondaryStats.critChance}</span>

@@ -1,4 +1,5 @@
 import { CharacterCreation } from '@/features/CharacterCreation/CharacterCreation';
+import { CharacterDetails } from '@/features/CharacterDetails/CharacterDetails';
 import { Combat } from '@/features/Combat/Combat';
 import { MainMenu } from '@/features/MainMenu/MainMenu';
 import { StrategicMap } from '@/features/StrategicMap/StrategicMap';
@@ -19,6 +20,8 @@ function App() {
         return <StrategicMap />;
       case 'combat':
         return <Combat />;
+      case 'characterDetails':
+        return <CharacterDetails />;
       default:
         return <MainMenu />;
     }

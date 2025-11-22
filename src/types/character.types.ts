@@ -16,7 +16,7 @@ export type SecondaryStatKey =
   | 'maxStamina'
   | 'armor'
   | 'evasion'
-  | 'damageModifier'
+  | 'meleeAttackPower'
   | 'critChance'
   | 'initiative';
 
@@ -32,9 +32,14 @@ export type BaseStatsKey =
   | 'baseInitiative'
   | 'baseArmor'
   | 'baseCritChance'
-  | 'baseDamage'
-  | 'baseAccuracy';
+  | 'baseMeleeDamage';
 export type BaseStats = Record<BaseStatsKey, number>;
+
+export interface StatBlock {
+  mainStats?: Partial<Record<MainStatKey, number>>;
+  secondaryStats?: Partial<Record<SecondaryStatKey, number>>;
+  skills?: Partial<Record<SkillKey, number>>;
+}
 
 export type CharacterStatistic = {
   battlesWon: number;

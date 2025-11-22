@@ -32,7 +32,7 @@
     "initiative": "Initiative",
     "armor": "Armor",
     "critChance": "Crit Chance",
-    "damageModifier": "Damage Modifier",
+    "meleeAttackPower": "Melee Attack Power",
     "evasion": "Evasion"
   },
   "traits": {
@@ -134,5 +134,27 @@
   "combat": {
     "moveForward": "Move Forward",
     "moveBack": "Move Back"
+  },
+  "items": {
+    "makeshiftKnife": {
+      "name": "Makeshift Knife",
+      "desc": "A crude blade made from scrap metal. It gets the job done."
+    },
+    "pumpShotgun": {
+      "name": "Pump Shotgun",
+      "desc": "Reliable close-quarters firepower. Loud and messy."
+    },
+    "travelDuster": {
+      "name": "Travel Duster",
+      "desc": "Worn leather coat offering protection from the elements and minor scrapes."
+    },
+    "regularCloth": {
+      "name": "Regular Cloth",
+      "desc": "Simple clothing. Better than nothing."
+    },
+    "fists": {
+      "name": "Fists",
+      "desc": "Your bare hands."
+    }
   }
 }

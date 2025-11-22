@@ -1,7 +1,12 @@
 import type { GameSlice } from '../types.ts';
 import type { StoreState } from '../useGameState.ts';
 
-export type UIScreen = 'mainMenu' | 'characterCreation' | 'strategicMap' | 'combat';
+export type UIScreen =
+  | 'mainMenu'
+  | 'characterCreation'
+  | 'strategicMap'
+  | 'combat'
+  | 'characterDetails';
 
 export interface UISlice {
   currentScreen: UIScreen;

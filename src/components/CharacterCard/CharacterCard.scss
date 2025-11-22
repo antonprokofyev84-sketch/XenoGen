@@ -1,14 +1,10 @@
-// Цвета редкости для заливки между рамками
-$rarity-common: #888;
-$rarity-uncommon: #6e7c5a;
-$rarity-rare: #60708f;
-$rarity-unique: #c8a658; // c5b05c; c0a05e c8a658
+// Импортировать variables.scss НЕ НУЖНО, Vite сделает это сам.
 
 .characterCard {
   width: 180px;
   height: 360px;
 
-  border: 1px solid #444;
+  border: 1px solid $color-border;
   border-radius: 8px;
   padding: 3px;
   box-sizing: border-box;
@@ -18,31 +14,21 @@ $rarity-unique: #c8a658; // c5b05c; c0a05e c8a658
   display: flex;
   flex-direction: column;
 
-  &.common {
-    background-color: $rarity-common;
-  }
-  &.uncommon {
-    background-color: $rarity-uncommon;
-  }
-  &.rare {
-    background-color: $rarity-rare;
-  }
-  &.unique {
-    background-color: $rarity-unique;
-  }
+  @include rarity-bg;
 
   .cardInnerBorder {
-    flex-grow: 1; // Занимает всё место, кроме футера
-    min-height: 0; // Важно для flex-контейнеров, чтобы они могли сжиматься
-    background-color: #2a2a2a;
-    border: 1px solid #1e1e1e; // Внутренняя рамка
+    flex-grow: 1;
+    min-height: 0;
+    // Глобальная переменная
+    background-color: $color-bg-dark;
+    border: 1px solid $color-bg-darker;
     border-radius: 5px;
     overflow: hidden;
   }
 
   .imageContainer {
     width: 100%;
-    height: 100%; // Изображение занимает весь `card-inner-border`
+    height: 100%;
     overflow: hidden;
 
     img {
@@ -54,15 +40,14 @@ $rarity-unique: #c8a658; // c5b05c; c0a05e c8a658
   }
 
   .cardFooter {
-    flex-shrink: 0; // Футер не сжимается
+    flex-shrink: 0;
     text-align: center;
-    padding: 8px 0; // Вертикальные отступы для футера
+    padding: 8px 0;
 
     .characterLevel {
       font-size: 1.5rem;
       font-weight: bold;
-      color: #fff; // Белый цвет для лучшей читаемости на цветном фоне
-      // Тень для контраста на светлых фонах (например, uncommon)
+      color: $color-text-main;
       text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
     }
   }

@@ -6,15 +6,11 @@ import { useGameState } from '@/state/useGameState.ts';
 import './MainMenu.scss';
 
 export const MainMenu = () => {
-  const { characterActions, goToScreen } = useGameState(
-    useShallow((state) => ({
-      characterActions: state.characters.actions,
-      goToScreen: state.ui.goToScreen,
-    })),
-  );
+  const resetProtagonist = useGameState((state) => state.characters.actions.resetProtagonist);
+  const goToScreen = useGameState((state) => state.ui.goToScreen);
 
   const handleNewGame = () => {
-    characterActions.resetProtagonist();
+    resetProtagonist();
     goToScreen('characterCreation');
   };
 

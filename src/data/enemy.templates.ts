@@ -11,7 +11,7 @@ export const ENEMY_TEMPLATES_DB: Record<string, EnemyTemplate> = {
     baseStats: {
       hp: 45,
       armor: 2,
-      baseMeleeDamage: 3,
+      meleeAttackPower: 3,
       melee: 30,
       range: 5,
       evasion: 8,
@@ -32,7 +32,7 @@ export const ENEMY_TEMPLATES_DB: Record<string, EnemyTemplate> = {
     baseStats: {
       hp: 60,
       armor: 2,
-      baseMeleeDamage: 4,
+      meleeAttackPower: 4,
       melee: 42,
       range: 6,
       evasion: 16,
@@ -54,7 +54,7 @@ export const ENEMY_TEMPLATES_DB: Record<string, EnemyTemplate> = {
     baseStats: {
       hp: 55,
       armor: 3,
-      baseMeleeDamage: 4,
+      meleeAttackPower: 4,
       melee: 10,
       range: 38,
       evasion: 14,
@@ -75,7 +75,7 @@ export const ENEMY_TEMPLATES_DB: Record<string, EnemyTemplate> = {
     baseStats: {
       hp: 66,
       armor: 2,
-      baseMeleeDamage: 4,
+      meleeAttackPower: 4,
       melee: 10,
       range: 46,
       evasion: 18,
@@ -97,7 +97,7 @@ export const ENEMY_TEMPLATES_DB: Record<string, EnemyTemplate> = {
     baseStats: {
       hp: 70,
       armor: 3,
-      baseMeleeDamage: 5,
+      meleeAttackPower: 5,
       melee: 12,
       range: 53,
       evasion: 21,

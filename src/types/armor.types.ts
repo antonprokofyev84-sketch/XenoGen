@@ -1,20 +1,20 @@
-import type { Rarity } from '@/types/common.types';
+import type { StatBlock } from './character.types';
+import type { Rarity } from './common.types';
 
 export interface ArmorTemplate {
   templateId: string;
-  slot: 'armor' | 'outerwear' | 'accessory';
+  type: 'armor';
   price: number;
   dropRate: number;
-  requiredStrength?: number;
-  mods: Record<string, number>;
   rarityMultipliers?: {
     uncommon?: number;
     rare?: number;
     unique?: number;
   };
+  mods: StatBlock;
+  requirements?: StatBlock;
 }
 
 export interface ArmorInstance extends Omit<ArmorTemplate, 'dropRate' | 'rarityMultipliers'> {
-  id: string; // A unique ID for this specific item instance
   rarity: Rarity;
 }

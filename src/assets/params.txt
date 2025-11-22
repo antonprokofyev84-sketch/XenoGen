@@ -41,5 +41,5 @@ Initiative 21
 ΔInitiative = 1.12
 ΔArmor = 0.2666666667
 ΔCritChance = 0.56
-ΔDamageModifier = 0.8
+ΔmeleeAttackPower = 0.8
 ΔEvasion = 4.8

@@ -1,14 +1,5 @@
 @use 'sass:color';
 
-// --- Color Palette ---
-$btn-color-red: #c53d3d;
-$btn-color-green: #4caf50;
-$btn-color-blue: #3e4b86;
-$btn-color-yellow: #c5b05c;
-$btn-color-white: #ffffff;
-$btn-color-grey: #a0a0a0;
-$btn-color-border-default: #505050;
-
 // --- Base Button Styles ---
 .btn {
   display: inline-flex;

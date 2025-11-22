@@ -72,5 +72,7 @@ export function generateEnemyGroup(opts: GroupGenOptions) {
     group.push(enemy);
   }
 
+  console.log(group);
+
   return group; // может быть пустым — это ок на данном этапе
 }

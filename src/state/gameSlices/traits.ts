@@ -1,21 +1,45 @@
-import { mainStatKeys, secondaryStatsKeys, skillKeys } from '@/state/constants';
 import type { StoreState } from '@/state/useGameState';
 import { traitsManager } from '@/systems/traits/traitsManager';
 import { traitsRegistry } from '@/systems/traits/traitsRegistry';
+import type { MainStats, SecondaryStats, Skills, StatBlock } from '@/types/character.types';
 import type { CombatStatus } from '@/types/combat.types';
 import type { ActiveTrait, TraitId, TriggerRule } from '@/types/traits.types';
 
 import type { GameSlice } from '../types';
 
-const filterModsByKeys = (
-  totalMods: Record<string, number>,
-  validKeys: string[],
-): Record<string, number> => {
-  const filteredMods: Record<string, number> = {};
-  for (const key of validKeys) {
-    if (totalMods[key]) filteredMods[key] = totalMods[key];
+/**
+ * Универсальная функция для суммирования характеристик из списка трейтов.
+ * Читаемая версия: берет группу статов и складывает числа.
+ */
+const aggregateStats = <T extends Record<string, number>>(
+  activeTraits: ActiveTrait[],
+  categoryKey: keyof StatBlock,
+): T => {
+  // Инициализируем пустой объект-аккумулятор
+  const totalStats = {} as T;
+
+  for (const trait of activeTraits) {
+    const lvl = traitsRegistry.resolveLevel(trait.id, trait.level);
+
+    // Пропускаем, если нет модов вообще или нет нужной категории (например, skills)
+    if (!lvl?.mods || !lvl.mods[categoryKey]) continue;
+
+    const statsGroup = lvl.mods[categoryKey];
+
+    // Проходим по каждому стату в группе (например: strength: 1, agility: 2)
+    for (const [key, value] of Object.entries(statsGroup)) {
+      const statName = key as keyof T;
+      const modifierValue = value as number;
+
+      // Берем текущее значение или 0, если его еще нет
+      const currentValue = (totalStats[statName] as number) ?? 0;
+
+      // Записываем сумму
+      totalStats[statName] = (currentValue + modifierValue) as T[keyof T];
+    }
   }
-  return filteredMods;
+
+  return totalStats;
 };
 
 export interface TraitsSlice {
@@ -41,36 +65,29 @@ export const traitsSelectors = {
     (state: StoreState): ActiveTrait[] =>
       state.traits.traitsByCharacterId[characterId] ?? [],
 
-  selectTotalModsByCharacterId:
+  // Селектор для Основных характеристик (STR, DEX...)
+  selectMainStatMods:
     (characterId: string) =>
-    (state: StoreState): Record<string, number> => {
+    (state: StoreState): Partial<MainStats> => {
       const active = state.traits.traitsByCharacterId[characterId] ?? [];
-      const total: Record<string, number> = {};
-
-      for (const inst of active) {
-        const lvl = traitsRegistry.resolveLevel(inst.id, inst.level);
-        if (!lvl?.mods) continue;
-        for (const [key, val] of Object.entries(lvl.mods)) {
-          total[key] = (total[key] ?? 0) + (val as number);
-        }
-      }
-      return total;
+      return aggregateStats<MainStats>(active, 'mainStats');
     },
 
-  selectMainStatMods: (characterId: string) => (state: StoreState) => {
-    const totalMods = traitsSelectors.selectTotalModsByCharacterId(characterId)(state);
-    return filterModsByKeys(totalMods, mainStatKeys);
-  },
+  // Селектор для Навыков (Melee, Crafting...)
+  selectSkillMods:
+    (characterId: string) =>
+    (state: StoreState): Partial<Skills> => {
+      const active = state.traits.traitsByCharacterId[characterId] ?? [];
+      return aggregateStats<Skills>(active, 'skills');
+    },
 
-  selectSkillMods: (characterId: string) => (state: StoreState) => {
-    const totalMods = traitsSelectors.selectTotalModsByCharacterId(characterId)(state);
-    return filterModsByKeys(totalMods, skillKeys);
-  },
-
-  selectSecondaryStatMods: (characterId: string) => (state: StoreState) => {
-    const totalMods = traitsSelectors.selectTotalModsByCharacterId(characterId)(state);
-    return filterModsByKeys(totalMods, secondaryStatsKeys);
-  },
+  // Селектор для Вторичных статов (HP, Armor...)
+  selectSecondaryStatMods:
+    (characterId: string) =>
+    (state: StoreState): Partial<SecondaryStats> => {
+      const active = state.traits.traitsByCharacterId[characterId] ?? [];
+      return aggregateStats<SecondaryStats>(active, 'secondaryStats');
+    },
 };
 
 export const createTraitsSlice: GameSlice<TraitsSlice> = (set, get) => ({
@@ -81,11 +98,9 @@ export const createTraitsSlice: GameSlice<TraitsSlice> = (set, get) => ({
       set((state) => {
         const currentTraits = state.traits.traitsByCharacterId[characterId] ?? [];
 
-        // Проверка лимитов (предполагаем, что traitsManager.canAddTrait существует)
         if (!traitsManager.canAddTrait(traitId, currentTraits)) return;
 
         const level = params?.level ?? 0;
-
         const newTrait = traitsRegistry.createActiveTrait(traitId, level);
 
         if (newTrait) {
@@ -115,7 +130,6 @@ export const createTraitsSlice: GameSlice<TraitsSlice> = (set, get) => ({
         const trait = list.find((t) => t.id === traitId);
         if (!trait) return;
 
-        // смена уровня → подложить дефолты нового уровня, если не переданы явно
         if (props.level !== undefined && props.level !== trait.level) {
           const lvl = traitsRegistry.resolveLevel(trait.id, props.level);
           if (lvl) {
@@ -149,7 +163,7 @@ export const createTraitsSlice: GameSlice<TraitsSlice> = (set, get) => ({
     },
 
     processBattleEnd: (combatStatus) => {
-      const activeIds = get().party.activeIds; // только активный отряд
+      const activeIds = get().party.activeIds;
       const allEffects: Record<string, TriggerRule[]> = {};
 
       set((state) => {

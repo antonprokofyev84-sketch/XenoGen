@@ -1,0 +1,74 @@
+// --- ЦВЕТА РЕДКОСТИ ---
+$rarity-common: #888888;
+$rarity-uncommon: #6e7c5a;
+$rarity-rare: #60708f;
+$rarity-unique: #c8a658;
+
+// --- UI COLORS ---
+$color-border: #444444;
+$color-bg-dark: #2a2a2a;
+$color-bg-darker: #1e1e1e;
+$color-text-main: #ffffff;
+
+// --- BUTTON PALETTE ---
+$btn-color-red: #c53d3d;
+$btn-color-green: #4caf50;
+$btn-color-blue: #3e4b86;
+$btn-color-yellow: #c5b05c;
+$btn-color-white: #ffffff;
+$btn-color-grey: #a0a0a0;
+$btn-color-border-default: #505050;
+
+// --- MIXINS ---
+
+// 1. Фон редкости
+@mixin rarity-bg {
+  &.common {
+    background-color: $rarity-common;
+  }
+  &.uncommon {
+    background-color: $rarity-uncommon;
+  }
+  &.rare {
+    background-color: $rarity-rare;
+  }
+  &.unique {
+    background-color: $rarity-unique;
+  }
+}
+
+// 2. Текст редкости (ВЕРНУЛ)
+@mixin rarity-text {
+  &.common {
+    color: $rarity-common;
+  }
+  &.uncommon {
+    color: $rarity-uncommon;
+  }
+  &.rare {
+    color: $rarity-rare;
+  }
+  &.unique {
+    color: $rarity-unique;
+  }
+}
+
+// 3. Кастомный скроллбар
+@mixin custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #555 #1a1a1a;
+  &::-webkit-scrollbar {
+    width: 10px;
+  }
+  &::-webkit-scrollbar-track {
+    background: #2a2a2a;
+    border-radius: 8px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 8px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: #777;
+  }
+}

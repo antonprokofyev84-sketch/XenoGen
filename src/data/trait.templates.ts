@@ -1,7 +1,7 @@
 import type { TraitTemplate } from '@/types/traits.types';
 
 export const TRAIT_TEMPLATES_DB: TraitTemplate[] = [
-  // === Battle-Hardened (объединено из battleHardened0 + battleHardened) ===
+  // === Battle-Hardened ===
   {
     id: 'battleHardened',
     nameKey: 'traits.battleHardened.name',
@@ -14,7 +14,7 @@ export const TRAIT_TEMPLATES_DB: TraitTemplate[] = [
         progress: 0,
         progressMax: 2,
         triggers: {
-          onBattleWin: [{ do: [{ kind: 'modifyProgress', id: 'battleHardened', delta: +1 }] }],
+          onBattleWin: [{ do: [{ kind: 'modifyProgress', id: 'battleHardened', delta: 1 }] }],
           onBattleLose: [{ do: [{ kind: 'modifyProgress', id: 'battleHardened', delta: -2 }] }],
           onBattleFlee: [{ do: [{ kind: 'modifyProgress', id: 'battleHardened', delta: -1 }] }],
           onProgressMax: [{ do: [{ kind: 'levelUpTrait', id: 'battleHardened' }] }],
@@ -23,13 +23,15 @@ export const TRAIT_TEMPLATES_DB: TraitTemplate[] = [
       1: {
         tags: ['quirk', 'positive'],
         isVisible: true,
-        mods: { melee: 10, range: 10, evasion: 5 },
+        mods: {
+          skills: { melee: 10, range: 10 },
+          secondaryStats: { evasion: 5 },
+        },
       },
     },
   },
 
   // === ADDICTIONS ===
-  // было: alcoholic1 -> alcoholic2
   {
     id: 'alcoholic',
     nameKey: 'traits.alcoholic1.name',
@@ -69,7 +71,7 @@ export const TRAIT_TEMPLATES_DB: TraitTemplate[] = [
     },
   },
 
-  // === TEST (бывший плоский — обёрнут в levels) ===
+  // === TEST TRAIT ===
   {
     id: 'testTrait1',
     nameKey: 'testTrait1Name',
@@ -92,7 +94,7 @@ export const TRAIT_TEMPLATES_DB: TraitTemplate[] = [
     },
   },
 
-  // === TEMPORARY STATUSES (были плоские — теперь в levels) ===
+  // === TEMPORARY STATUSES ===
   {
     id: 'buzzed',
     nameKey: 'traits.buzzed.name',
@@ -102,7 +104,9 @@ export const TRAIT_TEMPLATES_DB: TraitTemplate[] = [
         tags: ['status', 'temporary'],
         isVisible: true,
         duration: 1,
-        mods: { will: 10, per: -5 },
+        mods: {
+          mainStats: { will: 10, per: -5 },
+        },
       },
     },
   },
@@ -115,78 +119,67 @@ export const TRAIT_TEMPLATES_DB: TraitTemplate[] = [
         tags: ['status', 'temporary'],
         isVisible: true,
         duration: 1,
-        mods: { will: -10, dex: -5 },
+        mods: {
+          mainStats: { will: -10, dex: -5 },
+        },
       },
     },
   },
 
-  // === INJURY (объединены lightInjured -> injured -> heavyInjured) ===
+  // === INJURY ===
   {
     id: 'injury',
     nameKey: 'traits.injury.name',
     descriptionKey: 'traits.injury.desc',
     levels: {
       0: {
+        // Light
         tags: ['status', 'injury', 'negative'],
         isVisible: true,
-        duration: 2, // light
+        duration: 2,
         mods: {
-          str: -5,
-          dex: -5,
-          con: -5,
-          int: -5,
-          per: -5,
-          will: -5,
-          initiative: -1,
-          evasion: -5,
-          melee: -5,
-          range: -5,
+          mainStats: { str: -5, dex: -5, con: -5, int: -5, per: -5, will: -5 },
+          secondaryStats: { initiative: -1, evasion: -5 },
+          skills: { melee: -5, range: -5 },
         },
         triggers: { onDurationEnd: [{ do: [{ kind: 'levelUpTrait', id: 'injury' }] }] },
       },
       1: {
+        // Injured
         tags: ['status', 'injury', 'negative'],
         isVisible: true,
-        duration: 3, // injured (средняя)
+        duration: 3,
         mods: {
-          str: -10,
-          dex: -10,
-          con: -10,
-          int: -10,
-          per: -10,
-          will: -10,
-          initiative: -3,
-          evasion: -10,
-          melee: -10,
-          range: -10,
-          crafting: -10,
-          science: -10,
-          medicine: -10,
+          mainStats: { str: -10, dex: -10, con: -10, int: -10, per: -10, will: -10 },
+          secondaryStats: { initiative: -3, evasion: -10 },
+          skills: {
+            melee: -10,
+            range: -10,
+            crafting: -10,
+            science: -10,
+            medicine: -10,
+          },
         },
         triggers: { onDurationEnd: [{ do: [{ kind: 'levelUpTrait', id: 'injury' }] }] },
       },
       2: {
+        // Heavy
         tags: ['status', 'injury', 'negative'],
         isVisible: true,
-        duration: 3, // heavy
+        duration: 3,
         mods: {
-          str: -15,
-          dex: -15,
-          con: -15,
-          int: -15,
-          per: -15,
-          will: -15,
-          initiative: -5,
-          evasion: -20,
-          melee: -20,
-          range: -20,
-          crafting: -20,
-          science: -20,
-          medicine: -20,
-          charisma: -20,
-          survival: -20,
+          mainStats: { str: -15, dex: -15, con: -15, int: -15, per: -15, will: -15 },
+          secondaryStats: { initiative: -5, evasion: -20 },
+          skills: {
+            melee: -20,
+            range: -20,
+            crafting: -20,
+            science: -20,
+            medicine: -20,
+            charisma: -20,
+            survival: -20,
+          },
         },
-        // последний уровень — без авто-up
       },
     },
   },
@@ -203,21 +196,18 @@ export const TRAIT_TEMPLATES_DB: TraitTemplate[] = [
         tags: ['scar', 'cosmetic', 'positive'],
         isVisible: true,
         mods: {
-          cha: 5,
-          beauty: 5,
+          skills: { charisma: 5 }, // cha -> charisma
         },
       },
       1: {
         tags: ['scar', 'cosmetic', 'positive'],
         isVisible: true,
         mods: {
-          cha: 10,
-          beauty: 10,
+          skills: { charisma: 10 },
         },
       },
     },
   },
-
   {
     id: 'uglyScars',
     nameKey: 'trait.uglyScars.name',
@@ -229,26 +219,23 @@ export const TRAIT_TEMPLATES_DB: TraitTemplate[] = [
         tags: ['scar', 'cosmetic', 'negative'],
         isVisible: true,
         mods: {
-          cha: -2,
-          intimidate: 7,
-          will: 5,
-          beauty: -5,
+          skills: { charisma: -2 },
+          mainStats: { will: 5 },
+          // intimidate пока убрал, так как его нет в SkillKey
         },
       },
       1: {
         tags: ['scar', 'cosmetic', 'negative'],
         isVisible: true,
         mods: {
-          cha: -5,
-          intimidate: 10,
-          will: 10,
-          beauty: -10,
+          skills: { charisma: -5 },
+          mainStats: { will: 10 },
         },
       },
     },
   },
 
-  // === PROFESSIONS (объединены в уровневые, категория на шаблоне) ===
+  // === PROFESSIONS ===
   {
     id: 'medic',
     nameKey: 'traits.medic1.name',
@@ -262,7 +249,9 @@ export const TRAIT_TEMPLATES_DB: TraitTemplate[] = [
         cost: 20,
         progress: 0,
         progressMax: 100,
-        mods: { medicine: 15 },
+        mods: {
+          skills: { medicine: 15 },
+        },
         triggers: {
           onAction: [
             {
@@ -276,7 +265,9 @@ export const TRAIT_TEMPLATES_DB: TraitTemplate[] = [
       1: {
         tags: ['profession'],
         isVisible: true,
-        // можно расширить моды на старших ступенях
+        mods: {
+          skills: { medicine: 25 },
+        },
       },
     },
   },
@@ -293,7 +284,10 @@ export const TRAIT_TEMPLATES_DB: TraitTemplate[] = [
         cost: 30,
         progress: 0,
         progressMax: 100,
-        mods: { survival: 15, range: 10, dex: 5 },
+        mods: {
+          skills: { survival: 15, range: 10 },
+          mainStats: { dex: 5 },
+        },
         triggers: {
           onAction: [
             {
@@ -323,7 +317,9 @@ export const TRAIT_TEMPLATES_DB: TraitTemplate[] = [
         cost: 20,
         progress: 0,
         progressMax: 100,
-        mods: { crafting: 15, science: 10 },
+        mods: {
+          skills: { crafting: 15, science: 10 },
+        },
         triggers: {
           onAction: [
             {

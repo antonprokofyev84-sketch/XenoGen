@@ -1,12 +1,13 @@
 import type { Rarity } from './common.types';
-import type { EquipmentItem, WeaponSlots } from './equipment.types';
+import type { WeaponSlots } from './equipment.types';
+import type { InventoryItem } from './inventory.types';
 import type { EffectLog } from './logs.types';
 import type { WeaponInstance } from './weapon.types';
 
 export interface CombatStats {
   hp: number;
   armor: number;
-  baseMeleeDamage: number;
+  meleeAttackPower: number;
   melee: number;
   range: number;
   evasion: number;
@@ -19,8 +20,8 @@ export interface CombatEquipment {
   meleeSecondary: WeaponInstance | null;
   rangePrimary: WeaponInstance | null;
   rangeSecondary: WeaponInstance | null;
-  armor: EquipmentItem | null;
-  gadget: EquipmentItem | null;
+  armor: InventoryItem | null;
+  gadget: InventoryItem | null;
 }
 
 export type CombatUnitStatus = 'dead' | 'alive' | 'unconscious';

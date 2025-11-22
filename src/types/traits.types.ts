@@ -1,3 +1,5 @@
+import type { StatBlock } from './character.types';
+
 // --- Rules / Conditions ---
 export type TriggerRule = { if?: Condition[]; do: Action[] };
 
@@ -28,7 +30,7 @@ export type TraitFields = {
   duration?: number;
   progress?: number;
   progressMax?: number;
-  mods?: Record<string, number>;
+  mods?: StatBlock;
   triggers?: TriggerMap;
 };
 
@@ -75,7 +77,6 @@ export type ActiveTrait = {
   level: number;
   duration?: number;
   progress?: number;
-
   category?: string | null;
   maxCategoryCount?: number | null;
   progressMax?: number | null;

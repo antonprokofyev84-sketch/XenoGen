@@ -14,7 +14,7 @@ const mapCharacterToCombatStats = (state: StoreState, characterId: string): Comb
   const stats: CombatStats = {
     hp,
     armor: secondary.armor,
-    baseMeleeDamage: secondary.damageModifier,
+    meleeAttackPower: secondary.meleeAttackPower,
     melee: skills.melee,
     range: skills.range,
     evasion: secondary.evasion,

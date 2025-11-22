@@ -6,7 +6,7 @@ export const secondaryStatsKeys: SecondaryStatKey[] = [
   'maxHp',
   'armor',
   'evasion',
-  'damageModifier',
+  'meleeAttackPower',
   'critChance',
   'initiative',
 ] as const;

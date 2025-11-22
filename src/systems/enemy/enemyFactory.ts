@@ -3,10 +3,11 @@ import { RARITY_RULES } from '@/data/enemy.rules';
 import { ENEMY_RARITY_CHANCE, EQUIPMENT_BY_TIER_CHANCE, TIER_UP_DELTAS } from '@/data/enemy.rules';
 import { MAX_ENEMY_TIER, MIN_ENEMY_TIER } from '@/data/enemy.rules';
 import { ENEMY_TEMPLATES_DB } from '@/data/enemy.templates';
+import type { StatBlock } from '@/types/character.types';
 import type { CombatStats, CombatUnit } from '@/types/combat.types';
 import type { Rarity } from '@/types/common.types';
-import type { EquipmentItem } from '@/types/equipment.types';
 import type { WeaponSlots } from '@/types/equipment.types';
+import type { InventoryItem } from '@/types/inventory.types';
 import type { WeaponInstance } from '@/types/weapon.types';
 import { makeInstanceId } from '@/utils/utils';
 
@@ -40,11 +41,33 @@ const getRandomKeyByWeight = (weights: Record<string, number>): string => {
   return Object.keys(weights)[0];
 };
 
-const applyMods = (stats: CombatStats, mods?: Record<string, number>) => {
-  if (!mods) return;
-  for (const [key, value] of Object.entries(mods)) {
-    if (key in stats) stats[key as keyof CombatStats] += value;
+const flattenMods = (mods: StatBlock): Record<string, number> => {
+  let flat: Record<string, number> = {};
+
+  for (const group of Object.values(mods)) {
+    if (group) {
+      flat = { ...flat, ...group };
+    }
   }
+
+  return flat;
+};
+
+const applyMods = (baseStats: CombatStats, mods?: StatBlock): CombatStats => {
+  const modifiedStats = { ...baseStats };
+  if (!mods) return modifiedStats;
+
+  // 1. Сплющиваем структуру модов
+  const flatMods = flattenMods(mods);
+
+  for (const modKey in modifiedStats) {
+    const modValue = flatMods[modKey];
+    if (modValue === undefined) continue;
+
+    modifiedStats[modKey as keyof CombatStats] += modValue;
+  }
+
+  return modifiedStats;
 };
 
 /**
@@ -132,27 +155,34 @@ export const enemyFactory = {
     const armorInstance = equipmentFactory.createArmorInstance(armorIdToCreate, armorRarity);
 
     // Гаджет (если есть)
-    let gadgetInstance: EquipmentItem | null = null;
-    if (template.equipment.gadgetId) {
-      const rarity = getMaxRarity(getRandomKeyByWeight(tierChances) as Rarity, enemyRarity);
-      gadgetInstance = { templateId: template.equipment.gadgetId, rarity };
-    }
+    // let gadgetInstance: EquipmentItem | null = null;
+    // if (template.equipment.gadgetId) {
+    //   const rarity = getMaxRarity(getRandomKeyByWeight(tierChances) as Rarity, enemyRarity);
+    //   gadgetInstance = { templateId: template.equipment.gadgetId, rarity };
+    // }
 
+    // for now i descide to not apply weapon mods to enemy stats here as they will be applied in combatHelpers during combat calculations
+    // applying them here reduces calculation during combat but makes differneces between enemies and party members calculations
     // Применяем моды от всей экипировки
-    applyMods(finalStats, meleeInstance?.mods);
-    applyMods(finalStats, rangeInstance?.mods);
-    applyMods(finalStats, armorInstance?.mods);
+    // finalStats = applyMods(finalStats, meleeInstance?.mods);
+    // finalStats = applyMods(finalStats, rangeInstance?.mods);
+    finalStats = applyMods(finalStats, armorInstance?.mods);
     // applyMods(finalStats, gadgetInstance?.mods);
 
     // --- Шаг 4: Сборка финального объекта (ОБНОВЛЕНО) ---
 
-    const finalMelee = meleeInstance ? { ...meleeInstance, mods: {} } : null;
-    const finalRange = rangeInstance ? { ...rangeInstance, mods: {} } : null;
+    const finalMelee = meleeInstance || null;
+    const finalRange = rangeInstance || null;
 
-    const finalArmor = armorInstance
-      ? { templateId: armorInstance.templateId, rarity: armorInstance.rarity }
+    const finalArmor: InventoryItem | null = armorInstance
+      ? {
+          templateId: armorInstance.templateId,
+          rarity: armorInstance.rarity,
+          type: armorInstance.type,
+          quantity: 1,
+        }
       : null;
-    const finalGadget = gadgetInstance;
+    // const finalGadget = gadgetInstance;
 
     const activeWeaponSlot: WeaponSlots = finalRange ? 'rangePrimary' : 'meleePrimary';
 
@@ -177,10 +207,13 @@ export const enemyFactory = {
         meleeSecondary: null,
         rangeSecondary: null,
         armor: finalArmor,
-        gadget: finalGadget,
+        gadget: null,
+        // gadget: finalGadget,
       },
       activeWeaponSlot,
     };
+
+    console.log(instance.stats);
 
     return instance;
   },

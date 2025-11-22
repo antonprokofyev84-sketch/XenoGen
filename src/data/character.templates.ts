@@ -17,8 +17,7 @@ export const PROTAGONIST_TEMPLATE: Character = {
     baseInitiative: 5,
     baseArmor: 0,
     baseCritChance: 5,
-    baseDamage: 1,
-    baseAccuracy: 30,
+    baseMeleeDamage: 1,
   },
   mainStats: {
     str: initialMainStatValue,
@@ -53,8 +52,7 @@ export const CHARACTER_TEMPLATES_DB: Record<string, CharacterTemplate> = {
   //     baseInitiative: 5,
   //     baseArmor: 0,
   //     baseCritChance: 5,
-  //     baseDamage: 1,
-  //     baseAccuracy: 30,
+  //     baseMeleeDamage: 1,
   //   },
   //   mainStats: {
   //     str: initialMainStatValue,

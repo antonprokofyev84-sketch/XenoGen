@@ -1,4 +1,5 @@
-import type { Rarity } from '@/types/common.types';
+import type { StatBlock } from './character.types';
+import type { Rarity } from './common.types';
 
 export type WeaponType = 'meleeWeapon' | 'rangeWeapon';
 
@@ -7,23 +8,20 @@ export interface WeaponTemplate {
   type: WeaponType;
   price: number;
   dropRate: number;
-  requiredStrength?: number;
-  requiredMelee?: number;
-  requiredRanged?: number;
   distance: number;
   attacksPerTurn: number;
   damage: [min: number, max: number];
   armorPiercing: number;
-  mods?: Record<string, number>;
   lethality: number;
   rarityMultipliers?: {
     uncommon?: number;
     rare?: number;
     unique?: number;
   };
+  mods?: StatBlock;
+  requirements?: StatBlock;
 }
 
 export type WeaponInstance = Omit<WeaponTemplate, 'dropRate' | 'rarityMultipliers'> & {
-  id: string;
   rarity: Rarity;
 };

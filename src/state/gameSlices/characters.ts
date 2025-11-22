@@ -76,8 +76,8 @@ const calculateArmor = (mainStats: MainStats, baseStats: BaseStats): number => {
 const calculateCritChance = (mainStats: MainStats, baseStats: BaseStats): number => {
   return baseStats.baseCritChance + Math.floor(mainStats.per / 20) + Math.floor(mainStats.int / 50);
 };
-const calculateDamageModifier = (mainStats: MainStats, baseStats: BaseStats): number => {
-  return baseStats.baseDamage + Math.floor(mainStats.str / 10);
+const calculateMeleeAttackPower = (mainStats: MainStats, baseStats: BaseStats): number => {
+  return baseStats.baseMeleeDamage + Math.floor(mainStats.str / 10);
 };
 const calculateEvasion = (mainStats: MainStats): number => {
   return Math.floor(mainStats.dex / 2) + Math.floor(mainStats.per / 10);
@@ -122,7 +122,7 @@ export const characterSelectors = {
           maxStamina: 0,
           armor: 0,
           evasion: 0,
-          damageModifier: 0,
+          meleeAttackPower: 0,
           critChance: 0,
           initiative: 0,
         };
@@ -132,7 +132,7 @@ export const characterSelectors = {
         maxStamina: calculateMaxStamina(mainStats, baseStats),
         armor: calculateArmor(mainStats, baseStats),
         evasion: calculateEvasion(mainStats),
-        damageModifier: calculateDamageModifier(mainStats, baseStats),
+        meleeAttackPower: calculateMeleeAttackPower(mainStats, baseStats),
         critChance: calculateCritChance(mainStats, baseStats),
         initiative: calculateInitiative(mainStats, baseStats),
       };

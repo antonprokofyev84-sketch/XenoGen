@@ -2,32 +2,70 @@
 import { ARMOR_RARITY_MULTIPLIERS_DEFAULT, ARMOR_TEMPLATES_DB } from '@/data/armor.templates';
 import { WEAPON_RARITY_MULTIPLIERS_DEFAULT, WEAPON_TEMPLATES_DB } from '@/data/weapon.templates';
 import type { ArmorInstance } from '@/types/armor.types';
+import type { StatBlock } from '@/types/character.types';
 import type { Rarity } from '@/types/common.types';
 import type { WeaponInstance } from '@/types/weapon.types';
-import { makeInstanceId } from '@/utils/utils';
 
 /**
- * Учитывает редкость: положительные модификаторы умножаются,
- * отрицательные делятся на множитель.
+ * Хелпер для масштабирования группы статов.
+ * Принимает любой объект { ключ: число } и множитель.
+ * Без дженериков и лишних приведений типов.
+ */
+const scaleStatGroup = (
+  group: Record<string, number> | undefined,
+  multiplier: number,
+): Record<string, number> | undefined => {
+  if (!group) return undefined;
+
+  const result: Record<string, number> = {};
+
+  for (const key in group) {
+    const value = group[key];
+
+    // Простая проверка типа, чтобы TS понимал, что это число
+    if (typeof value === 'number') {
+      if (value > 0) {
+        result[key] = Math.round(value * multiplier);
+      } else if (value < 0) {
+        // Штрафы уменьшаются с ростом редкости (делим на множитель)
+        result[key] = Math.round(value / multiplier);
+      } else {
+        result[key] = 0;
+      }
+    }
+  }
+
+  return result;
+};
+
+/**
+ * Применяет множитель редкости ко всей структуре StatBlock.
+ * Использует цикл для автоматической обработки всех категорий статов в StatBlock.
  */
 const calculateRarityModifiers = (
-  baseModifiers: Record<string, number> = {},
+  baseModifiers: StatBlock = {},
   rarityMultiplier: number,
-): Record<string, number> => {
-  const result: Record<string, number> = {};
-  for (const modifierKey in baseModifiers) {
-    const baseValue = baseModifiers[modifierKey];
-    if (baseValue > 0) result[modifierKey] = Math.round(baseValue * rarityMultiplier);
-    else if (baseValue < 0) result[modifierKey] = Math.round(baseValue / rarityMultiplier);
-    else result[modifierKey] = 0;
+): StatBlock => {
+  const result: StatBlock = {};
+  // Получаем все ключи, присутствующие в базовых модификаторах
+  const keys = Object.keys(baseModifiers) as Array<keyof StatBlock>;
+
+  for (const key of keys) {
+    const group = baseModifiers[key];
+
+    if (group) {
+      // Используем scaleStatGroup для каждой найденной категории.
+      result[key] = scaleStatGroup(group, rarityMultiplier);
+    }
   }
+
   return result;
 };
 
 /** Детерминированные рассчитанные поля для брони. */
 type ArmorComputedStats = {
   price: number;
-  mods: Record<string, number>;
+  mods: StatBlock; // <-- Обновленный тип
 };
 
 /** Детерминированные рассчитанные поля для оружия. */
@@ -35,7 +73,7 @@ type WeaponComputedStats = {
   price: number;
   damage: [number, number];
   armorPiercing: number;
-  mods: Record<string, number>;
+  mods: StatBlock; // <-- Обновленный тип
 };
 
 /** Простой кэш только для детерминированных вычислений. */
@@ -50,8 +88,13 @@ function computeArmorStats(templateId: string, rarity: Rarity): ArmorComputedSta
   const template = ARMOR_TEMPLATES_DB[templateId];
   if (!template) return null;
 
+  // Если common, просто копируем структуру без вычислений
   if (rarity === 'common') {
-    return { price: template.price, mods: { ...(template.mods ?? {}) } };
+    return {
+      price: template.price,
+      // Используем нативный structuredClone для глубокой копии
+      mods: template.mods ? structuredClone(template.mods) : {},
+    };
   }
 
   const rarityMultipliers = template.rarityMultipliers ?? ARMOR_RARITY_MULTIPLIERS_DEFAULT;
@@ -73,7 +116,8 @@ function computeWeaponStats(templateId: string, rarity: Rarity): WeaponComputedS
       price: template.price,
       damage: [...template.damage] as [number, number],
       armorPiercing: template.armorPiercing,
-      mods: { ...(template.mods ?? {}) },
+      // Используем нативный structuredClone для глубокой копии
+      mods: template.mods ? structuredClone(template.mods) : {},
     };
   }
 
@@ -143,9 +187,9 @@ export const equipmentFactory = {
     // Берём все поля шаблона, кроме служебного rarityMultipliers (остальные перезапишем computed-полями)
     const { rarityMultipliers, ...templateFields } = template;
 
+    // Предполагается, что интерфейс ArmorInstance уже обновлен и ожидает mods: StatBlock
     const armorInstance: ArmorInstance = {
       ...templateFields,
-      id: makeInstanceId(),
       rarity,
       price: computed.price,
       mods: computed.mods,
@@ -164,12 +208,11 @@ export const equipmentFactory = {
     const computed = getWeaponStatsCached(templateId, rarity);
     if (!computed) return null;
 
-    // Берём все поля шаблона, кроме служебного rarityMultipliers (остальные перезапишем computed-полями)
     const { rarityMultipliers, ...templateFields } = template;
 
+    // Предполагается, что интерфейс WeaponInstance уже обновлен и ожидает mods: StatBlock
     const weaponInstance: WeaponInstance = {
       ...templateFields,
-      id: makeInstanceId(),
       rarity,
       price: computed.price,
       damage: computed.damage,

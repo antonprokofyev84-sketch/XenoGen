@@ -11,8 +11,9 @@ export const BottomBar = () => {
   const { restForMinutes, restUntilMorning } = useGameState(
     useShallow((state) => state.world.actions),
   );
+  const goToScreen = useGameState((state) => state.ui.goToScreen);
 
-  const { stamina } = useGameState((state) => state.characters.byId['protagonist']);
+  // const { stamina } = useGameState((state) => state.characters.byId['protagonist']);
 
   const handleRestOneHour = () => {
     restForMinutes(60);
@@ -24,7 +25,11 @@ export const BottomBar = () => {
         <TimeDisplay />
       </div>
 
-      <div className="partyPortraits">{stamina}</div>
+      <div className="partyPortraits">
+        <Button variant="solid" color="white" onClick={() => goToScreen('characterDetails')}>
+          Character Details
+        </Button>
+      </div>
 
       <div className="controls">
         <Button variant="solid" color="white" onClick={handleRestOneHour}>

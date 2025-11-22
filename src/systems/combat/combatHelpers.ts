@@ -1,3 +1,4 @@
+import type { StatBlock } from '@/types/character.types';
 import type { CombatStats, CombatUnit } from '@/types/combat.types';
 import type { WeaponSlots } from '@/types/equipment.types';
 import type { WeaponType } from '@/types/weapon.types';
@@ -36,8 +37,9 @@ export const getDelayPoints = (
   occupiedPositions: number[] = [],
 ): number => {
   const distanceBetweenUnits = Math.abs(attacker.position - target.position);
-  const deltaDistance =
-    distanceBetweenUnits - attacker.equipment[attacker.activeWeaponSlot]!.distance;
+  // Безопасное получение дистанции (на случай бага с отсутствующим оружием)
+  const weaponDistance = attacker.equipment[attacker.activeWeaponSlot]?.distance ?? 1;
+  const deltaDistance = distanceBetweenUnits - weaponDistance;
 
   if (deltaDistance <= 0) {
     return 0;
@@ -46,9 +48,9 @@ export const getDelayPoints = (
   let delayPoints = 0;
   for (let i = 1; i <= deltaDistance; i++) {
     if (attacker.faction === 'player') {
-      delayPoints += BASE_DELAY_PER_POSITION + occupiedPositions[attacker.position + i];
+      delayPoints += BASE_DELAY_PER_POSITION + (occupiedPositions[attacker.position + i] || 0);
     } else {
-      delayPoints += BASE_DELAY_PER_POSITION + occupiedPositions[attacker.position - i];
+      delayPoints += BASE_DELAY_PER_POSITION + (occupiedPositions[attacker.position - i] || 0);
     }
   }
 
@@ -60,15 +62,41 @@ export const computeEffectiveArmor = (targetArmor: number, armorPiercing?: numbe
   return Math.max(0, targetArmor - armorPiercingSafe);
 };
 
-const applyTemporaryMods = (baseStats: CombatStats, mods?: Partial<CombatStats>): CombatStats => {
+/**
+ * Преобразует вложенный StatBlock в плоский объект модификаторов.
+ * Автоматически проходит по всем группам в StatBlock (mainStats, skills, и т.д.)
+ * и сливает их в один объект, не хардкодя имена полей.
+ */
+const flattenMods = (mods: StatBlock): Record<string, number> => {
+  let flat: Record<string, number> = {};
+
+  for (const group of Object.values(mods)) {
+    if (group) {
+      flat = { ...flat, ...group };
+    }
+  }
+
+  return flat;
+};
+
+/**
+ * Накладывает временные модификаторы (от оружия/баффов) на базовые статы юнита.
+ * Учитывает разницу в названиях ключей между StatBlock и CombatStats.
+ */
+const applyTemporaryMods = (baseStats: CombatStats, mods?: StatBlock): CombatStats => {
   const modifiedStats = { ...baseStats };
   if (!mods) return modifiedStats;
 
-  (Object.keys(mods) as (keyof Partial<CombatStats>)[]).forEach((key) => {
-    if (key in modifiedStats && mods[key] !== undefined) {
-      modifiedStats[key as keyof CombatStats] += mods[key] as number;
-    }
-  });
+  // 1. Сплющиваем структуру модов
+  const flatMods = flattenMods(mods);
+
+  for (const modKey in modifiedStats) {
+    const modValue = flatMods[modKey];
+    if (modValue === undefined) continue;
+
+    modifiedStats[modKey as keyof CombatStats] += modValue;
+  }
+
   return modifiedStats;
 };
 
@@ -107,6 +135,7 @@ export const calculateAttackForecast = (
     return null;
   }
 
+  // this is potentiall not correct or ia need somthing other then faction check
   if (attacker.faction === target.faction) {
     return null;
   }
@@ -126,14 +155,25 @@ export const calculateAttackForecast = (
     return null;
   }
 
-  const attackerStatsWithMods = applyTemporaryMods(attacker.stats, weaponInstance.mods);
+  console.log('===');
+  console.log(JSON.stringify(attacker.stats));
+  console.log(JSON.stringify(weaponInstance.mods));
 
-  const hitChancePercent = computeHitChancePercent(attackerStatsWithMods, target.stats, activeSlot);
+  // Применяем сплющенные моды оружия к статам атакующего
+  const attackerStatsWithWeaponMods = applyTemporaryMods(attacker.stats, weaponInstance.mods);
+  console.log('combat helpers attackerStatsWithWeaponMods');
+  console.log(attackerStatsWithWeaponMods.melee);
+
+  const hitChancePercent = computeHitChancePercent(
+    attackerStatsWithWeaponMods,
+    target.stats,
+    activeSlot,
+  );
 
   // inline damage range after armor (no crit)
   const meleeBonus =
     activeSlot === 'meleePrimary' || activeSlot === 'meleeSecondary'
-      ? attackerStatsWithMods.baseMeleeDamage
+      ? attackerStatsWithWeaponMods.meleeAttackPower
       : 0;
   const baseMinBeforeArmor = weaponInstance.damage[0] + meleeBonus;
   const baseMaxBeforeArmor = weaponInstance.damage[1] + meleeBonus;
@@ -164,7 +204,7 @@ export const calculateAttackForecast = (
     lethality: weaponInstance.lethality,
     weaponType: weaponInstance.type,
     hitChancePercent,
-    critChancePercent: attackerStatsWithMods.critChance,
+    critChancePercent: attackerStatsWithWeaponMods.critChance,
     targetDefense: target.stats.armor,
     delayPoints,
     relativeDelay,

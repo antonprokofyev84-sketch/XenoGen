@@ -12,6 +12,8 @@ import { createEquipmentSlice, equipmentSelectors } from './gameSlices/equipment
 import type { EquipmentSlice } from './gameSlices/equipment';
 import { createFactionsSlice, factionsSelectors } from './gameSlices/factions';
 import type { FactionsSlice } from './gameSlices/factions';
+import { createInventorySlice, inventorySelectors } from './gameSlices/inventory';
+import type { InventorySlice } from './gameSlices/inventory';
 import { createPartySlice, partySelectors } from './gameSlices/party';
 import type { PartySlice } from './gameSlices/party';
 import { createPoiSlice, poiSelectors } from './gameSlices/poi';
@@ -34,6 +36,7 @@ export type StoreState = {
   pois: PoiSlice;
   factions: FactionsSlice;
   equipment: EquipmentSlice;
+  inventory: InventorySlice;
 };
 
 export const useGameState = create<StoreState>()(
@@ -48,6 +51,7 @@ export const useGameState = create<StoreState>()(
     shelter: createShelterSlice(set, get, api),
     pois: createPoiSlice(set, get, api),
     factions: createFactionsSlice(set, get, api),
+    inventory: createInventorySlice(set, get, api),
   })),
 );
 
@@ -61,4 +65,5 @@ export {
   poiSelectors,
   factionsSelectors,
   worldSelectors,
+  inventorySelectors,
 };
