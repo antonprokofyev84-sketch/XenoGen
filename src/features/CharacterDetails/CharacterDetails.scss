@@ -1,39 +1,24 @@
-.inventoryScreen {
+.characterDetails {
   display: flex;
   flex-direction: row;
-  height: 100%; // Занимаем всю высоту родителя
+  height: 100%;
+  width: 100%;
   padding: 1rem;
   gap: 1rem;
-  background-color: #121212; // Темный фон подложки
-  color: $color-text-main;
+  background-color: #121212;
+  color: #ffffff;
   box-sizing: border-box;
-  overflow: hidden; // Чтобы скроллились внутренние области
+  overflow: hidden;
 
-  // --- ЛЕВАЯ КОЛОНКА ---
-  .leftColumn {
-    flex: 0 0 420px; // Фиксированная ширина под панель персонажа
-    display: flex;
-    flex-direction: column;
-    min-height: 0; // Fix for flexbox scrolling
+  // --- ЛЕВАЯ КОЛОНКА: Сам компонент CharacterPanel ---
+  .characterPanel {
+    flex: 2; // 2 части пространства
+    min-width: 0; // Чтобы контент внутри мог сжиматься при необходимости
   }
 
-  // --- ПРАВАЯ КОЛОНКА ---
-  .rightColumn {
-    flex: 1; // Занимает всё оставшееся место
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    min-width: 0; // Fix for flexbox scrolling
-  }
-
-  .inventoryContainer {
-    flex: 1; // Занимает большую часть правой колонки
-    min-height: 0; // Важно для скролла внутри инвентаря
-    display: flex;
-    flex-direction: column;
-  }
-
-  .detailsContainer {
-    flex: 0 0 200px; // Фиксированная высота для деталей снизу
+  // --- ПРАВАЯ КОЛОНКА: Сам компонент InventoryPanel ---
+  .inventoryPanel {
+    flex: 3; // 3 части пространства
+    min-width: 0; // Чтобы контент внутри мог сжиматься при необходимости
   }
 }

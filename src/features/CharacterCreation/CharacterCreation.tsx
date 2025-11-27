@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { use, useState } from 'react';
 
 import { Button } from '@/components/Button/Button';
 import { INITIAL_FACTIONS } from '@/data/initialFaction';
@@ -35,6 +35,8 @@ export const CharacterCreation = () => {
   const initializeMap = useGameState((state) => state.map.actions.initializeMap);
   const initializePois = useGameState((state) => state.pois.actions.initializePois);
 
+  const addItem = useGameState((state) => state.inventory.actions.addItem);
+
   const handleStatChange = (statKey: MainStatKey, delta: number) => {
     characterActions.changeMainStat(protagonistId, statKey, delta);
     setCreationPoints((p) => p - delta);
@@ -68,6 +70,21 @@ export const CharacterCreation = () => {
     initializeFactions(INITIAL_FACTIONS);
     initializeMap(INITIAL_MAP);
     initializePois(INITIAL_POI);
+
+    //test
+    addItem({
+      templateId: 'fireAxe',
+      rarity: 'uncommon',
+      type: 'meleeWeapon',
+      quantity: 1,
+    });
+    addItem({
+      templateId: 'reinforcedLeatherArmor',
+      rarity: 'rare',
+      type: 'armor',
+      quantity: 1,
+    });
+
     goToScreen('strategicMap');
   };
 

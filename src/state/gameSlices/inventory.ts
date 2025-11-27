@@ -1,5 +1,10 @@
 import type { EquipmentSlot } from '@/types/equipment.types';
-import type { InventoryItem, InventoryStorage, Resources } from '@/types/inventory.types';
+import type {
+  CombatLoot,
+  InventoryItem,
+  InventoryStorage,
+  Resources,
+} from '@/types/inventory.types';
 
 import type { GameSlice } from '../types';
 import type { StoreState } from '../useGameState';
@@ -13,6 +18,7 @@ export interface InventorySlice {
   resources: Resources;
 
   actions: {
+    addLoot: (loot: CombatLoot) => void;
     addItem: (item: InventoryItem) => boolean;
     removeItem: (item: InventoryItem) => boolean;
 
@@ -25,6 +31,8 @@ export interface InventorySlice {
 
 // --- СЕЛЕКТОРЫ ---
 export const inventorySelectors = {
+  selectItemsByType: (type: keyof InventoryStorage) => (state: StoreState) =>
+    state.inventory.items[type],
   selectMeleeWeapons: (state: StoreState) => state.inventory.items.meleeWeapon,
   selectRangeWeapons: (state: StoreState) => state.inventory.items.rangeWeapon,
   selectArmor: (state: StoreState) => state.inventory.items.armor,
@@ -62,6 +70,41 @@ export const createInventorySlice: GameSlice<InventorySlice> = (set, get) => ({
   },
 
   actions: {
+    addLoot: (loot) => {
+      set((state) => {
+        // 1. Мержим ресурсы
+        state.inventory.resources.money += loot.resources.money;
+        state.inventory.resources.scrap += loot.resources.scrap;
+        state.inventory.resources.food += loot.resources.food;
+
+        // 2. Мержим предметы (из плоского списка в категории)
+        loot.items.forEach((newItem) => {
+          const category = newItem.type;
+
+          // Проверяем, существует ли такая категория в хранилище
+          const categoryItems = state.inventory.items[category];
+
+          if (!categoryItems) {
+            console.warn(
+              `[Inventory] Unknown item category: ${category} for item ${newItem.templateId}`,
+            );
+            return;
+          }
+
+          // Пытаемся найти существующий стак
+          const existing = categoryItems.find(
+            (i) => i.templateId === newItem.templateId && i.rarity === newItem.rarity,
+          );
+
+          if (existing) {
+            existing.quantity += newItem.quantity;
+          } else {
+            // Immer позволяет просто пушить в массив
+            categoryItems.push(newItem);
+          }
+        });
+      });
+    },
     addItem: (item: InventoryItem): boolean => {
       let success = false;
 

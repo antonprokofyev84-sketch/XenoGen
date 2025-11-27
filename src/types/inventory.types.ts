@@ -17,7 +17,7 @@ export interface Resources {
 
 export type InventoryStorage = Record<ItemType, InventoryItem[]>;
 
-export interface InventoryState {
-  items: InventoryStorage;
+export type CombatLoot = {
+  items: InventoryItem[];
   resources: Resources;
-}
+};

@@ -1,101 +1,79 @@
 import { RARITY_ORDER } from '@/constants';
-import { ARMOR_TEMPLATES_DB } from '@/data/armor.templates';
 import { ENEMY_TEMPLATES_DB } from '@/data/enemy.templates';
+import { ITEMS_TEMPLATES_DB } from '@/data/items.templates';
 import { LEVEL_BONUS, LOOT_RULES_BY_TEMPLATE } from '@/data/loot.rules';
-import { WEAPON_TEMPLATES_DB } from '@/data/weapon.templates';
-import type {
-  AggregatedLootResult,
-  CombatEquipment,
-  CombatUnit,
-  LootItem,
-} from '@/types/combat.types';
+import type { CombatUnit } from '@/types/combat.types';
 import type { Rarity } from '@/types/common.types';
-import type { LootRule } from '@/types/loot.types';
+import type { CombatLoot, InventoryItem, ItemType } from '@/types/inventory.types';
+import type { LootEntry, LootRule } from '@/types/loot.types';
 import { randomInRange } from '@/utils/utils';
 
-const COMPENSATION_CHANCE = 0.66 as const;
+type SlotItemMinimal = { templateId: string; rarity: Rarity; type: ItemType };
 
-// в будущем можно добавить поле compensation в темплейты оружия и брони
+// --- КОНСТАНТЫ ---
+const COMPENSATION_CHANCE = 0.66 as const;
 const SCRAP_COMPENSATION_MIN = 4;
 const SCRAP_COMPENSATION_MAX = 6;
 
-const SCRAP_ID = 'scrap';
-const MONEY_ID = 'coins';
-
-type EquipmentBuckets = {
-  weapons: LootItem[];
-  armors: LootItem[];
-  gadgets: LootItem[];
-  compensation: LootItem[];
-};
-
-const SLOT_BUCKET: Record<keyof CombatEquipment, keyof EquipmentBuckets> = {
-  meleePrimary: 'weapons',
-  meleeSecondary: 'weapons',
-  rangePrimary: 'weapons',
-  rangeSecondary: 'weapons',
-  armor: 'armors',
-  gadget: 'gadgets',
-};
+// --- ХЕЛПЕРЫ ---
 
 function getBaseLevel(templateId: string): number {
-  return ENEMY_TEMPLATES_DB[templateId].baseLevel;
+  return ENEMY_TEMPLATES_DB[templateId]?.baseLevel ?? 1;
 }
 
-function sampleCount(count: number | [number, number], quantityMultiplier: number): number {
-  if (typeof count === 'number') {
-    return Math.max(0, Math.floor(count * quantityMultiplier));
+function sampleCount(quantity: number | [number, number], quantityMultiplier: number): number {
+  if (typeof quantity === 'number') {
+    return Math.max(0, Math.floor(quantity * quantityMultiplier));
   }
-  const [min, max] = count;
+  const [min, max] = quantity;
   const roll = randomInRange(min, max);
   return Math.max(0, Math.floor(roll * quantityMultiplier));
 }
 
-// --- 1. Агрегатор лута ---
-// (Чтобы 'scrap' (x5) и 'scrap' (x3) стали 'scrap' (x8))
-function aggregateLoot(lootList: LootItem[]): LootItem[] {
-  const aggregated: Record<string, LootItem> = {};
+/**
+ * Добавляет предмет в хранилище с учетом агрегации (стакания).
+ */
+function addItemToLoot(storage: InventoryItem[], item: InventoryItem) {
+  const { templateId, rarity, quantity } = item;
 
-  for (const item of lootList) {
-    // Ключ = item.id + (возможно, rarity, если это экипировка)
-    const key = `${item.id}_${item.rarity || 'default'}`;
+  const existingItem = storage.find((i) => i.templateId === templateId && i.rarity === rarity);
 
-    if (aggregated[key]) {
-      aggregated[key].quantity += item.quantity;
-    } else {
-      aggregated[key] = { ...item };
-    }
+  if (existingItem) {
+    existingItem.quantity += quantity;
+  } else {
+    storage.push({ ...item });
   }
-  return Object.values(aggregated);
 }
 
-// хелпер: прокрутить набор правил и накидать результаты в массив
-function rollRules(
-  rules: Array<{ itemId: string; count: number | [number, number]; chance: number }>,
-  quantityMultiplier: number,
-): LootItem[] {
-  const out: LootItem[] = [];
+// --- ЛОГИКА ГЕНЕРАЦИИ ---
+
+type SimpleLootResult = { id: string; quantity: number; type: string };
+
+function rollRules(rules: Array<LootEntry>, quantityMultiplier: number): SimpleLootResult[] {
+  const out: SimpleLootResult[] = [];
   for (const rule of rules) {
     if (Math.random() <= rule.chance) {
-      const quantity = sampleCount(rule.count, quantityMultiplier);
-      if (quantity > 0) out.push({ id: rule.itemId, quantity });
+      const quantity = sampleCount(rule.quantity, quantityMultiplier);
+      if (quantity > 0)
+        out.push({
+          id: rule.itemId,
+          quantity,
+          type: ITEMS_TEMPLATES_DB[rule.itemId]?.type || 'misc',
+        });
     }
   }
   return out;
 }
 
-// --- 2. Обработчик таблицы лута (Base + Rarity) ---
-function processLootTable(enemy: CombatUnit, lootRule: LootRule): LootItem[] {
+function processLootTable(enemy: CombatUnit, lootRule: LootRule): SimpleLootResult[] {
   const enemyRarity: Rarity = enemy.rarity || 'common';
-
   const baseLevel = getBaseLevel(enemy.templateId);
   const levelTier = Math.max(0, enemy.level - baseLevel);
   const quantityMultiplier = LEVEL_BONUS[Math.min(levelTier, LEVEL_BONUS.length - 1)] ?? 1;
 
-  const results: LootItem[] = [];
-
-  // rarity bonuses
+  const results: SimpleLootResult[] = [];
   const rarityIndex = RARITY_ORDER.indexOf(enemyRarity);
+
   if (rarityIndex >= 0) {
     const tiersToProcess = lootRule.cascade
       ? RARITY_ORDER.slice(0, rarityIndex + 1)
@@ -106,89 +84,73 @@ function processLootTable(enemy: CombatUnit, lootRule: LootRule): LootItem[] {
       results.push(...rollRules(bonusRules, quantityMultiplier));
     }
   }
-
   return results;
 }
 
-function checkEquipmentDrop(equipment: CombatEquipment): EquipmentBuckets {
-  const buckets: EquipmentBuckets = { weapons: [], armors: [], gadgets: [], compensation: [] };
+// --- ГЛАВНАЯ ФУНКЦИЯ ---
 
-  for (const slotKey of Object.keys(equipment) as Array<keyof CombatEquipment>) {
-    const item = equipment[slotKey];
-    if (!item) continue;
+export const generateLoot = (enemies: CombatUnit[]): CombatLoot => {
+  const itemsStorage: InventoryItem[] = [];
 
-    const templateDropRate =
-      WEAPON_TEMPLATES_DB[item.templateId]?.dropRate ??
-      ARMOR_TEMPLATES_DB[item.templateId]?.dropRate ??
-      0;
-
-    if (templateDropRate <= 0) continue;
-
-    if (Math.random() <= templateDropRate) {
-      const bucket = SLOT_BUCKET[slotKey];
-      (buckets[bucket] as LootItem[]).push({
-        id: item.templateId,
-        quantity: 1,
-        rarity: item.rarity || 'common',
-      });
-    } else if (Math.random() <= COMPENSATION_CHANCE) {
-      buckets.compensation.push({
-        id: SCRAP_ID,
-        quantity: randomInRange(SCRAP_COMPENSATION_MIN, SCRAP_COMPENSATION_MAX),
-      });
-    }
-  }
-
-  return buckets;
-}
-
-type LootBin = {
-  weapons: LootItem[];
-  armors: LootItem[];
-  gadgets: LootItem[];
-  items: LootItem[];
-  money: LootItem[];
-  scrap: LootItem[];
-};
-
-export const generateLoot = (enemies: CombatUnit[]): AggregatedLootResult => {
-  const lootBin: LootBin = {
-    weapons: [],
-    armors: [],
-    gadgets: [],
-    items: [],
-    money: [],
-    scrap: [],
+  const resources = {
+    money: 0,
+    scrap: 0,
+    food: 0,
   };
 
   for (const enemy of enemies) {
     if (enemy.status !== 'dead' && enemy.status !== 'unconscious') continue;
 
-    // эквип (сразу по корзинам)
-    const eq = checkEquipmentDrop(enemy.equipment);
-    lootBin.weapons.push(...eq.weapons);
-    lootBin.armors.push(...eq.armors);
-    lootBin.gadgets.push(...eq.gadgets);
-    lootBin.scrap.push(...eq.compensation);
+    const processEquipmentSlot = (slotItem: SlotItemMinimal | null | undefined) => {
+      if (!slotItem) return;
 
-    // таблица
+      const dropRate = ITEMS_TEMPLATES_DB[slotItem.templateId]?.dropRate ?? 0;
+
+      if (dropRate > 0) {
+        if (Math.random() <= dropRate) {
+          addItemToLoot(itemsStorage, {
+            templateId: slotItem.templateId,
+            type: slotItem.type,
+            rarity: slotItem.rarity,
+            quantity: 1,
+          });
+        } else if (Math.random() <= COMPENSATION_CHANCE) {
+          resources.scrap += randomInRange(SCRAP_COMPENSATION_MIN, SCRAP_COMPENSATION_MAX);
+        }
+      }
+    };
+
+    if (enemy.equipment) {
+      processEquipmentSlot(enemy.equipment.meleePrimary);
+      processEquipmentSlot(enemy.equipment.meleeSecondary);
+      processEquipmentSlot(enemy.equipment.rangePrimary);
+      processEquipmentSlot(enemy.equipment.rangeSecondary);
+      processEquipmentSlot(enemy.equipment.armor);
+      processEquipmentSlot(enemy.equipment.gadget);
+    }
+
     const lootRule = LOOT_RULES_BY_TEMPLATE[enemy.templateId];
     if (lootRule) {
       const tableLoot = processLootTable(enemy, lootRule);
-      for (const item of tableLoot) {
-        if (item.id === SCRAP_ID) lootBin.scrap.push(item);
-        else if (item.id === MONEY_ID) lootBin.money.push(item);
-        else lootBin.items.push(item);
+
+      for (const lootItem of tableLoot) {
+        if (lootItem.type === 'resource') {
+          resources[lootItem.id as keyof typeof resources] += lootItem.quantity;
+          continue;
+        }
+
+        addItemToLoot(itemsStorage, {
+          templateId: lootItem.id,
+          type: lootItem.type as ItemType,
+          rarity: 'common',
+          quantity: lootItem.quantity,
+        });
       }
     }
   }
 
   return {
-    weapons: aggregateLoot(lootBin.weapons),
-    armors: aggregateLoot(lootBin.armors),
-    gadgets: aggregateLoot(lootBin.gadgets),
-    items: aggregateLoot(lootBin.items),
-    money: aggregateLoot(lootBin.money)[0],
-    scrap: aggregateLoot(lootBin.scrap)[0],
+    items: itemsStorage,
+    resources,
   };
 };

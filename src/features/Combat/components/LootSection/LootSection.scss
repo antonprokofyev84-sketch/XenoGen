@@ -1,108 +1,145 @@
-// --- Цвета Редкости для Рамок ---
-$rarity-common: #888;
-$rarity-uncommon: #6e7c5a;
-$rarity-rare: #60708f;
-$rarity-unique: #c8a658;
-
-.equipment,
-.otherItems {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 1.5rem;
-}
-
-.equipment .loot-item {
-  width: 120px;
-  height: 120px;
-}
-
-.otherItems .loot-item {
-  width: 80px;
-  height: 80px;
-}
+$item-size-main: 100px;
+$item-size-resource: 60px; // Уменьшили базовый размер для ресурсов
+$gap: 12px;
+$resource-gold: #c5b05c;
 
 .lootDisplay {
   width: 100%;
-}
-
-.loot-section {
-  margin-bottom: 1.5rem;
-
-  h3 {
-    color: #aaa;
-    font-size: 1rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin: 0 0 0.75rem 0;
-    border-bottom: 1px solid #444;
-    padding-bottom: 0.5rem;
-  }
-}
-
-.loot-grid {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
+  flex-direction: column;
+  gap: 1.5rem;
 
-// --- Базовый стиль для иконки 100x100 ---
-.loot-item {
-  position: relative;
-  background-color: #222;
-  border: 2px solid #555;
-  border-radius: 6px;
-  padding: 5px;
-  box-sizing: border-box;
-  flex-shrink: 0;
-
-  // Размеры по умолчанию
-  width: 100px;
-  height: 100px;
-
-  // Рамки редкости
-  &.rarity-common {
-    border-color: $rarity-common;
-  }
-  &.rarity-uncommon {
-    border-color: $rarity-uncommon;
-  }
-  &.rarity-rare {
-    border-color: $rarity-rare;
-  }
-  &.rarity-unique {
-    border-color: $rarity-unique;
+  .emptyLoot {
+    color: $btn-color-grey;
+    font-style: italic;
+    text-align: center;
+    padding: 2rem;
   }
 
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-
-  .item-quantity {
-    position: absolute;
-    bottom: 2px;
-    right: 4px;
-    color: #fff;
-    font-size: 0.9rem;
-    font-weight: 600;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+  .resourcesDivider {
+    border-top: 1px solid rgba($color-border, 0.5);
+    padding-top: 1rem;
   }
 }
 
-.resource-list {
-  div {
-    padding: 0.25rem 0;
-    font-weight: 500;
-    text-transform: capitalize;
+.lootSection {
+  width: 100%;
+
+  .lootGrid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $gap;
+    justify-content: flex-start;
+    align-items: center; // Выравнивание по центру для разных высот
   }
 
-  .resource-money {
-    color: #c5b05c; // Желтый
-  }
-  .resource-scrap {
-    color: #9e9e9e; // Серый
+  // Общий контейнер для позиционирования
+  .lootItem {
+    position: relative;
+    box-sizing: border-box;
+    flex-shrink: 0;
+
+    // --- СТИЛИ ДЛЯ ОБЫЧНЫХ ПРЕДМЕТОВ (Картинки, Квадратные) ---
+    &:not(.resourceItem) {
+      width: $item-size-main;
+      height: $item-size-main;
+      background-color: rgba(0, 0, 0, 0.3);
+      border: 2px solid $color-border;
+      border-radius: 6px;
+      padding: 6px;
+
+      // Легкий ховер только для подсветки (без скейла)
+      transition: background-color 0.1s ease;
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+      }
+
+      // Рамки редкости
+      &.common {
+        border-color: $rarity-common;
+      }
+      &.uncommon {
+        border-color: $rarity-uncommon;
+      }
+      &.rare {
+        border-color: $rarity-rare;
+      }
+      &.unique {
+        border-color: $rarity-unique;
+      }
+
+      .iconContainer {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        img {
+          max-width: 100%;
+          max-height: 100%;
+          object-fit: contain;
+          filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.5));
+        }
+      }
+
+      .itemQuantity {
+        position: absolute;
+        bottom: 4px;
+        right: 6px;
+        color: #fff;
+        font-size: 0.9rem;
+        font-weight: 700;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 1);
+        pointer-events: none;
+      }
+    }
+
+    // --- СТИЛИ ДЛЯ РЕСУРСОВ (SVG 60px, Текст рядом) ---
+    &.resourceItem {
+      // Сбрасываем фиксированную ширину, чтобы вместить текст
+      width: auto;
+      height: auto;
+
+      // Убираем рамку и фон
+      border: none;
+      background: transparent;
+      color: $resource-gold;
+
+      display: flex;
+      align-items: center; // Центрируем иконку и текст по вертикали
+      gap: 10px; // Отступ между иконкой и цифрой
+      padding-right: 15px; // Небольшой отступ справа для разделения ресурсов
+
+      .iconContainer {
+        // Фиксированный размер иконки - 60px
+        width: $item-size-resource;
+        height: $item-size-resource;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        .svgIcon {
+          width: 100%;
+          height: 100%;
+          fill: currentColor; // Наследует золотой цвет ($resource-gold)
+          filter: drop-shadow(0 0 5px rgba(197, 176, 92, 0.3)); // Легкое свечение
+        }
+      }
+
+      .itemQuantity {
+        // Статичное позиционирование (рядом с иконкой)
+        position: static;
+        transform: none;
+
+        font-size: 1.4rem; // Крупный, читаемый шрифт
+        font-weight: 700;
+        color: #ddd; // Светлый текст (почти белый)
+
+        background-color: transparent;
+        padding: 0;
+        text-shadow: 1px 1px 2px #000;
+      }
+    }
   }
 }

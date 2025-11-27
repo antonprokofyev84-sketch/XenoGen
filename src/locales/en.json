@@ -9,7 +9,7 @@
     "backButton": "Back",
     "startButton": "Start Game"
   },
-  "stats": {
+  "mainStats": {
     "str": "Strength",
     "dex": "Dexterity",
     "con": "Constitution",
@@ -34,6 +34,19 @@
     "critChance": "Crit Chance",
     "meleeAttackPower": "Melee Attack Power",
     "evasion": "Evasion"
+  },
+  "weaponStats": {
+    "damage": "Damage",
+    "armorPiercing": "Armor Piercing",
+    "distance": "Range",
+    "attacksPerTurn": "Attacks/Turn",
+    "lethality": "Lethality"
+  },
+  "rarity": {
+    "common": "Common",
+    "uncommon": "Uncommon",
+    "rare": "Rare",
+    "unique": "Unique"
   },
   "traits": {
     "alcoholic1": {

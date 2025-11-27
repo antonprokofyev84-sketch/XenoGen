@@ -2,28 +2,133 @@
   background-color: $color-bg-dark;
   border: 1px dashed $color-border;
   border-radius: 8px;
-  padding: 1rem;
+  padding: 0.5rem; // Уменьшили паддинг, чтобы дать больше места сетке
   height: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  gap: 0.5rem;
   box-sizing: border-box;
 
-  h3 {
-    margin-bottom: 0.5rem;
-    color: $rarity-unique;
-  }
-
-  p {
-    color: $btn-color-grey;
-  }
-
-  .tabsContainer {
+  // --- TABS HEADER ---
+  .tabsHeader {
     display: flex;
-    gap: 5px;
-    flex-wrap: wrap;
-    margin-top: 10px;
     justify-content: center;
+    gap: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba($color-border, 0.5);
+
+    .tabButton {
+      background: transparent;
+      border: 2px solid transparent;
+      border-radius: 6px;
+      padding: 6px 12px;
+      cursor: pointer;
+      color: $btn-color-grey;
+      transition: all 0.2s ease;
+
+      .tabIcon {
+        width: 32px;
+        height: 32px;
+        fill: currentColor; // SVG будет наследовать цвет текста
+      }
+
+      &:hover {
+        color: $btn-color-white;
+        background-color: rgba(255, 255, 255, 0.05);
+      }
+
+      &.active {
+        color: $btn-color-yellow; // Активный цвет
+        border-color: rgba($btn-color-yellow, 0.3);
+        background-color: rgba($btn-color-yellow, 0.1);
+
+        // Легкое свечение для активной иконки
+        filter: drop-shadow(0 0 5px rgba($btn-color-yellow, 0.4));
+      }
+    }
+  }
+
+  // --- GRID CONTAINER ---
+  .gridContainer {
+    flex: 1;
+    min-height: 0; // Для скролла
+    display: flex;
+    flex-direction: column;
+  }
+
+  // --- FILTERS FOOTER ---
+  .filtersFooter {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba($color-border, 0.5);
+
+    .rarityCheckbox {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      user-select: none;
+      color: $btn-color-grey;
+      transition: color 0.2s;
+
+      input {
+        display: none; // Прячем стандартный чекбокс
+      }
+
+      // Кастомный чекбокс (квадратик)
+      .checkmark {
+        width: 14px;
+        height: 14px;
+        border: 2px solid #555;
+        border-radius: 3px;
+        display: inline-block;
+        position: relative;
+        transition: all 0.2s;
+      }
+
+      &:hover {
+        color: #fff;
+      }
+
+      // Логика цветов при checked
+      input:checked + .checkmark {
+        background-color: currentColor;
+        border-color: currentColor;
+        box-shadow: 0 0 4px currentColor;
+      }
+
+      // Цвета для разных редкостей (используем наши переменные)
+      &.common {
+        color: $rarity-common;
+        input:checked ~ .labelName {
+          color: #fff;
+          text-shadow: 0 0 3px $rarity-common;
+        }
+      }
+      &.uncommon {
+        color: $rarity-uncommon;
+        input:checked ~ .labelName {
+          color: #fff;
+          text-shadow: 0 0 3px $rarity-uncommon;
+        }
+      }
+      &.rare {
+        color: $rarity-rare;
+        input:checked ~ .labelName {
+          color: #fff;
+          text-shadow: 0 0 3px $rarity-rare;
+        }
+      }
+      &.unique {
+        color: $rarity-unique;
+        input:checked ~ .labelName {
+          color: #fff;
+          text-shadow: 0 0 3px $rarity-unique;
+        }
+      }
+    }
   }
 }

@@ -155,14 +155,8 @@ export const calculateAttackForecast = (
     return null;
   }
 
-  console.log('===');
-  console.log(JSON.stringify(attacker.stats));
-  console.log(JSON.stringify(weaponInstance.mods));
-
   // Применяем сплющенные моды оружия к статам атакующего
   const attackerStatsWithWeaponMods = applyTemporaryMods(attacker.stats, weaponInstance.mods);
-  console.log('combat helpers attackerStatsWithWeaponMods');
-  console.log(attackerStatsWithWeaponMods.melee);
 
   const hitChancePercent = computeHitChancePercent(
     attackerStatsWithWeaponMods,

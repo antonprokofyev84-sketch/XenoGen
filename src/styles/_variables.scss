@@ -53,6 +53,21 @@ $btn-color-border-default: #505050;
   }
 }
 
+@mixin rarity-border {
+  &.common {
+    border-color: $rarity-common;
+  }
+  &.uncommon {
+    border-color: $rarity-uncommon;
+  }
+  &.rare {
+    border-color: $rarity-rare;
+  }
+  &.unique {
+    border-color: $rarity-unique;
+  }
+}
+
 // 3. Кастомный скроллбар
 @mixin custom-scrollbar {
   scrollbar-width: thin;

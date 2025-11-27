@@ -1,43 +1,83 @@
-import { useShallow } from 'zustand/react/shallow';
+import { useMemo } from 'react';
 
-import { combatSelectors, useCombatState } from '@/state/useCombatState';
-import { generateLoot } from '@/systems/combat/combatLootGenerator';
-import type { LootItem } from '@/types/combat.types';
+// --- ИМПОРТ ИКОНОК РЕСУРСОВ КАК КОМПОНЕНТОВ ---
+import FoodIcon from '@/assets/icons/food.svg?react';
+import MoneyIcon from '@/assets/icons/money.svg?react';
+import ScrapIcon from '@/assets/icons/scrap.svg?react';
+import { useCombatState } from '@/state/useCombatState';
+import type { InventoryItem } from '@/types/inventory.types';
 import { assetsVersion } from '@/utils/assetsVersion';
 
 import './LootSection.scss';
 
-interface LootSectionProps extends React.HTMLAttributes<HTMLDivElement> {
-  items: LootItem[];
-  imageFolder: string;
-  header?: string;
-  className?: string;
+// Тип для ресурсов (требует React-компонент иконки, отличается от InventoryItem наличием Icon)
+interface ResourceItemDisplay {
+  templateId: string;
+  quantity: number;
+  rarity: string;
+  Icon: React.FunctionComponent<React.SVGProps<SVGSVGElement>>;
 }
 
 /**
- * Вспомогательный компонент для отрисовки секции лута (оружие, броня и т.д.)
+ * Блок для обычных предметов (PNG из папок)
+ * Теперь принимает массив InventoryItem
  */
-const LootBlock = ({ items, header, imageFolder, className, ...rest }: LootSectionProps) => {
+const LootBlock = ({ items, className }: { items: InventoryItem[]; className?: string }) => {
   if (items.length === 0) return null;
 
-  const combinedClassName = `loot-section ${className || ''}`;
+  return (
+    <div className={`lootSection ${className || ''}`}>
+      <div className="lootGrid">
+        {items.map((item, index) => (
+          <div
+            key={`${item.templateId}-${index}`}
+            className={`lootItem ${item.rarity || 'common'}`}
+            title={`${item.templateId} (x${item.quantity})`}
+          >
+            <div className="iconContainer">
+              <img
+                // Динамический путь: /images/{type}/{id}.png
+                src={assetsVersion(`/images/${item.type}/${item.templateId}.png`)}
+                alt={item.templateId}
+                loading="lazy"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
+            </div>
+            {item.quantity > 1 && <span className="itemQuantity">x{item.quantity}</span>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Отдельный блок для ресурсов (SVG компоненты)
+ */
+const ResourceBlock = ({
+  items,
+  className,
+}: {
+  items: ResourceItemDisplay[];
+  className?: string;
+}) => {
+  if (items.length === 0) return null;
 
   return (
-    <div {...rest} className={combinedClassName}>
-      {header && <h3>{header}</h3>}
-      <div className="loot-grid">
-        {items.map((item) => (
+    <div className={`lootSection ${className || ''}`}>
+      <div className="lootGrid">
+        {items.map((item, index) => (
           <div
-            key={`${item.id}-${item.rarity || 'common'}`}
-            className={`loot-item rarity-${item.rarity || 'common'}`}
-            title={`${item.id} (x${item.quantity})`}
+            key={`res-${item.templateId}-${index}`}
+            className={`lootItem resourceItem ${item.rarity || 'common'}`}
+            title={`${item.templateId}: ${item.quantity}`}
           >
-            <img
-              src={assetsVersion(`${imageFolder}/${item.id}.png`)}
-              alt={item.id}
-              loading="lazy"
-            />
-            {item.quantity > 1 && <span className="item-quantity">x{item.quantity}</span>}
+            <div className="iconContainer">
+              <item.Icon className="svgIcon" />
+            </div>
+            <span className="itemQuantity">x{item.quantity}</span>
           </div>
         ))}
       </div>
@@ -46,62 +86,60 @@ const LootBlock = ({ items, header, imageFolder, className, ...rest }: LootSecti
 };
 
 export const LootSection = () => {
-  const allEnemies = useCombatState(useShallow((state) => combatSelectors.selectAllEnemies(state)));
-  const loot = generateLoot(allEnemies);
+  const loot = useCombatState((state) => state.loot);
 
-  // Проверка, есть ли вообще какой-либо лут
-  const hasLoot =
-    loot.weapons.length > 0 ||
-    loot.armors.length > 0 ||
-    loot.gadgets.length > 0 ||
-    loot.items.length > 0 ||
-    loot.money ||
-    loot.scrap;
+  const { mainLoot, resourcesLoot } = useMemo(() => {
+    if (!loot) return { mainLoot: [], resourcesLoot: [] };
 
-  const currency = [
-    loot.money ? { id: 'money', quantity: loot.money.quantity } : null,
-    loot.scrap ? { id: 'scrap', quantity: loot.scrap.quantity } : null,
-  ].filter(Boolean) as LootItem[];
+    const res: ResourceItemDisplay[] = [];
+
+    if (loot.resources.money > 0) {
+      res.push({
+        templateId: 'Money',
+        quantity: loot.resources.money,
+        rarity: 'unique',
+        Icon: MoneyIcon,
+      });
+    }
+
+    if (loot.resources.scrap > 0) {
+      res.push({
+        templateId: 'Scrap',
+        quantity: loot.resources.scrap,
+        rarity: 'common',
+        Icon: ScrapIcon,
+      });
+    }
+
+    if (loot.resources.food > 0) {
+      res.push({
+        templateId: 'Ration',
+        quantity: loot.resources.food,
+        rarity: 'common',
+        Icon: FoodIcon,
+      });
+    }
+
+    return { mainLoot: loot.items, resourcesLoot: res };
+  }, [loot]);
+
+  if (!loot) return null;
+
+  const hasLoot = mainLoot.length > 0 || resourcesLoot.length > 0;
 
   return (
     <div className="lootDisplay">
       {!hasLoot ? (
-        <p>No loot found.</p>
+        <div className="emptyLoot">No loot found.</div>
       ) : (
         <>
-          <div className="equipment">
-            <LootBlock
-              items={loot.weapons}
-              // header="Weapons"
-              imageFolder="/images/weapon/"
-              className="weapon-list"
-            />
-            <LootBlock
-              items={loot.armors}
-              // header="Armor"
-              imageFolder="/images/armor/"
-              className="armor-list"
-            />
-            <LootBlock
-              items={loot.gadgets}
-              // header="Gadgets"
-              imageFolder="/images/gadget/"
-              className="gadget-list"
-            />
-          </div>
+          <LootBlock items={mainLoot} className="mainLootList" />
 
-          <div className="otherItems">
-            {currency.length > 0 && (
-              <LootBlock items={currency} imageFolder="/images/items/" className="item-list" />
-            )}
-
-            <LootBlock
-              items={loot.items}
-              // header="Items"
-              imageFolder="/images/items/"
-              className="item-list"
-            />
-          </div>
+          {resourcesLoot.length > 0 && (
+            <div className="resourcesDivider">
+              <ResourceBlock items={resourcesLoot} className="resourcesList" />
+            </div>
+          )}
         </>
       )}
     </div>

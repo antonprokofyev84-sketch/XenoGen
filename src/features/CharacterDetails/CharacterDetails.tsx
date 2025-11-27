@@ -5,37 +5,38 @@ import type { ItemType } from '@/types/inventory.types';
 
 import { CharacterPanel } from './components/CharacterPanel/CharacterPanel';
 import { InventoryPanel } from './components/InventoryPanel/InventoryPanel';
-import { ItemDetails } from './components/ItemDetails/ItemDetails';
 
 import './CharacterDetails.scss';
 
-// --- ОСНОВНОЙ КОМПОНЕНТ ---
-
 export const CharacterDetails = () => {
-  // 1. Получаем ID лидера для начального стейта
   const leaderId = useGameState((state) => state.party.leaderId);
+  const unselectItem = useGameState((state) => state.inventory.actions.unselectItem);
 
-  // 2. Локальный стейт экрана
   const [activeCharacterId, setActiveCharacterId] = useState<string>(leaderId);
   const [activeTab, setActiveTab] = useState<ItemType>('meleeWeapon');
 
+  // Хендлер для клика по фону (сброс выделения)
+  const handleBackgroundClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Проверяем, был ли клик совершен по предмету инвентаря или его внутренностям.
+    // Если да — ничего не делаем (выделение обрабатывается внутри InventoryGrid).
+    if ((e.target as HTMLElement).closest('.inventoryItem')) {
+      return;
+    }
+
+    // Если клик был не по предмету (например, по пустому месту), снимаем выделение.
+    unselectItem();
+  };
+
   return (
-    <div className="inventoryScreen">
-      {/* ЛЕВАЯ КОЛОНКА: Персонаж и слоты */}
-      <div className="leftColumn">
-        <CharacterPanel characterId={activeCharacterId} />
-      </div>
+    // Используем onClickCapture для фазы погружения
+    <div className="characterDetails" onClickCapture={handleBackgroundClick}>
+      <CharacterPanel characterId={activeCharacterId} />
 
-      {/* ПРАВАЯ КОЛОНКА: Сетка предметов и Детали */}
-      <div className="rightColumn">
-        <div className="inventoryContainer">
-          <InventoryPanel activeTab={activeTab} onTabChange={setActiveTab} />
-        </div>
-
-        <div className="detailsContainer">
-          <ItemDetails />
-        </div>
-      </div>
+      <InventoryPanel
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        characterId={activeCharacterId}
+      />
     </div>
   );
 };

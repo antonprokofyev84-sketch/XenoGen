@@ -75,6 +75,7 @@ export const BattleSummary = () => {
   const clearSelectedPoiId = useGameState((state) => state.map.actions.clearSelectedPoiId);
   const removePoiFromCell = useGameState((state) => state.pois.actions.removePoiFromCell);
   const changePoiDetails = useGameState((state) => state.pois.actions.changePoiDetails);
+  const addLoot = useGameState((state) => state.inventory.actions.addLoot);
   const aliveEnemies = useCombatState(
     useShallow((state) => combatSelectors.selectAliveEnemies(state)),
   );
@@ -84,6 +85,9 @@ export const BattleSummary = () => {
     if (combatStatus === 'victory') {
       clearSelectedPoiId();
       removePoiFromCell(selectedCellId!, selectedPoiId!);
+      if (useCombatState.getState().loot) {
+        addLoot(useCombatState.getState().loot!);
+      }
     }
 
     if (combatStatus === 'defeat' || combatStatus === 'retreat') {

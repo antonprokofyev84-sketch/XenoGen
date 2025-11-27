@@ -50,7 +50,7 @@ export const MainStatsBlock = ({
 
         return (
           <div className="statRow" key={statKey}>
-            <span className="statName">{textData.stats[statKey]}</span>
+            <span className="statName">{textData.mainStats[statKey]}</span>
             <span className={`statValue ${getStatValueClass(currentStatValue)}`}>
               {effectiveStatValue}
             </span>

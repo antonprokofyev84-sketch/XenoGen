@@ -7,16 +7,17 @@ export const LOOT_RULES_BY_TEMPLATE: Record<string, LootRule> = {
   youngScavenger: {
     tiers: {
       common: [
-        { itemId: 'scrap', count: [2, 5], chance: 1.0 },
-        { itemId: 'coins', count: [1, 2], chance: 0.4 },
-        { itemId: 'cloth_patch', count: [1, 2], chance: 0.35 },
+        { itemId: 'scrap', quantity: [2, 5], chance: 1.0 },
+        { itemId: 'money', quantity: [1, 2], chance: 1.0 }, // 0.4
+        { itemId: 'food', quantity: [1, 2], chance: 1.0 }, // 0.4
+        { itemId: 'cloth_patch', quantity: [1, 2], chance: 0.35 },
       ],
       uncommon: [
-        { itemId: 'bandage', count: [1, 2], chance: 0.5 },
-        { itemId: 'weapon_part_common', count: 1, chance: 0.25 },
+        { itemId: 'bandage', quantity: [1, 2], chance: 0.5 },
+        { itemId: 'weapon_part', quantity: 1, chance: 0.25 },
       ],
-      rare: [{ itemId: 'medkit_small', count: 1, chance: 0.2 }],
-      unique: [{ itemId: 'weapon_part_rare', count: 1, chance: 0.15 }],
+      rare: [{ itemId: 'medkit_small', quantity: 1, chance: 0.2 }],
+      unique: [{ itemId: 'weapon_part', quantity: 1, chance: 0.15 }],
     },
     cascade: true,
   },
@@ -24,20 +25,20 @@ export const LOOT_RULES_BY_TEMPLATE: Record<string, LootRule> = {
   oldScavenger: {
     tiers: {
       common: [
-        { itemId: 'scrap', count: [3, 6], chance: 1.0 },
-        { itemId: 'coins', count: [1, 3], chance: 0.5 },
-        { itemId: 'cloth_patch', count: [1, 3], chance: 0.45 },
-        { itemId: 'bone_shard', count: [1, 2], chance: 0.3 },
+        { itemId: 'scrap', quantity: [3, 6], chance: 1.0 },
+        { itemId: 'money', quantity: [1, 3], chance: 0.5 },
+        { itemId: 'cloth_patch', quantity: [1, 3], chance: 0.45 },
+        { itemId: 'bone_shard', quantity: [1, 2], chance: 0.3 },
       ],
       uncommon: [
-        { itemId: 'bandage', count: [1, 2], chance: 0.6 },
-        { itemId: 'weapon_part_common', count: 1, chance: 0.35 },
+        { itemId: 'bandage', quantity: [1, 2], chance: 0.6 },
+        { itemId: 'weapon_part', quantity: 1, chance: 0.35 },
       ],
       rare: [
-        { itemId: 'medkit_small', count: 1, chance: 0.25 },
-        { itemId: 'weapon_part_rare', count: 1, chance: 0.15 },
+        { itemId: 'medkit_small', quantity: 1, chance: 0.25 },
+        { itemId: 'weapon_part', quantity: 1, chance: 0.15 },
       ],
-      unique: [{ itemId: 'talisman_old_world', count: 1, chance: 0.1 }],
+      unique: [{ itemId: 'talisman_old_world', quantity: 1, chance: 0.1 }],
     },
     cascade: true,
   },
@@ -45,16 +46,16 @@ export const LOOT_RULES_BY_TEMPLATE: Record<string, LootRule> = {
   scavengerStalker: {
     tiers: {
       common: [
-        { itemId: 'scrap', count: [3, 6], chance: 1.0 },
-        { itemId: 'coins', count: [1, 3], chance: 0.5 },
-        { itemId: 'bolt_crossbow', count: [3, 7], chance: 0.7 },
+        { itemId: 'scrap', quantity: [3, 6], chance: 1.0 },
+        { itemId: 'money', quantity: [1, 3], chance: 0.5 },
+        { itemId: 'bolt_crossbow', quantity: [3, 7], chance: 0.7 },
       ],
       uncommon: [
-        { itemId: 'bandage', count: [1, 2], chance: 0.45 },
-        { itemId: 'weapon_part_common', count: 1, chance: 0.35 },
+        { itemId: 'bandage', quantity: [1, 2], chance: 0.45 },
+        { itemId: 'weapon_part_common', quantity: 1, chance: 0.35 },
       ],
-      rare: [{ itemId: 'medkit_small', count: 1, chance: 0.25 }],
-      unique: [{ itemId: 'weapon_part_rare', count: 1, chance: 0.15 }],
+      rare: [{ itemId: 'medkit_small', quantity: 1, chance: 0.25 }],
+      unique: [{ itemId: 'weapon_part_rare', quantity: 1, chance: 0.15 }],
     },
     cascade: true,
   },
@@ -62,19 +63,19 @@ export const LOOT_RULES_BY_TEMPLATE: Record<string, LootRule> = {
   scavengerScout: {
     tiers: {
       common: [
-        { itemId: 'scrap', count: [3, 6], chance: 1.0 },
-        { itemId: 'coins', count: [1, 4], chance: 0.6 },
-        { itemId: 'bullets_9mm', count: [6, 12], chance: 0.75 },
+        { itemId: 'scrap', quantity: [3, 6], chance: 1.0 },
+        { itemId: 'money', quantity: [1, 4], chance: 0.6 },
+        { itemId: 'bullets_9mm', quantity: [6, 12], chance: 0.75 },
       ],
       uncommon: [
-        { itemId: 'bandage', count: [1, 2], chance: 0.5 },
-        { itemId: 'weapon_part_common', count: 1, chance: 0.4 },
+        { itemId: 'bandage', quantity: [1, 2], chance: 0.5 },
+        { itemId: 'weapon_part_common', quantity: 1, chance: 0.4 },
       ],
       rare: [
-        { itemId: 'medkit_small', count: 1, chance: 0.3 },
-        { itemId: 'ammo_box_pistol', count: 1, chance: 0.2 },
+        { itemId: 'medkit_small', quantity: 1, chance: 0.3 },
+        { itemId: 'ammo_box_pistol', quantity: 1, chance: 0.2 },
       ],
-      unique: [{ itemId: 'weapon_part_rare', count: 1, chance: 0.2 }],
+      unique: [{ itemId: 'weapon_part_rare', quantity: 1, chance: 0.2 }],
     },
     cascade: true,
   },
@@ -82,21 +83,21 @@ export const LOOT_RULES_BY_TEMPLATE: Record<string, LootRule> = {
   scavengerMarksman: {
     tiers: {
       common: [
-        { itemId: 'scrap', count: [4, 8], chance: 1.0 },
-        { itemId: 'coins', count: [2, 5], chance: 0.7 },
-        { itemId: 'rifle_round', count: [8, 16], chance: 0.8 },
+        { itemId: 'scrap', quantity: [4, 8], chance: 1.0 },
+        { itemId: 'money', quantity: [2, 5], chance: 0.7 },
+        { itemId: 'rifle_round', quantity: [8, 16], chance: 0.8 },
       ],
       uncommon: [
-        { itemId: 'bandage', count: [1, 2], chance: 0.55 },
-        { itemId: 'weapon_part_common', count: 1, chance: 0.45 },
+        { itemId: 'bandage', quantity: [1, 2], chance: 0.55 },
+        { itemId: 'weapon_part_common', quantity: 1, chance: 0.45 },
       ],
       rare: [
-        { itemId: 'medkit_small', count: 1, chance: 0.35 },
-        { itemId: 'ammo_box_rifle', count: 1, chance: 0.25 },
+        { itemId: 'medkit_small', quantity: 1, chance: 0.35 },
+        { itemId: 'ammo_box_rifle', quantity: 1, chance: 0.25 },
       ],
       unique: [
-        { itemId: 'weapon_part_rare', count: 1, chance: 0.25 },
-        { itemId: 'blueprint_fragment', count: 1, chance: 0.15 },
+        { itemId: 'weapon_part_rare', quantity: 1, chance: 0.25 },
+        { itemId: 'blueprint_fragment', quantity: 1, chance: 0.15 },
       ],
     },
     cascade: true,

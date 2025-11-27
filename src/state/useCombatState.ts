@@ -15,6 +15,7 @@ import {
   insertItemByTimeSortedTail,
   roundToTwoDecimals,
 } from '@/systems/combat/combatInitiativeHelpers';
+import { generateLoot } from '@/systems/combat/combatLootGenerator';
 import {
   addDefenseMetrics,
   addOffenseMetrics,
@@ -22,6 +23,7 @@ import {
 } from '@/systems/combat/combatMetricHelpers';
 import type { CharacterUpdates, CombatResult, CombatUnit } from '@/types/combat.types';
 import type { WeaponSlots } from '@/types/equipment.types';
+import type { CombatLoot } from '@/types/inventory.types';
 
 const POSITION_SWAP_MAP = [1, 0, 3, 2] as const;
 
@@ -34,6 +36,7 @@ export type CombatStore = {
   attackResultById: Record<string, AttackRollResult[]>;
   combatResult: CombatResult;
   characterUpdates: CharacterUpdates;
+  loot: CombatLoot | null;
 
   actions: {
     initializeCombat: (initialUnits: CombatUnit[]) => void;
@@ -99,6 +102,7 @@ export const useCombatState = create<CombatStore>()(
     attackResultById: {},
     combatResult: { combatStatus: 'ongoing' } as CombatResult,
     characterUpdates: null,
+    loot: null,
 
     actions: {
       initializeCombat: (initialUnits) => {
@@ -215,9 +219,6 @@ export const useCombatState = create<CombatStore>()(
 
             if (totalDamage > 0) {
               targetUnit.stats.hp -= totalDamage;
-              console.log(
-                `[Combat] ${targetId} takes ${totalDamage} damage, ${targetUnit.stats.hp} HP left.`,
-              );
             }
 
             if (targetUnit.stats.hp <= 0) {
@@ -296,7 +297,6 @@ export const useCombatState = create<CombatStore>()(
             .map((ally) => calculateAttackForecast(currentActiveUnit, ally, occupiedPositions))
             .filter(Boolean) as AttackForecast[];
           const targetForecast = chooseTargetForecast(forecasts_stay);
-          console.log(targetForecast);
           if (targetForecast) {
             get().actions.attack(targetForecast);
             return;
@@ -333,7 +333,13 @@ export const useCombatState = create<CombatStore>()(
         const combatResult = get().combatResult;
         const logs = useGameState.getState().world.actions.endBattle(combatResult);
 
-        get().actions.setCharacterUpdates(logs);
+        const allEnemies = combatSelectors.selectAllEnemies(get());
+        const loot = generateLoot(allEnemies);
+
+        set((state) => {
+          state.loot = loot;
+          state.characterUpdates = logs;
+        });
       },
 
       setCharacterUpdates: (updates) => {

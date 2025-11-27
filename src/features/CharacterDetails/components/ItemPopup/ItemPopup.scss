@@ -1,0 +1,187 @@
+.itemPopup {
+  background-color: rgba(20, 20, 20, 0.95);
+  border: 1px solid $color-border;
+  border-radius: 6px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+  width: 280px;
+  backdrop-filter: blur(4px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  @include rarity-border;
+
+  .popupHeader {
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+    @include rarity-bg;
+
+    .titleRow {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 4px;
+    }
+
+    .itemName {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #fff;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    }
+
+    .rarityLabel {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      opacity: 0.9;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .priceRow {
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.9);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+
+      .priceValue {
+        font-weight: bold;
+        color: $btn-color-yellow;
+        text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5);
+      }
+      .icon {
+        width: 12px;
+        height: 12px;
+        fill: $btn-color-yellow;
+      }
+    }
+  }
+
+  .popupBody {
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  // --- СЕКЦИИ ---
+  .section {
+    .sectionTitle {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: #777;
+      margin-bottom: 4px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 2px;
+    }
+
+    &.requirements {
+      .reqGrid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .reqItem {
+        font-size: 0.8rem;
+        background: rgba(0, 0, 0, 0.3);
+        padding: 2px 6px;
+        border-radius: 4px;
+
+        &.unmet {
+          color: $btn-color-red;
+          border: 1px solid rgba($btn-color-red, 0.3);
+        }
+        &.met {
+          color: #aaa;
+        }
+      }
+    }
+
+    &.baseStats,
+    &.mods {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      .statRow {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.9rem;
+
+        .label {
+          color: #bbb;
+        }
+        .value {
+          font-weight: 600;
+          color: #fff;
+
+          &.highlight {
+            color: #eee;
+          }
+          &.positive {
+            color: $btn-color-green;
+          }
+          &.negative {
+            color: $btn-color-red;
+          }
+        }
+      }
+    }
+
+    &.description {
+      margin-top: 4px;
+      font-style: italic;
+      color: #888;
+      font-size: 0.85rem;
+      line-height: 1.4;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding-top: 8px;
+    }
+  }
+
+  // --- FOOTER С КНОПКАМИ ---
+  .popupFooter {
+    padding: 8px 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: rgba(0, 0, 0, 0.2);
+    display: flex;
+    gap: 8px;
+    justify-content: stretch; // Растягиваем кнопки
+
+    .popupBtn {
+      flex: 1; // Кнопки занимают равную ширину
+      padding: 6px 0;
+      background-color: #333;
+      border: 1px solid #555;
+      border-radius: 4px;
+      color: #ddd;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      &:hover {
+        background-color: #444;
+        border-color: #777;
+        color: #fff;
+      }
+
+      &.unequip {
+        border-color: rgba($btn-color-red, 0.5);
+        &:hover {
+          background-color: rgba($btn-color-red, 0.2);
+          border-color: $btn-color-red;
+        }
+      }
+
+      &.use {
+        border-color: rgba($btn-color-green, 0.5);
+        &:hover {
+          background-color: rgba($btn-color-green, 0.2);
+          border-color: $btn-color-green;
+        }
+      }
+    }
+  }
+}
