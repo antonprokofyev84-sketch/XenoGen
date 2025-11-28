@@ -1,5 +1,8 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
+import { useShallow } from 'zustand/react/shallow';
+
+import { partySelectors } from '@/state/gameSlices/party';
 import { useGameState } from '@/state/useGameState';
 import type { ItemType } from '@/types/inventory.types';
 
@@ -9,28 +12,45 @@ import { InventoryPanel } from './components/InventoryPanel/InventoryPanel';
 import './CharacterDetails.scss';
 
 export const CharacterDetails = () => {
-  const leaderId = useGameState((state) => state.party.leaderId);
-  const unselectItem = useGameState((state) => state.inventory.actions.unselectItem);
+  const leaderId = useGameState((s) => s.party.leaderId);
+  const partyIds = useGameState(useShallow((s) => partySelectors.selectAllMemberIds(s)));
+  const unselectItem = useGameState((s) => s.inventory.actions.unselectItem);
 
-  const [activeCharacterId, setActiveCharacterId] = useState<string>(leaderId);
-  const [activeTab, setActiveTab] = useState<ItemType>('meleeWeapon');
+  const initialIndex = useMemo(() => {
+    const idx = partyIds.indexOf(leaderId);
+    return idx === -1 ? 0 : idx;
+  }, [partyIds, leaderId]);
 
-  // Хендлер для клика по фону (сброс выделения)
-  const handleBackgroundClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Проверяем, был ли клик совершен по предмету инвентаря или его внутренностям.
-    // Если да — ничего не делаем (выделение обрабатывается внутри InventoryGrid).
-    if ((e.target as HTMLElement).closest('.inventoryItem')) {
-      return;
-    }
+  const [activeIndex, setActiveIndex] = useState(initialIndex);
 
-    // Если клик был не по предмету (например, по пустому месту), снимаем выделение.
+  const activeCharacterId = partyIds[activeIndex] ?? leaderId;
+
+  const switchCharacter = (direction: 1 | -1) => {
+    if (partyIds.length <= 1) return;
+
+    setActiveIndex((i) => {
+      const next = (i + direction + partyIds.length) % partyIds.length;
+      return next;
+    });
+
     unselectItem();
   };
 
+  const [activeTab, setActiveTab] = useState<ItemType>('meleeWeapon');
+
+  const handleClickCapture = (e: React.MouseEvent) => {
+    const isItemClick = (e.target as HTMLElement).closest('.inventoryItem');
+    if (!isItemClick) unselectItem();
+  };
+
   return (
-    // Используем onClickCapture для фазы погружения
-    <div className="characterDetails" onClickCapture={handleBackgroundClick}>
-      <CharacterPanel characterId={activeCharacterId} />
+    <div className="characterDetails" onClickCapture={handleClickCapture}>
+      <CharacterPanel
+        characterId={activeCharacterId}
+        showNavigation={partyIds.length > 1}
+        onNext={() => switchCharacter(+1)}
+        onPrev={() => switchCharacter(-1)}
+      />
 
       <InventoryPanel
         activeTab={activeTab}

@@ -37,7 +37,7 @@
   },
   "weaponStats": {
     "damage": "Damage",
-    "armorPiercing": "Armor Piercing",
+    "armorPiercing": "Penetration",
     "distance": "Range",
     "attacksPerTurn": "Attacks/Turn",
     "lethality": "Lethality"
@@ -149,25 +149,65 @@
     "moveBack": "Move Back"
   },
   "items": {
+    "fists": {
+      "name": "Fists",
+      "desc": "Your bare hands. Better than nothing, but not by much."
+    },
     "makeshiftKnife": {
       "name": "Makeshift Knife",
-      "desc": "A crude blade made from scrap metal. It gets the job done."
+      "desc": "A crude blade sharpened from scrap metal. Rusty, but sharp enough to cut."
+    },
+    "spear": {
+      "name": "Scrap Spear",
+      "desc": "A long metal pipe with a sharpened tip. Excellent for keeping mutants at a distance."
+    },
+    "fireAxe": {
+      "name": "Fire Axe",
+      "desc": "An old world tool with a heavy head. Delivers devastating chopping blows."
+    },
+    "beretta92": {
+      "name": "Beretta 92",
+      "desc": "A well-preserved semi-automatic pistol. Reliable, accurate, and deadly in the right hands."
     },
     "pumpShotgun": {
       "name": "Pump Shotgun",
-      "desc": "Reliable close-quarters firepower. Loud and messy."
+      "desc": "Reliable close-quarters firepower. The sound of racking the slide alone can end fights."
+    },
+    "makeshiftRifle": {
+      "name": "Pipe Rifle",
+      "desc": "A single-shot rifle cobbled together from pipes and wood. Inaccurate, but hits hard at range."
+    },
+    "crossbow": {
+      "name": "Hunter's Crossbow",
+      "desc": "Silent and deadly. Perfect for ambushes, and you can recover the bolts if you're lucky."
+    },
+    "regularCloth": {
+      "name": "Regular Clothes",
+      "desc": "Simple, worn clothing. Offers minimal protection against the elements."
     },
     "travelDuster": {
       "name": "Travel Duster",
-      "desc": "Worn leather coat offering protection from the elements and minor scrapes."
+      "desc": "A heavy leather coat treated to resist rain and dust. Offers basic protection."
     },
-    "regularCloth": {
-      "name": "Regular Cloth",
-      "desc": "Simple clothing. Better than nothing."
+    "lightLeatherArmor": {
+      "name": "Light Leather Armor",
+      "desc": "Patches of cured leather stitched together. Lightweight mobility with decent protection."
     },
-    "fists": {
-      "name": "Fists",
-      "desc": "Your bare hands."
+    "reinforcedLeatherArmor": {
+      "name": "Reinforced Leather",
+      "desc": "Leather armor reinforced with scrap metal plates. Heavy, but can stop a knife or a claw."
+    },
+    "scrap": {
+      "name": "Scrap",
+      "desc": "Assorted junk and metal parts. The currency of survival."
+    },
+    "money": {
+      "name": "Credits",
+      "desc": "Old World electronic credits. Still accepted by traders."
+    },
+    "ration": {
+      "name": "Ration Pack",
+      "desc": "Preserved food. Doesn't taste like much, but keeps you alive."
     }
   }
 }
