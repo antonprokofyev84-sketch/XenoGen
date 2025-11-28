@@ -1,10 +1,10 @@
 import { useState } from 'react';
 
-// Импорт иконок как React-компонентов (Vite SVGR plugin)
 import ArmorIcon from '@/assets/icons/armor.svg?react';
 import GadgetIcon from '@/assets/icons/gadget.svg?react';
 import MeleeIcon from '@/assets/icons/meleeWeapon.svg?react';
 import RangeIcon from '@/assets/icons/rangeWeapon.svg?react';
+import { useGameState } from '@/state/useGameState';
 import type { Rarity } from '@/types/common.types';
 import type { ItemType } from '@/types/inventory.types';
 
@@ -14,11 +14,11 @@ import './InventoryPanel.scss';
 
 interface InventoryPanelProps {
   activeTab: ItemType;
-  characterId: string; // <-- Добавили проп
+  characterId: string;
   onTabChange: (tab: ItemType) => void;
+  onItemRef: (el: HTMLElement | null) => void;
 }
 
-// Конфигурация табов
 const TABS_CONFIG: {
   type: ItemType;
   Icon: React.FunctionComponent<React.SVGProps<SVGSVGElement>>;
@@ -31,8 +31,13 @@ const TABS_CONFIG: {
 
 const ALL_RARITIES: Rarity[] = ['common', 'uncommon', 'rare', 'unique'];
 
-export const InventoryPanel = ({ activeTab, onTabChange, characterId }: InventoryPanelProps) => {
-  // Локальный стейт фильтров. По умолчанию выбраны все.
+export const InventoryPanel = ({
+  activeTab,
+  onTabChange,
+  characterId,
+  onItemRef,
+}: InventoryPanelProps) => {
+  const goToScreen = useGameState((state) => state.ui.goToScreen);
   const [selectedRarities, setSelectedRarities] = useState<Set<Rarity>>(new Set(ALL_RARITIES));
 
   const toggleRarity = (rarity: Rarity) => {
@@ -47,18 +52,29 @@ export const InventoryPanel = ({ activeTab, onTabChange, characterId }: Inventor
 
   return (
     <div className="inventoryPanel">
-      {/* --- ВЕРХ: ТАБЫ --- */}
+      {/* --- ВЕРХ: ТАБЫ + КНОПКА ЗАКРЫТИЯ --- */}
       <div className="tabsHeader">
-        {TABS_CONFIG.map(({ type, Icon }) => (
-          <button
-            key={type}
-            onClick={() => onTabChange(type)}
-            className={`tabButton ${activeTab === type ? 'active' : ''}`}
-            title={type} // Тултип при наведении
-          >
-            <Icon className="tabIcon" />
-          </button>
-        ))}
+        <div className="tabsList">
+          {TABS_CONFIG.map(({ type, Icon }) => (
+            <button
+              key={type}
+              onClick={() => onTabChange(type)}
+              className={`tabButton ${activeTab === type ? 'active' : ''}`}
+              title={type}
+            >
+              <Icon className="tabIcon" />
+            </button>
+          ))}
+        </div>
+
+        {/* Кнопка закрытия теперь внутри хедера */}
+        <button
+          className="closeButton"
+          onClick={() => goToScreen('strategicMap')}
+          title="Close Inventory"
+        >
+          X
+        </button>
       </div>
 
       {/* --- ЦЕНТР: СЕТКА --- */}
@@ -67,6 +83,7 @@ export const InventoryPanel = ({ activeTab, onTabChange, characterId }: Inventor
           activeTab={activeTab}
           characterId={characterId}
           rarityFilters={Array.from(selectedRarities)}
+          onItemRef={onItemRef}
         />
       </div>
 

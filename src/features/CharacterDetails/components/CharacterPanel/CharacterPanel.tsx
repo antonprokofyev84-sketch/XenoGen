@@ -18,6 +18,7 @@ interface CharacterPanelProps {
   showNavigation: boolean;
   onNext: () => void;
   onPrev: () => void;
+  onItemRef: (el: HTMLElement | null) => void; // <-- Новый проп
 }
 
 const LEFT_SLOTS: { slot: EquipmentSlot; Icon: any }[] = [
@@ -38,12 +39,14 @@ const EquipmentSlotItem = ({
   Icon,
   isSelected,
   onClick,
+  onItemRef, // Принимаем реф
 }: {
   slot: EquipmentSlot;
   item: InventoryItem | null | undefined;
   Icon: React.FunctionComponent<React.SVGProps<SVGSVGElement>>;
   isSelected: boolean;
   onClick: () => void;
+  onItemRef: (el: HTMLElement | null) => void;
 }) => {
   const rarity = item?.rarity || 'common';
 
@@ -52,15 +55,17 @@ const EquipmentSlotItem = ({
       className={`equipmentSlot ${item ? 'filled' : 'empty'} ${isSelected ? 'active' : ''} ${item ? rarity : ''}`}
       onClick={onClick}
       title={item ? item.templateId : slot}
+      // Если слот выбран, привязываем к нему реф для попапа
+      ref={isSelected ? onItemRef : null}
     >
       {item ? (
         <div className="itemContent">
           <img
             src={assetsVersion(`/images/${item.type}/${item.templateId}.png`)}
             alt={item.templateId}
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = 'none';
-            }}
+            // onError={(e) => {
+            //   (e.target as HTMLImageElement).style.display = 'none';
+            // }}
           />
         </div>
       ) : (
@@ -77,6 +82,7 @@ export const CharacterPanel = ({
   showNavigation,
   onNext,
   onPrev,
+  onItemRef,
 }: CharacterPanelProps) => {
   const character = useGameState(characterSelectors.selectCharacterById(characterId));
   const equipment = useGameState(
@@ -117,6 +123,7 @@ export const CharacterPanel = ({
             Icon={Icon}
             isSelected={isSelected}
             onClick={() => handleSlotClick(slot, item)}
+            onItemRef={onItemRef} // Прокидываем реф вниз
           />
         );
       })}

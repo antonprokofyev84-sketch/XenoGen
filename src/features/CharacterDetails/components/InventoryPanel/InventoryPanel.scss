@@ -1,21 +1,34 @@
+@use '@/styles/variables' as *;
+
 .inventoryPanel {
   background-color: $color-bg-dark;
-  border: 1px dashed $color-border;
+  border: 1px solid $color-border;
   border-radius: 8px;
-  padding: 0.5rem; // Уменьшили паддинг, чтобы дать больше места сетке
+  padding: 0.5rem;
   height: 100%;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   box-sizing: border-box;
 
+  // Убрали position: relative, так как кнопка теперь внутри хедера
+
   // --- TABS HEADER ---
   .tabsHeader {
     display: flex;
+    align-items: center;
     justify-content: center;
-    gap: 1rem;
+    position: relative; // Чтобы позиционировать кнопку внутри хедера
     padding-bottom: 0.5rem;
     border-bottom: 1px solid rgba($color-border, 0.5);
+    min-height: 50px; // Высота под новую кнопку
+
+    .tabsList {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex: 1; // Занимаем центр
+    }
 
     .tabButton {
       background: transparent;
@@ -29,7 +42,7 @@
       .tabIcon {
         width: 32px;
         height: 32px;
-        fill: currentColor; // SVG будет наследовать цвет текста
+        fill: currentColor;
       }
 
       &:hover {
@@ -38,12 +51,40 @@
       }
 
       &.active {
-        color: $btn-color-yellow; // Активный цвет
+        color: $btn-color-yellow;
         border-color: rgba($btn-color-yellow, 0.3);
         background-color: rgba($btn-color-yellow, 0.1);
-
-        // Легкое свечение для активной иконки
         filter: drop-shadow(0 0 5px rgba($btn-color-yellow, 0.4));
+      }
+    }
+
+    // --- CLOSE BUTTON (Внутри хедера) ---
+    .closeButton {
+      position: absolute;
+      right: 0;
+
+      width: 40px; // Увеличили размер (~ в 2 раза)
+      height: 40px;
+
+      border-radius: 8px; // Слегка скруглили, чтобы не был кругом
+      background-color: rgba(0, 0, 0, 0.2);
+      border: 1px solid $color-border;
+      color: $btn-color-grey;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+
+      font-weight: bold;
+      font-size: 1.2rem;
+      font-family: sans-serif;
+      transition: all 0.2s;
+
+      &:hover {
+        background-color: $btn-color-red;
+        border-color: $btn-color-red;
+        color: white;
       }
     }
   }
@@ -51,7 +92,7 @@
   // --- GRID CONTAINER ---
   .gridContainer {
     flex: 1;
-    min-height: 0; // Для скролла
+    min-height: 0;
     display: flex;
     flex-direction: column;
   }
@@ -75,10 +116,9 @@
       transition: color 0.2s;
 
       input {
-        display: none; // Прячем стандартный чекбокс
+        display: none;
       }
 
-      // Кастомный чекбокс (квадратик)
       .checkmark {
         width: 14px;
         height: 14px;
@@ -93,14 +133,12 @@
         color: #fff;
       }
 
-      // Логика цветов при checked
       input:checked + .checkmark {
         background-color: currentColor;
         border-color: currentColor;
         box-shadow: 0 0 4px currentColor;
       }
 
-      // Цвета для разных редкостей (используем наши переменные)
       &.common {
         color: $rarity-common;
         input:checked ~ .labelName {

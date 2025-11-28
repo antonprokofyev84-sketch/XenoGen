@@ -72,18 +72,30 @@ export const CharacterCreation = () => {
     initializePois(INITIAL_POI);
 
     //test
-    addItem({
-      templateId: 'fireAxe',
-      rarity: 'uncommon',
-      type: 'meleeWeapon',
-      quantity: 1,
-    });
-    addItem({
-      templateId: 'reinforcedLeatherArmor',
-      rarity: 'rare',
-      type: 'armor',
-      quantity: 1,
-    });
+    // addItem({
+    //   templateId: 'fireAxe',
+    //   rarity: 'uncommon',
+    //   type: 'meleeWeapon',
+    //   quantity: 3,
+    // });
+    // addItem({
+    //   templateId: 'pumpShotgun',
+    //   rarity: 'uncommon',
+    //   type: 'rangeWeapon',
+    //   quantity: 3,
+    // });
+    // addItem({
+    //   templateId: 'makeshiftKnife',
+    //   rarity: 'unique',
+    //   type: 'meleeWeapon',
+    //   quantity: 3,
+    // });
+    // addItem({
+    //   templateId: 'reinforcedLeatherArmor',
+    //   rarity: 'rare',
+    //   type: 'armor',
+    //   quantity: 3,
+    // });
 
     goToScreen('strategicMap');
   };

@@ -13,7 +13,6 @@ export const ARMOR_TEMPLATES_DB: Record<string, ArmorTemplate> = {
       secondaryStats: {
         armor: 3,
         evasion: 1,
-        initiative: 0,
       },
     },
   },

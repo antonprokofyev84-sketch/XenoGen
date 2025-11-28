@@ -1,3 +1,5 @@
+@use '@/styles/variables' as *;
+
 .itemPopup {
   background-color: rgba(20, 20, 20, 0.95);
   border: 1px solid $color-border;
@@ -147,10 +149,10 @@
     background-color: rgba(0, 0, 0, 0.2);
     display: flex;
     gap: 8px;
-    justify-content: stretch; // Растягиваем кнопки
+    justify-content: stretch;
 
     .popupBtn {
-      flex: 1; // Кнопки занимают равную ширину
+      flex: 1;
       padding: 6px 0;
       background-color: #333;
       border: 1px solid #555;
@@ -165,6 +167,19 @@
         background-color: #444;
         border-color: #777;
         color: #fff;
+      }
+
+      // DISABlED STATE (Если требования не выполнены)
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        filter: grayscale(100%);
+
+        &:hover {
+          background-color: #333; // Сброс ховера
+          border-color: #555;
+          color: #ddd;
+        }
       }
 
       &.unequip {

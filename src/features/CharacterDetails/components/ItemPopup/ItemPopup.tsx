@@ -7,6 +7,7 @@ import textData from '@/locales/en.json';
 import { characterSelectors } from '@/state/gameSlices/characters';
 import { useGameState } from '@/state/useGameState';
 import { buildItemDetails } from '@/systems/items/itemDetailsBuilder';
+import type { EquipmentSlot } from '@/types/equipment.types';
 
 import './ItemPopup.scss';
 
@@ -14,6 +15,12 @@ interface ItemPopupProps {
   activeCharacterId: string;
   style?: React.CSSProperties;
 }
+
+// Конфигурация слотов для оружия
+const WEAPON_SLOTS_MAP: Record<string, { primary: EquipmentSlot; secondary: EquipmentSlot }> = {
+  meleeWeapon: { primary: 'meleePrimary', secondary: 'meleeSecondary' },
+  rangeWeapon: { primary: 'rangePrimary', secondary: 'rangeSecondary' },
+};
 
 const getRarityLabel = (rarity: string) => {
   // @ts-ignore
@@ -24,6 +31,11 @@ const getRarityLabel = (rarity: string) => {
 export const ItemPopup = forwardRef<HTMLDivElement, ItemPopupProps>(
   ({ activeCharacterId, style }, ref) => {
     const selectedItemEntry = useGameState((state) => state.inventory.selectedItem);
+
+    // ЭКШЕНЫ ЭКИПИРОВКИ
+    const equipItem = useGameState((state) => state.equipment.actions.equipItem);
+    const unequipItem = useGameState((state) => state.equipment.actions.unequipItem);
+    const unselectItem = useGameState((state) => state.inventory.actions.unselectItem);
 
     // Получаем полные статы персонажа для проверки требований
     const charMainStats = useGameState(
@@ -61,39 +73,80 @@ export const ItemPopup = forwardRef<HTMLDivElement, ItemPopupProps>(
 
     if (!details) return null;
 
+    // --- ПРОВЕРКА ТРЕБОВАНИЙ ---
+    const canEquip = details.requirementRows.every((req) => req.isMet);
+
+    // --- ХЕНДЛЕРЫ ---
+    const handleEquip = (slot?: EquipmentSlot) => {
+      if (!canEquip) return;
+
+      const success = equipItem(activeCharacterId, item, slot);
+      if (success) {
+        unselectItem(); // Закрываем попап после успешного действия
+      }
+    };
+
+    const handleUnequip = () => {
+      // Если контекст не инвентарь, то это слот экипировки
+      if (selectedItemEntry.context !== 'inventory') {
+        unequipItem(activeCharacterId, selectedItemEntry.context);
+        unselectItem();
+      }
+    };
+
     const renderActions = () => {
-      // Если это не инвентарь (а например слот экипировки), то кнопка "Снять"
+      // Если это слот экипировки -> Кнопка "Снять"
       if (selectedItemEntry.context !== 'inventory') {
         return (
-          <button className="popupBtn unequip" onClick={() => console.log('Unequip')}>
+          <button className="popupBtn unequip" onClick={handleUnequip}>
             Unequip
           </button>
         );
       }
 
+      // Проверяем, является ли предмет оружием по наличию в мапе
+      const weaponSlots = WEAPON_SLOTS_MAP[item.type];
+
+      if (weaponSlots) {
+        return (
+          <>
+            <button
+              className="popupBtn"
+              disabled={!canEquip}
+              onClick={() => handleEquip(weaponSlots.primary)}
+            >
+              To Main
+            </button>
+            <button
+              className="popupBtn"
+              disabled={!canEquip}
+              onClick={() => handleEquip(weaponSlots.secondary)}
+            >
+              To Secondary
+            </button>
+          </>
+        );
+      }
+
+      // Для остальных типов (броня, гаджеты, расходники)
       switch (item.type) {
-        case 'meleeWeapon':
-        case 'rangeWeapon':
-          return (
-            <>
-              <button className="popupBtn" onClick={() => console.log('Equip Main')}>
-                To Main
-              </button>
-              <button className="popupBtn" onClick={() => console.log('Equip Secondary')}>
-                To Secondary
-              </button>
-            </>
-          );
         case 'armor':
         case 'gadget':
           return (
-            <button className="popupBtn" onClick={() => console.log('Equip')}>
+            <button
+              className="popupBtn"
+              disabled={!canEquip}
+              onClick={() => handleEquip()} // Слот определится автоматически внутри equipItem
+            >
               Equip
             </button>
           );
         case 'consumable':
           return (
-            <button className="popupBtn use" onClick={() => console.log('Use')}>
+            <button
+              className="popupBtn use"
+              onClick={() => console.log('Use action not implemented')}
+            >
               Use
             </button>
           );
@@ -152,7 +205,6 @@ export const ItemPopup = forwardRef<HTMLDivElement, ItemPopupProps>(
               {details.modRows.map((row, idx) => (
                 <div key={idx} className="statRow">
                   <span className="label">{row.label}</span>
-                  {/* Используем highlight для цвета (good/bad) */}
                   <span className={`value ${row.highlight || ''}`}>{row.value}</span>
                 </div>
               ))}
