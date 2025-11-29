@@ -10,6 +10,9 @@ import type { ItemType } from '@/types/inventory.types';
 import { CharacterPanel } from './components/CharacterPanel/CharacterPanel';
 import { InventoryPanel } from './components/InventoryPanel/InventoryPanel';
 import { ItemPopup } from './components/ItemPopup/ItemPopup';
+import { StatsPanel } from './components/StatsPanel/StatsPanel';
+
+// <-- Новый импорт
 
 import './CharacterDetails.scss';
 
@@ -63,28 +66,33 @@ export const CharacterDetails = () => {
 
     if (!isItemClick && !isPopupClick) {
       unselectItem();
-      refs.setReference(null); // Сбрасываем реф
+      refs.setReference(null);
     }
   };
 
   return (
     <div className="characterDetails" onClickCapture={handleClickCapture}>
+      {/* КОЛОНКА 1: Статы */}
+      <StatsPanel characterId={activeCharacterId} />
+
+      {/* КОЛОНКА 2: Кукла */}
       <CharacterPanel
         characterId={activeCharacterId}
         showNavigation={partyIds.length > 1}
         onNext={() => switchCharacter(+1)}
         onPrev={() => switchCharacter(-1)}
-        onItemRef={refs.setReference} // Передаем реф для слотов экипировки
+        onItemRef={refs.setReference}
       />
 
+      {/* КОЛОНКА 3: Инвентарь */}
       <InventoryPanel
         activeTab={activeTab}
         onTabChange={setActiveTab}
         characterId={activeCharacterId}
-        onItemRef={refs.setReference} // Передаем реф для сетки инвентаря
+        onItemRef={refs.setReference}
       />
 
-      {/* POPUP: Показываем, если есть выбранный предмет (независимо от контекста) */}
+      {/* POPUP */}
       {selectedItem && (
         <FloatingPortal>
           <ItemPopup

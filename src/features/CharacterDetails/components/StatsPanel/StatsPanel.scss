@@ -1,0 +1,91 @@
+@use '@/styles/variables' as *;
+
+.statsPanel {
+  background-color: $color-bg-dark;
+  border: 1px solid $color-border;
+  border-radius: 8px;
+  padding: 1rem;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow: hidden;
+
+  .panelHeader {
+    text-align: center;
+    padding-bottom: 0.5rem;
+    flex-shrink: 0;
+
+    h3 {
+      margin: 0;
+      font-size: 1.2rem;
+      color: $btn-color-grey; // Более спокойный цвет для заголовка панели
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: normal;
+    }
+  }
+
+  .scrollableContent {
+    flex: 1;
+    overflow-y: auto;
+    @include custom-scrollbar;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding-right: 5px;
+  }
+
+  // Контейнер для горизонтального расположения
+  .statsRowLayout {
+    display: flex;
+    flex-direction: row;
+    gap: 10%;
+
+    // Каждая секция внутри ряда занимает 50%
+    .statSection {
+      flex: 1;
+      min-width: 0; // Чтобы длинный текст не ломал верстку
+    }
+  }
+
+  .statSection {
+    .sectionTitle {
+      color: $btn-color-yellow;
+      font-size: 0.85rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 0.5rem;
+      padding-bottom: 0.2rem;
+    }
+
+    .statRow {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 2px 0; // Чуть компактнее, так как теперь в две колонки
+      font-size: 0.85rem; // Шрифт чуть меньше для плотности
+
+      &:not(:last-child) {
+        border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+      }
+
+      .label {
+        color: #ccc;
+        white-space: nowrap; // Чтобы название не переносилось некрасиво
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-right: 8px;
+      }
+
+      .value {
+        font-weight: bold;
+        color: #fff;
+        font-family: monospace;
+        font-size: 0.95rem;
+      }
+    }
+  }
+}
