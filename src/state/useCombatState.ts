@@ -37,6 +37,7 @@ export type CombatStore = {
   combatResult: CombatResult;
   characterUpdates: CharacterUpdates;
   loot: CombatLoot | null;
+  isActionLocked: boolean;
 
   actions: {
     initializeCombat: (initialUnits: CombatUnit[]) => void;
@@ -49,6 +50,8 @@ export type CombatStore = {
     processAITurn: () => void;
     finishBattle: () => void; // <-- 2. ДОБАВЛЕН НОВЫЙ ЭКШЕН
     setCharacterUpdates: (updates: CharacterUpdates) => void;
+    _lockAction: () => boolean;
+    _unlockAction: () => void;
   };
 };
 
@@ -103,6 +106,7 @@ export const useCombatState = create<CombatStore>()(
     combatResult: { combatStatus: 'ongoing' } as CombatResult,
     characterUpdates: null,
     loot: null,
+    isActionLocked: false,
 
     actions: {
       initializeCombat: (initialUnits) => {
@@ -171,14 +175,22 @@ export const useCombatState = create<CombatStore>()(
         });
       },
       swapPosition: (unitId: string) => {
+        if (get().actions._lockAction()) return;
         set((state) => {
           const unit = state.unitsById[unitId];
           if (!unit) return;
           const newPosition = POSITION_SWAP_MAP[unit.position];
           unit.position = newPosition;
         });
+
+        setTimeout(() => {
+          get().actions._unlockAction();
+          get().actions.endTurn();
+        }, 1000);
       },
       attack: (forcast) => {
+        if (get().actions._lockAction()) return;
+
         const result = calculateAttackResult(forcast);
 
         set((state) => {
@@ -267,6 +279,7 @@ export const useCombatState = create<CombatStore>()(
         }
 
         setTimeout(() => {
+          get().actions._unlockAction();
           get().actions.endTurn();
         }, 1000);
       },
@@ -345,6 +358,19 @@ export const useCombatState = create<CombatStore>()(
       setCharacterUpdates: (updates) => {
         set((state) => {
           state.characterUpdates = updates;
+        });
+      },
+
+      _lockAction: () => {
+        if (get().isActionLocked) return true;
+        set((state) => {
+          state.isActionLocked = true;
+        });
+        return false;
+      },
+      _unlockAction: () => {
+        set((state) => {
+          state.isActionLocked = false;
         });
       },
     },

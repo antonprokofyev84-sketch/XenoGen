@@ -1,0 +1,20 @@
+.poiView {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  width: 100%;
+  padding: 1rem;
+  gap: 1rem;
+  background-color: #121212; // Соответствует CharacterDetails
+  color: #ffffff;
+  box-sizing: border-box;
+  overflow: hidden;
+
+  // Оба компонента занимают равное пространство и выглядят как панели
+  .dialogPanel,
+  .imagePanel {
+    flex: 1;
+    min-width: 0;
+    // Padding убран отсюда, так как он теперь внутри самих панелей (как в StatsPanel)
+  }
+}

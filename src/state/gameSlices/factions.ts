@@ -24,6 +24,20 @@ export interface FactionsSlice {
   };
 }
 
+// --- Draft Functions ---
+
+const changeReputationDraft = (state: StoreState, factionId: string, delta: number) => {
+  if (factionId === 'player') return null; // no-op
+  const cur = state.factions.reputationById[factionId] ?? 0;
+  const next = Math.max(REP_MIN, Math.min(REP_MAX, cur + delta));
+  state.factions.reputationById[factionId] = next;
+  return { type: 'modifyReputation', factionId, delta } as const;
+};
+
+export const factionsDraft = {
+  changeReputation: changeReputationDraft,
+};
+
 export const factionsSelectors = {
   selectFactionRelation:
     (factionId: string) =>
@@ -55,10 +69,7 @@ export const createFactionsSlice: GameSlice<FactionsSlice> = (set) => ({
       }),
     changeReputation: (factionId, delta) =>
       set((state) => {
-        if (factionId === 'player') return; // no-op
-        const cur = state.factions.reputationById[factionId] ?? 0;
-        const next = Math.max(REP_MIN, Math.min(REP_MAX, cur + delta));
-        state.factions.reputationById[factionId] = next;
+        changeReputationDraft(state, factionId, delta);
       }),
   },
 });

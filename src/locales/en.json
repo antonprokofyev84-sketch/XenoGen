@@ -148,6 +148,12 @@
     "moveForward": "Move Forward",
     "moveBack": "Move Back"
   },
+  "interactionLog": {
+    "reputation": "Reputation",
+    "check": "Check",
+    "success": "SUCCESS",
+    "fail": "FAIL"
+  },
   "items": {
     "fists": {
       "name": "Fists",

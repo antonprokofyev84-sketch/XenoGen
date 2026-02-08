@@ -5,6 +5,7 @@ export type UIScreen =
   | 'mainMenu'
   | 'characterCreation'
   | 'strategicMap'
+  | 'poiView'
   | 'combat'
   | 'characterDetails';
 

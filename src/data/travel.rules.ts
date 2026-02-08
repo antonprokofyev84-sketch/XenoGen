@@ -2,10 +2,28 @@ import type { CellType } from '@/types/map.types';
 import type { MovementMode } from '@/types/travel.types';
 import type { ToD, Weather } from '@/types/world.types';
 
-export const BASE_TRAVEL_COST = {
-  stamina: 12,
-  minutes: 60,
+export const BASE_CELL_TO_CELL = {
+  staminaCost: 12,
+  timeCost: 60, // minutes
 };
+
+export const CELL_TO_POI_ENTER = {
+  staminaCost: 4,
+  timeCost: 30, // minutes
+};
+
+export const SETTLEMENT_MOVE = {
+  staminaCost: 1,
+  timeCost: 15, // minutes
+};
+
+export const INNER_POI_MOVE = {
+  staminaCost: 0,
+  timeCost: 5, // minutes
+};
+
+export const DIAGONAL_MULTIPLIER = 1.4;
+export const FATIGUE_MULTIPLIER = 1.3;
 
 export interface BaseTravelRule {
   staminaMult: number;

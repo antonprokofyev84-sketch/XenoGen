@@ -27,7 +27,7 @@ export interface PartySlice {
   actions: {
     addMember: (characterId: string) => void;
     removeMember: (characterId: string) => void;
-    moveToCell: (targetCellId: string) => void;
+    moveToPoi: (targetPoiId: string, staminaCost?: number) => void;
     setTravelMode: (mode: MovementMode) => void;
     changeStamina: (delta: number) => void;
     addCaptive: (captive: Captive) => void;
@@ -108,6 +108,34 @@ export const partySelectors = {
   },
 };
 
+// Draft changes
+
+const changeStaminaDraft = (state: StoreState, delta: number) => {
+  const allMemberIds = partySelectors.selectAllMemberIds(state);
+
+  for (const memberId of allMemberIds) {
+    // тут должен быть вызов драфт функции из characters.ts
+    // но нужно пересмотреть архитектуру characters.ts
+    // state.characters.actions.changeStamina(memberId, delta); //set внутри сета
+  }
+};
+
+const moveToPoiDraft = (state: StoreState, targetPoiId: string, staminaCost?: number) => {
+  state.party.previousPartyPosition = state.party.currentPartyPosition;
+  state.party.currentPartyPosition = targetPoiId;
+  if (staminaCost) {
+    changeStaminaDraft(state, -staminaCost);
+  }
+};
+
+// Expose draft helpers for external systems
+export const partyDraft = {
+  changeStamina: changeStaminaDraft,
+  moveToPoi: moveToPoiDraft,
+};
+
+// Slice
+
 export const createPartySlice: GameSlice<PartySlice> = (set, get) => ({
   activeIds: ['protagonist'], // Начинаем только с протагониста
   leaderId: 'protagonist',
@@ -131,20 +159,18 @@ export const createPartySlice: GameSlice<PartySlice> = (set, get) => ({
       set((state) => {
         state.party.activeIds = state.party.activeIds.filter((id) => id !== characterId);
       }),
-    moveToCell: (targetCellId) =>
+    moveToPoi: (targetPoiId, staminaCost) =>
       set((state) => {
-        state.party.previousPartyPosition = state.party.currentPartyPosition;
-        state.party.currentPartyPosition = targetCellId;
+        moveToPoiDraft(state, targetPoiId, staminaCost);
       }),
     setTravelMode: (mode) =>
       set((state) => {
         state.party.travelMode = mode;
       }),
     changeStamina: (delta: number) => {
-      const allMemberIds = partySelectors.selectAllMemberIds(get());
-      for (const memberId of allMemberIds) {
-        get().characters.actions.changeStamina(memberId, delta);
-      }
+      set((state) => {
+        changeStaminaDraft(state, delta);
+      });
     },
     addCaptive: (captive) =>
       set((state) => {

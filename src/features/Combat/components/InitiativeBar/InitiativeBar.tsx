@@ -47,16 +47,12 @@ const renderInitiativeItem = (
 };
 
 export const InitiativeBar = ({ highlightedUnitId }: InitiativeBarProps) => {
-  const { queue, units } = useCombatState(
-    useShallow((state) => ({
-      queue: state.initiativeQueue,
-      units: state.unitsById,
-    })),
-  );
+  const queue = useCombatState((state) => state.initiativeQueue);
+  const units = useCombatState((state) => state.unitsById);
 
   const visibleQueue = queue.slice(0, DISPLAY_LIMIT);
 
-  const [animationParent] = useAutoAnimate<HTMLUListElement>({ duration: 1000 });
+  const [animationParent] = useAutoAnimate<HTMLUListElement>({ duration: 500 });
   // const [animationParent] = useAutoAnimate<HTMLUListElement>();
 
   return (

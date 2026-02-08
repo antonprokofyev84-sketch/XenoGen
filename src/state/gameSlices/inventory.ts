@@ -1,196 +1,216 @@
+import { PROTAGONIST_ID } from '@/constants';
 import type { EquipmentSlot } from '@/types/equipment.types';
 import type {
-  CombatLoot,
+  InventoryContainer,
   InventoryItem,
   InventoryStorage,
-  Resources,
+  ItemType,
 } from '@/types/inventory.types';
 
 import type { GameSlice } from '../types';
 import type { StoreState } from '../useGameState';
 
+// Хелпер для создания пустого хранилища
+const createEmptyStorage = (): InventoryStorage => ({
+  meleeWeapon: [],
+  rangeWeapon: [],
+  armor: [],
+  gadget: [],
+  resource: [],
+  consumable: [],
+  misc: [],
+});
+
 export interface InventorySlice {
-  items: InventoryStorage;
+  // Ключ в Record — это и есть ID контейнера
+  containers: Record<string, InventoryContainer>;
+
   selectedItem: {
+    containerId: string;
     item: InventoryItem | null;
     context: 'inventory' | EquipmentSlot;
   } | null;
-  resources: Resources;
 
   actions: {
-    addLoot: (loot: CombatLoot) => void;
-    addItem: (item: InventoryItem) => boolean;
-    removeItem: (item: InventoryItem) => boolean;
+    createContainer: (id: string, initialData?: Partial<InventoryContainer>) => void;
+    removeContainer: (id: string) => void;
 
-    selectItem: (item: InventoryItem, context: 'inventory' | EquipmentSlot) => void;
+    addItem: (containerId: string, item: InventoryItem) => boolean;
+    removeItem: (containerId: string, item: InventoryItem) => boolean;
+
+    modifyMoney: (containerId: string, delta: number) => boolean;
+
+    // Вместо addLoot — перенос всего содержимого (например, лут с трупа)
+    transferAll: (fromContainerId: string, toContainerId: string) => void;
+
+    selectItem: (
+      containerId: string,
+      item: InventoryItem,
+      context: 'inventory' | EquipmentSlot,
+    ) => void;
     unselectItem: () => void;
-
-    modifyResource: (resource: keyof Resources, delta: number) => void;
   };
 }
 
 // --- СЕЛЕКТОРЫ ---
-export const inventorySelectors = {
-  selectItemsByType: (type: keyof InventoryStorage) => (state: StoreState) =>
-    state.inventory.items[type],
-  selectMeleeWeapons: (state: StoreState) => state.inventory.items.meleeWeapon,
-  selectRangeWeapons: (state: StoreState) => state.inventory.items.rangeWeapon,
-  selectArmor: (state: StoreState) => state.inventory.items.armor,
-  selectGadgets: (state: StoreState) => state.inventory.items.gadget,
-  selectConsumables: (state: StoreState) => state.inventory.items.consumable,
-  selectMisc: (state: StoreState) => state.inventory.items.misc,
 
-  selectAllItems: (state: StoreState) => {
-    const i = state.inventory.items;
-    return [
-      ...i.meleeWeapon,
-      ...i.rangeWeapon,
-      ...i.armor,
-      ...i.gadget,
-      ...i.consumable,
-      ...i.misc,
-    ];
+export const inventorySelectors = {
+  selectContainer:
+    (containerId: string = PROTAGONIST_ID) =>
+    (state: StoreState) =>
+      state.inventory.containers[containerId],
+
+  selectContainerItemsByType: (containerId: string, type: ItemType) => (state: StoreState) => {
+    const container = state.inventory.containers[containerId];
+    return container ? container.items[type] : [];
   },
+
+  selectContainerMoney:
+    (containerId: string = PROTAGONIST_ID) =>
+    (state: StoreState) =>
+      state.inventory.containers[containerId]?.money ?? 0,
+
+  // Хелперы для игрока
+  selectPlayerItemsByType: (type: ItemType) => (state: StoreState) =>
+    state.inventory.containers[PROTAGONIST_ID]?.items[type] ?? [],
+
+  selectPlayerMoney: (state: StoreState) => state.inventory.containers[PROTAGONIST_ID]?.money ?? 0,
 };
 
 export const createInventorySlice: GameSlice<InventorySlice> = (set, get) => ({
-  items: {
-    meleeWeapon: [],
-    rangeWeapon: [],
-    armor: [],
-    gadget: [],
-    consumable: [],
-    misc: [],
+  containers: {
+    [PROTAGONIST_ID]: {
+      items: createEmptyStorage(),
+      money: 0,
+    },
   },
   selectedItem: null,
-  resources: {
-    money: 0,
-    scrap: 0,
-    food: 0,
-  },
 
   actions: {
-    addLoot: (loot) => {
+    createContainer: (id, initialData) => {
       set((state) => {
-        // 1. Мержим ресурсы
-        state.inventory.resources.money += loot.resources.money;
-        state.inventory.resources.scrap += loot.resources.scrap;
-        state.inventory.resources.food += loot.resources.food;
-
-        // 2. Мержим предметы (из плоского списка в категории)
-        loot.items.forEach((newItem) => {
-          const category = newItem.type;
-
-          // Проверяем, существует ли такая категория в хранилище
-          const categoryItems = state.inventory.items[category];
-
-          if (!categoryItems) {
-            console.warn(
-              `[Inventory] Unknown item category: ${category} for item ${newItem.templateId}`,
-            );
-            return;
-          }
-
-          // Пытаемся найти существующий стак
-          const existing = categoryItems.find(
-            (i) => i.templateId === newItem.templateId && i.rarity === newItem.rarity,
-          );
-
-          if (existing) {
-            existing.quantity += newItem.quantity;
-          } else {
-            // Immer позволяет просто пушить в массив
-            categoryItems.push(newItem);
-          }
-        });
+        if (!state.inventory.containers[id]) {
+          state.inventory.containers[id] = {
+            items: createEmptyStorage(),
+            money: 0,
+            ...initialData,
+          };
+        }
       });
     },
-    addItem: (item: InventoryItem): boolean => {
-      let success = false;
 
+    removeContainer: (id) => {
       set((state) => {
-        const { templateId, type, rarity, quantity } = item;
-        const targetArray = state.inventory.items[type];
+        delete state.inventory.containers[id];
+      });
+    },
 
-        if (!targetArray) {
-          console.warn(`Inventory: unknown type '${type}' in item`);
-          return;
-        }
+    addItem: (containerId, item) => {
+      let success = false;
+      set((state) => {
+        const container = state.inventory.containers[containerId];
+        if (!container) return;
+
+        const targetArray = container.items[item.type];
 
         const existing = targetArray.find(
-          (existingItem) =>
-            existingItem.templateId === templateId && existingItem.rarity === rarity,
+          (i) => i.templateId === item.templateId && i.rarity === item.rarity,
         );
 
         if (existing) {
-          existing.quantity += quantity;
+          existing.quantity += item.quantity;
         } else {
-          targetArray.push({
-            templateId,
-            type,
-            rarity,
-            quantity,
-          });
+          targetArray.push({ ...item });
         }
-
         success = true;
       });
-
       return success;
     },
 
-    removeItem: (item: InventoryItem): boolean => {
+    removeItem: (containerId, item) => {
       let success = false;
-
       set((state) => {
-        const { templateId, rarity, quantity: amount, type } = item;
-        const targetArray = state.inventory.items[type];
+        const container = state.inventory.containers[containerId];
+        if (!container) return;
 
-        if (!targetArray) {
-          console.warn(`Inventory: unknown type '${type}' in item`);
-          return; // success остается false
-        }
-
-        const existingIndex = targetArray.findIndex(
-          (existingItem) =>
-            existingItem.templateId === templateId && existingItem.rarity === rarity,
+        const targetArray = container.items[item.type];
+        const index = targetArray.findIndex(
+          (i) => i.templateId === item.templateId && i.rarity === item.rarity,
         );
 
-        const existing = targetArray[existingIndex];
+        if (index === -1) return;
 
-        if (!existing) return;
-
-        if (existing.quantity > amount) {
-          existing.quantity -= amount;
+        const existing = targetArray[index];
+        if (existing.quantity > item.quantity) {
+          existing.quantity -= item.quantity;
         } else {
-          targetArray.splice(existingIndex, 1);
+          targetArray.splice(index, 1);
         }
-
         success = true;
       });
-
       return success;
     },
 
-    // --- РЕАЛИЗАЦИЯ НОВЫХ ЭКШЕНОВ ---
-    selectItem: (item, context) => {
+    modifyMoney: (containerId, delta) => {
+      let success = false;
       set((state) => {
-        state.inventory.selectedItem = { item, context };
+        const container = state.inventory.containers[containerId];
+        if (!container) return;
+
+        const newAmount = container.money + delta;
+        if (newAmount < 0) return;
+
+        container.money = newAmount;
+        success = true;
+      });
+      return success;
+    },
+
+    transferAll: (fromId, toId) => {
+      set((state) => {
+        const source = state.inventory.containers[fromId];
+        const target = state.inventory.containers[toId];
+
+        if (!source || !target) return;
+
+        // 1. Переносим деньги
+        target.money += source.money;
+        source.money = 0;
+
+        // 2. Переносим предметы всех категорий
+        const categories = Object.keys(source.items) as ItemType[];
+
+        categories.forEach((type) => {
+          const sourceItems = source.items[type];
+          const targetItems = target.items[type];
+
+          sourceItems.forEach((srcItem) => {
+            const existing = targetItems.find(
+              (t) => t.templateId === srcItem.templateId && t.rarity === srcItem.rarity,
+            );
+
+            if (existing) {
+              existing.quantity += srcItem.quantity;
+            } else {
+              targetItems.push({ ...srcItem });
+            }
+          });
+
+          // Очищаем источник
+          source.items[type] = [];
+        });
+      });
+    },
+
+    selectItem: (containerId, item, context) => {
+      set((state) => {
+        state.inventory.selectedItem = { containerId, item, context };
       });
     },
 
     unselectItem: () => {
       set((state) => {
         state.inventory.selectedItem = null;
-      });
-    },
-
-    modifyResource: (resource, delta) => {
-      set((state) => {
-        state.inventory.resources[resource] = Math.max(
-          0,
-          state.inventory.resources[resource] + delta,
-        );
       });
     },
   },

@@ -1,14 +1,23 @@
-import { DEFAULT_EXPLORATION_DURATION } from '@/constants';
-import { STAMINA_RECOVERY_PER_HOUR } from '@/constants';
-import { EffectManager } from '@/systems/effects/effectManager';
+import {
+  DEFAULT_EXPLORATION_DURATION,
+  DEFAULT_VISIT_DATE,
+  STAMINA_RECOVERY_PER_HOUR,
+  START_DATE,
+} from '@/constants';
+import { PoiEffectManager } from '@/systems/effects/poiEffectManager';
+import { TraitEffectManager } from '@/systems/effects/traitEffectManager';
 import { TravelManager } from '@/systems/travel/travelManager';
 import type { CombatResult } from '@/types/combat.types';
 import type { EffectLog } from '@/types/logs.types';
 import type { ToD, Weather } from '@/types/world.types';
+import { diffCalendarDays } from '@/utils/diffCalendarDays';
 
 import type { GameSlice } from '../types';
 import { partySelectors } from '../useGameState';
 import type { StoreState } from '../useGameState';
+import { interactionDraft } from './interaction';
+import { partyDraft } from './party';
+import { poiDraft } from './poi';
 
 const MORNING_HOUR = 8; // 8:00 AM
 
@@ -20,7 +29,7 @@ export interface WorldSlice {
     endDay: () => void;
     changeTime: (minutes: number) => void;
     scoutCell: (cellId: string, maxRollValue: number, bonus: number, duration: number) => void;
-    travelToCell: (targetCellId: string) => void;
+    travelToPoi: (targetPoiId: string) => void;
     restUntilMorning: () => void;
     restForMinutes: (minutes: number) => void;
   };
@@ -36,8 +45,17 @@ export const worldSelectors = {
   },
 };
 
+function scoutCellDraft(state: StoreState, cellId: string) {
+  const perception = partySelectors.selectHighestEffectiveMainStat('per')(state);
+
+  // возможно нужно вять минимальное значение восприятия среди всех членов отряда как минимум
+  const explorationLevel = Math.floor(Math.random() * (perception + 1));
+
+  poiDraft.exploreCell(state, cellId, explorationLevel, DEFAULT_EXPLORATION_DURATION);
+}
+
 export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
-  currentTime: new Date('2069-05-10T08:00:00').getTime(),
+  currentTime: START_DATE,
   weather: 'clear',
 
   actions: {
@@ -46,7 +64,7 @@ export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
       console.log(combatResult);
       const stateSnapshot = get();
       const traitEffects = get().traits.actions.processBattleEnd(combatResult.combatStatus);
-      const charactersEffectLogs = EffectManager.processTraitEffects(traitEffects, {
+      const charactersEffectLogs = TraitEffectManager.processTraitEffects(traitEffects, {
         state: stateSnapshot,
       });
       const characterGrowthLogs = get().characters.actions.processBattleEnd(combatResult);
@@ -70,11 +88,14 @@ export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
       // This logic remains the same
       console.log(`--- A new day has begun ---`);
       const stateSnapshot = get();
+
       const traitEffects = get().traits.actions.processDayEnd();
-      get().map.actions.processDayEnd();
-      const poiEffects = get().pois.actions.processDayEnd();
-      EffectManager.processTraitEffects(traitEffects, { state: stateSnapshot });
-      EffectManager.processPoiEffects(poiEffects, { state: stateSnapshot });
+      const poiEffects = get().poiSlice.actions.processDayPass();
+
+      TraitEffectManager.processTraitEffects(traitEffects, { state: stateSnapshot });
+      set((state) => {
+        PoiEffectManager.processPoiEffects(poiEffects, { state });
+      });
     },
 
     changeTime: (minutes: number) => {
@@ -83,12 +104,12 @@ export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
       const newTime = oldTime + minutes * 60 * 1000;
       const oldDay = new Date(oldTime).getDate();
       const newDay = new Date(newTime).getDate();
+      const daysPassed = newDay - oldDay;
 
       set((state) => {
         state.world.currentTime = newTime;
       });
 
-      const daysPassed = newDay - oldDay;
       if (daysPassed > 0) {
         for (let i = 0; i < daysPassed; i++) {
           get().world.actions.endDay();
@@ -96,44 +117,44 @@ export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
       }
     },
 
-    scoutCell: (cellId, maxRollValue, bonus, duration) => {
-      // This logic remains the same
-      const roll = Math.floor(Math.random() * (maxRollValue + 1));
-      const explorationLevel = roll + bonus;
-      get().map.actions.exploreCell(cellId, explorationLevel, duration);
+    scoutCell: (cellId) => {
+      set((state) => {
+        scoutCellDraft(state, cellId);
+      });
     },
 
-    travelToCell: (targetCellId: string) => {
-      // This logic remains the same
-      const state = get();
-      const currentCellId = state.party.currentPartyPosition;
-      const targetCell = state.map.cells[targetCellId];
-      if (!targetCell) return;
+    travelToPoi: (targetPoiId: string) => {
+      const beforeState = get();
 
-      const cost = TravelManager.computeTravelCost({
-        currentCellId,
-        targetCellId,
-        terrain: targetCell.type,
-        weather: state.world.weather,
-        timeOfDay: worldSelectors.selectTimeOfDay(state),
-        mode: state.party.travelMode,
-        isFatigued: partySelectors.selectIsPartyFatigued(state),
-      });
+      const currentPoiId = beforeState.party.currentPartyPosition;
+      const targetPoi = beforeState.poiSlice.pois[targetPoiId];
+      if (!targetPoi) throw new Error(`Target POI ${targetPoiId} does not exist`);
 
-      if (!cost.passable) {
-        console.warn('Travel failed: terrain is impassable.');
+      const currentTime = beforeState.world.currentTime;
+      const lastVisitTime = targetPoi.details.lastTimeVisited ?? DEFAULT_VISIT_DATE;
+      const daysPassed = diffCalendarDays(lastVisitTime, currentTime);
+
+      const travel = TravelManager.computeTravel(currentPoiId, targetPoiId, beforeState);
+
+      if (!travel.canTravel) {
+        console.warn(`cant travel from ${currentPoiId} to ${targetPoiId}`);
         return;
       }
 
-      get().world.actions.changeTime(cost.minutes);
-      get().party.actions.changeStamina(-cost.stamina);
+      beforeState.world.actions.changeTime(travel.timeCost);
 
-      set((draftState) => {
-        draftState.party.currentPartyPosition = targetCellId;
+      set((state) => {
+        const poi = state.poiSlice.pois[targetPoiId];
+        if (!poi) return;
+
+        poiDraft.processPoiEnter(state, targetPoiId, daysPassed, state.world.currentTime);
+        if (poi.type === 'cell' && daysPassed > 0) {
+          scoutCellDraft(state, targetPoiId);
+        }
+        partyDraft.moveToPoi(state, targetPoiId, travel.staminaCost);
+        interactionDraft.startInteraction(state, { poiId: targetPoiId });
+        state.ui.currentScreen = poi.type === 'cell' ? 'strategicMap' : 'poiView';
       });
-
-      const selectedStat = partySelectors.selectHighestEffectiveMainStat('per')(get());
-      get().world.actions.scoutCell(targetCellId, selectedStat, 0, DEFAULT_EXPLORATION_DURATION);
     },
 
     restForMinutes: (minutes) => {

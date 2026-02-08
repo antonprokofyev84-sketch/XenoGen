@@ -1,22 +1,23 @@
 import { useGameState } from '@/state/useGameState';
+import { useMapInteractionStore } from '@/state/useMapInteractionStore';
 
 interface CellSelectionProps {
   cellSize: number;
 }
 
 export const CellSelection = ({ cellSize }: CellSelectionProps) => {
-  const selectedCellId = useGameState((state) => state.map.selectedCellId);
-  const travelToCell = useGameState((state) => state.world.actions.travelToCell);
+  const focusedCellId = useMapInteractionStore((state) => state.focusedPoiId);
+  const travelToPoi = useGameState((state) => state.world.actions.travelToPoi);
 
   const handleCellSelectionClick = () => {
-    travelToCell(selectedCellId!);
+    travelToPoi(focusedCellId!);
   };
 
-  if (!selectedCellId) {
+  if (!focusedCellId) {
     return null;
   }
 
-  const [col, row] = selectedCellId.split('-').map(Number);
+  const [col, row] = focusedCellId.split('-').map(Number);
   const x = col * cellSize;
   const y = row * cellSize;
 

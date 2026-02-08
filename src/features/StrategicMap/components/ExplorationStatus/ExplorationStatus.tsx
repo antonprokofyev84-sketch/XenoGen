@@ -1,20 +1,23 @@
-import { useShallow } from 'zustand/react/shallow';
-
 import textData from '@/locales/en.json';
-import { mapSelectors } from '@/state/gameSlices/map';
-import { useGameState } from '@/state/useGameState';
+import { poiSelectors, useGameState } from '@/state/useGameState';
+import { useMapInteractionStore } from '@/state/useMapInteractionStore';
 
 import './ExplorationStatus.scss';
 
 export const ExplorationStatus = () => {
-  const selectedCellId = useGameState((state) => state.map.selectedCellId);
-  const cellData = useGameState(useShallow(mapSelectors.selectCellById(selectedCellId!)));
+  const selectedCellId = useMapInteractionStore((state) => state.focusedPoiId);
+  const selectedCell = useGameState(poiSelectors.selectPoiById(selectedCellId!));
+  if (selectedCell?.type !== 'cell') {
+    return null;
+  }
+
+  const cellData = selectedCell?.details;
 
   const getStatus = () => {
-    if (!cellData.isVisited) {
+    if (cellData.visitedTimes === 0) {
       return { text: textData.strategicMap.statusUnexplored, className: 'unexplored' };
     }
-    if (cellData.explorationDaysLeft === null) {
+    if (cellData.explorationDaysLeft === Infinity) {
       let statusText = textData.strategicMap.statusPermanent;
       if (cellData.explorationLevel > 0) {
         statusText += ` | ${textData.strategicMap.scoutScoreLabel}: ${cellData.explorationLevel}`;

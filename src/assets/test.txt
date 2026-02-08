@@ -89,3 +89,37 @@ He is holding a crude, post-apocalyptic pipe gun. The weapon is visibly assemble
 thick metal pipe serves as the barrel, the stock is a rough piece of weathered wood, and the trigger mechanism is a crude assembly of exposed springs and levers, held together with bolts and wire wraps.
 The rifle looks nothing like a manufactured firearm. No assault rifle, no optical scope, no standard shotgun parts. It is clearly a piece of dangerous junk.
 On his back is a large, overstuffed backpack. Solid white background for easy removal. Ultra-detailed, 4k.
+
+
+
+
+
+//
+
+can you reduce the scale of this image to show more of the city about 60 houses instead of 25
+
+
+An isometric full town map of a medium-sized rural lakeside town, NOT an island. The lake appears only along the bottom 10% of the image; the rest is land. Show the ENTIRE TOWN in a wide-area, zoomed-out, bird's-eye view. The camera angle must be far enough to fit a large portion of the settlement in one frame, with houses appearing small on screen so that the scene includes at least 60–80 of them. Avoid close-up or medium zoom.
+
+Road layout (important):
+The town must have ONE main asphalt road running through it, clearly visible and distinct from all other paths. In addition, include only 2–3 very short side streets or dirt/gravel paths. There must NOT be roads circling around each house—reduce the number of roads. Use irregular, organic placement, not a tight grid. Many houses should sit directly beside the main road or be accessible only by narrow footpaths.
+
+Increase the density significantly: include 60–80 houses total, arranged in several dense clusters along the main asphalt road and the few short side paths.
+
+Include a detailed slave market district near the harbor: a large open square with a wooden auction stage, metal cages, and a packed parking lot full of various electric vehicles. Nearby are long worn-down barracks for captives.
+
+Include a harbor with wooden piers, a crane, small fishing boats, storage sheds, and a guard post.
+
+Include a small, ultra-modern genetic scanning station/clinic: a clean white building with external tanks, pipes running toward the lake, a tall antenna tower, turrets, and a landing pad. This building must stand out strongly from the rest of the town.
+
+Include the mayor’s office: a refurbished former military warehouse with reinforced windows and a flagpole.
+
+Include the mayor’s mansion: a large modern, well-maintained house with a pool and a small elite neighborhood of several smaller rich houses.
+
+Make the general store, bar/tavern, and repair shop clearly visible and distinct. Place them along the MAIN asphalt road so they are easy to find. Add service yards, parked electric cars, tool racks, outdoor seating, or small signs to visually differentiate them.
+
+Add architectural variety to the housing: in addition to the common 1–2 floor gable-roof houses, include several more modern homes with flat roofs or single-sloped roofs, metal siding, larger windows, or rooftop solar panels. Mix these styles naturally across the town.
+
+Add subtle low-tech cyberpunk elements: old security cameras, exposed cables, battery packs, improvised lighting, a few small service drones, worn solar panels, old LED signboards.
+
+Style: realistic textures, muted rural tones, high detail, readable isometric game map.

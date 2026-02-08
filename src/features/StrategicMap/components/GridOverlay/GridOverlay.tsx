@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { CELL_SIZE, GRID_COLS, GRID_ROWS } from '@/constants';
-import { useGameState } from '@/state/useGameState';
+import { useMapInteractionStore } from '@/state/useMapInteractionStore';
 
 import { CellSelection } from '../CellSelection/CellSelection';
 import { GridCell } from '../GridCell/GridCell';
@@ -12,7 +12,7 @@ import './GridOverlay.scss';
 interface GridOverlayProps {}
 
 export const GridOverlay: React.FC<GridOverlayProps> = () => {
-  const setSelectedCellId = useGameState((state) => state.map.actions.setSelectedCellId);
+  const setSelectedCellId = useMapInteractionStore((state) => state.actions.setFocusedPoiId);
   const mapWidth = GRID_COLS * CELL_SIZE;
   const mapHeight = GRID_ROWS * CELL_SIZE;
 
@@ -23,8 +23,6 @@ export const GridOverlay: React.FC<GridOverlayProps> = () => {
 
     const col = Math.floor(x / CELL_SIZE);
     const row = Math.floor(y / CELL_SIZE);
-
-    console.log(`Clicked sector coordinates: (${col}, ${row})`);
 
     setSelectedCellId(`${col}-${row}`);
   };

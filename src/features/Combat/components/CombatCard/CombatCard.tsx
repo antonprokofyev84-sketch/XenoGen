@@ -19,10 +19,10 @@ interface CombatCardProps {
 export const CombatCard = ({ unitId }: CombatCardProps) => {
   const unit = useCombatState((state) => state.unitsById[unitId]);
   const activeUnit = useCombatState((state) => combatSelectors.selectCurrentActiveUnit(state));
+  const swapPosition = useCombatState((state) => state.actions.swapPosition);
+  const attack = useCombatState((state) => state.actions.attack);
+  const processAITurn = useCombatState((state) => state.actions.processAITurn);
 
-  const { swapPosition, processAITurn, endTurn, attack } = useCombatState(
-    useShallow((state) => state.actions),
-  );
   const occupiedPositions = useCombatState(
     useShallow(combatSelectors.selectLinesOccupancyForUnits),
   );
@@ -66,7 +66,6 @@ export const CombatCard = ({ unitId }: CombatCardProps) => {
     }
 
     if (isActive) {
-      endTurn();
       setLocalPosition(position);
     } else if (position !== localPosition) {
       setLocalPosition(position);

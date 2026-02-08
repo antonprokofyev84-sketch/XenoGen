@@ -1,6 +1,13 @@
 import type { Rarity } from './common.types';
 
-export type ItemType = 'meleeWeapon' | 'rangeWeapon' | 'armor' | 'gadget' | 'consumable' | 'misc';
+export type ItemType =
+  | 'meleeWeapon'
+  | 'rangeWeapon'
+  | 'armor'
+  | 'gadget'
+  | 'resource'
+  | 'consumable'
+  | 'misc';
 
 export interface InventoryItem {
   templateId: string;
@@ -9,15 +16,9 @@ export interface InventoryItem {
   quantity: number;
 }
 
-export interface Resources {
-  money: number;
-  scrap: number;
-  food: number;
-}
-
 export type InventoryStorage = Record<ItemType, InventoryItem[]>;
 
-export type CombatLoot = {
-  items: InventoryItem[];
-  resources: Resources;
-};
+export interface InventoryContainer {
+  items: InventoryStorage;
+  money: number;
+}

@@ -199,6 +199,96 @@ export const characterSelectors = {
     },
 };
 
+// --- Draft Functions ---
+
+const setNameDraft = (state: StoreState, characterId: string, name: string) => {
+  const char = state.characters.byId[characterId];
+  if (char) char.name = name;
+};
+
+const changeMainStatDraft = (
+  state: StoreState,
+  characterId: string,
+  stat: MainStatKey,
+  delta: number,
+) => {
+  const char = state.characters.byId[characterId];
+  if (char) char.mainStats[stat] = Math.max(0, char.mainStats[stat] + delta);
+  return { type: 'modifyMainStat', stat, delta } as const;
+};
+
+const setMainStatDraft = (
+  state: StoreState,
+  characterId: string,
+  stat: MainStatKey,
+  value: number,
+) => {
+  const char = state.characters.byId[characterId];
+  if (char) char.mainStats[stat] = value;
+};
+
+const changeSkillDraft = (
+  state: StoreState,
+  characterId: string,
+  skill: SkillKey,
+  delta: number,
+) => {
+  const char = state.characters.byId[characterId];
+  if (char) char.skills[skill] = Math.max(0, char.skills[skill] + delta);
+  return { type: 'modifySkill', skill, delta } as const;
+};
+
+const setSkillDraft = (state: StoreState, characterId: string, skill: SkillKey, value: number) => {
+  const char = state.characters.byId[characterId];
+  if (char) char.skills[skill] = value;
+};
+
+const resetHpToMaxDraft = (state: StoreState, characterId: string) => {
+  const char = state.characters.byId[characterId];
+  if (char) {
+    const { mainStats, baseStats } = char;
+    char.hp = calculateMaxHp(mainStats, baseStats);
+  }
+};
+
+const changeStaminaDraft = (state: StoreState, characterId: string, delta: number) => {
+  const char = state.characters.byId[characterId];
+  if (char) {
+    const maxStamina = calculateMaxStamina(char.mainStats, char.baseStats);
+    const newStamina = char.stamina + delta;
+    char.stamina = Math.max(-maxStamina, Math.min(newStamina, maxStamina));
+  }
+};
+
+const resetStaminaToMaxDraft = (state: StoreState, characterId: string) => {
+  const char = state.characters.byId[characterId];
+  if (char) {
+    const { mainStats, baseStats } = char;
+    char.stamina = calculateMaxStamina(mainStats, baseStats);
+  }
+};
+
+const resetProtagonistDraft = (state: StoreState) => {
+  const protagonistId = state.characters.protagonistId;
+  const template = PROTAGONIST_TEMPLATE;
+  if (template) {
+    state.characters.byId[protagonistId] = { ...template };
+  }
+};
+
+// Expose draft helpers for external systems that operate inside a single `draft` call
+export const characterDraft = {
+  setName: setNameDraft,
+  changeMainStat: changeMainStatDraft,
+  setMainStat: setMainStatDraft,
+  changeSkill: changeSkillDraft,
+  setSkill: setSkillDraft,
+  resetHpToMax: resetHpToMaxDraft,
+  changeStamina: changeStaminaDraft,
+  resetStaminaToMax: resetStaminaToMaxDraft,
+  resetProtagonist: resetProtagonistDraft,
+};
+
 // --- Slice Creator Function ---
 
 export const createCharactersSlice: GameSlice<CharactersSlice> = (set, get) => ({
@@ -208,32 +298,27 @@ export const createCharactersSlice: GameSlice<CharactersSlice> = (set, get) => (
   actions: {
     setName: (characterId, name) =>
       set((state) => {
-        const char = state.characters.byId[characterId];
-        if (char) char.name = name;
+        setNameDraft(state, characterId, name);
       }),
 
     changeMainStat: (characterId, stat, delta) =>
       set((state) => {
-        const char = state.characters.byId[characterId];
-        if (char) char.mainStats[stat] = Math.max(0, char.mainStats[stat] + delta);
+        changeMainStatDraft(state, characterId, stat, delta);
       }),
 
     setMainStat: (characterId, stat, value) =>
       set((state) => {
-        const char = state.characters.byId[characterId];
-        if (char) char.mainStats[stat] = value;
+        setMainStatDraft(state, characterId, stat, value);
       }),
 
     changeSkill: (characterId, skill, delta) =>
       set((state) => {
-        const char = state.characters.byId[characterId];
-        if (char) char.skills[skill] = Math.max(0, char.skills[skill] + delta);
+        changeSkillDraft(state, characterId, skill, delta);
       }),
 
     setSkill: (characterId, skill, value) =>
       set((state) => {
-        const char = state.characters.byId[characterId];
-        if (char) char.skills[skill] = value;
+        setSkillDraft(state, characterId, skill, value);
       }),
 
     finalizeCharacterCreation: (characterId: string) =>
@@ -258,38 +343,22 @@ export const createCharactersSlice: GameSlice<CharactersSlice> = (set, get) => (
 
     resetProtagonist: () =>
       set((state) => {
-        const protagonistId = state.characters.protagonistId;
-        const template = PROTAGONIST_TEMPLATE;
-        if (template) {
-          state.characters.byId[protagonistId] = { ...template };
-        }
+        resetProtagonistDraft(state);
       }),
 
     resetHpToMax: (characterId) =>
       set((state) => {
-        const char = state.characters.byId[characterId];
-        if (char) {
-          const { mainStats, baseStats } = char;
-          char.hp = calculateMaxHp(mainStats, baseStats);
-        }
+        resetHpToMaxDraft(state, characterId);
       }),
 
     resetStaminaToMax: (characterId) =>
       set((state) => {
-        const char = state.characters.byId[characterId];
-        if (char) {
-          const { mainStats, baseStats } = char;
-          char.stamina = calculateMaxStamina(mainStats, baseStats);
-        }
+        resetStaminaToMaxDraft(state, characterId);
       }),
 
     changeStamina: (characterId: string, delta: number) => {
       set((state) => {
-        const char = state.characters.byId[characterId];
-
-        const maxStamina = calculateMaxStamina(char.mainStats, char.baseStats);
-        const newStamina = char.stamina + delta;
-        char.stamina = Math.max(-maxStamina, Math.min(newStamina, maxStamina));
+        changeStaminaDraft(state, characterId, delta);
       });
       console.log(get().characters.byId[characterId]);
     },

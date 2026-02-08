@@ -2,6 +2,7 @@ import { CharacterCreation } from '@/features/CharacterCreation/CharacterCreatio
 import { CharacterDetails } from '@/features/CharacterDetails/CharacterDetails';
 import { Combat } from '@/features/Combat/Combat';
 import { MainMenu } from '@/features/MainMenu/MainMenu';
+import { PoiView } from '@/features/PoiView/PoiView';
 import { StrategicMap } from '@/features/StrategicMap/StrategicMap';
 import { useGameState } from '@/state/useGameState';
 
@@ -18,6 +19,8 @@ function App() {
         return <CharacterCreation />;
       case 'strategicMap':
         return <StrategicMap />;
+      case 'poiView':
+        return <PoiView />;
       case 'combat':
         return <Combat />;
       case 'characterDetails':

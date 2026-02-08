@@ -12,8 +12,9 @@ const SCOUT_BONUS_DURATION = 2;
 const SCOUT_BONUS_SCORE = 20;
 
 export const LeftPanelFooter = () => {
+  return null;
   const selectedCellId = useGameState((state) => state.map.selectedCellId);
-  if (!selectedCellId) return null;
+
   const { type } = useGameState((state) => state.map.cells[selectedCellId]);
   const currentPartyPosition = useGameState((state) => state.party.currentPartyPosition);
   const partyPerception = useGameState(
@@ -27,6 +28,8 @@ export const LeftPanelFooter = () => {
   const { travelMode } = useGameState((state) => state.party);
   const weather = useGameState((state) => state.world.weather);
   const timeOfDay = useGameState((state) => worldSelectors.selectTimeOfDay(state));
+
+  if (!selectedCellId) return null;
 
   const travelCost = TravelManager.computeTravelCost({
     currentCellId: currentPartyPosition,

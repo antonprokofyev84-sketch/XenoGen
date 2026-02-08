@@ -5,7 +5,12 @@
 export const makeInstanceId = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
     ? crypto.randomUUID()
-    : `it_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    : `it-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+export const stripLastUnderscoreSegment = (value: string): string => {
+  const index = value.lastIndexOf('_');
+  return index === -1 ? value : value.slice(0, index);
+};
 
 export const clamp = (value: number, min: number, max: number) =>
   Math.max(min, Math.min(max, value));

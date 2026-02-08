@@ -1,75 +1,102 @@
 import type { CombatUnit } from './combat.types';
 
+export type CellTerrain = 'forest' | 'mountain' | 'plain' | 'desert' | 'water' | 'ruins';
+
+interface GeneralDetails {
+  lastTimeVisited?: number | null;
+}
+
+export interface CellDetails extends GeneralDetails {
+  // позиция в сетке (для UI и поиска соседей)
+  col: number;
+  row: number;
+
+  terrain: CellTerrain;
+
+  // 0..999 или 1000 для 10-го уровня (макс) уровень вычисляется как Math.floor(threat / 100)
+  // для contamination и prosperity аналогично
+  threat: number;
+  contamination: number;
+  prosperity: number;
+
+  visitedTimes: number; // сколько раз игрок реально заходил в клетку
+
+  // "сила" разведки, которая влияет на видимость POI в клетке
+  // возможно имеет смысл добавить еще одно поле
+  // которое будет отвечать за "максимальный уровень разведки, достигнутый когда-либо"
+  // а текущий уровень будет зависеть  от половины максимального и восприятия персонажей
+  explorationLevel: number;
+
+  /**
+   * 0     -> не разведана сейчас
+   * > 0   -> временно разведана ещё N дней или постоянно разведана (Infinity)
+   */
+  explorationDaysLeft: number;
+}
+
+export interface EncounterDetails extends GeneralDetails {
+  poiTemplateId: string;
+
+  faction?: string;
+  ownerId?: string;
+
+  explorationThreshold: number;
+
+  level?: number;
+
+  progress?: number;
+  progressMax?: number;
+
+  isDiscovered: boolean;
+  lifetimeDays?: number | null;
+
+  combatUnits?: CombatUnit[] | null;
+  store?: any | null;
+}
+
 export type PoiType =
-  | 'combat'
+  | 'cell'
+  | 'encounter'
   | 'loot'
+  | 'facility'
   | 'dungeon'
   | 'settlement'
   | 'base'
-  | 'event'
   | 'boss'
   | 'quest';
 
-export interface Poi extends ActivePoi {
-  nameKey: string;
-  descriptionKey: string;
+export type PoiDetails = CellDetails | EncounterDetails | Record<string, any>;
 
-  triggers?: {
-    onDayPass?: PoiTriggerRule[];
-    onProgressMax?: PoiTriggerRule[];
-  };
-}
+// =====================
+// POI Nodes (discriminated union)
+// =====================
 
-export interface ActivePoi {
+export interface BasePoiNode {
   id: string;
-  poiTemplateId: string;
-  type: PoiType;
-  rarity?: 'common' | 'rare' | 'unique';
-  difficulty?: number;
-  duration?: number;
-  progress?: number;
-  progressMax?: number;
-  faction: string;
-  isDiscovered: boolean;
-  perceptionThreshold: number;
-  details?: PoiDetails;
+  parentId: string | null; // null = корень (ячейка)
+  childrenIds: string[];
+  rootCellId: string;
 }
 
-export type PoiDetails = CombatPoiDetails /* | LootPoiDetails */;
-
-export interface CombatPoiDetails {
-  enemyGroup: CombatUnit[];
+export interface CellPoiNode extends BasePoiNode {
+  type: 'cell';
+  details: CellDetails;
 }
 
-export type PoiTriggerRule = {
-  // if?: Condition[]; // All conditions must be met (AND logic)
-  do: PoiAction[]; // Executed in order
-};
+export interface EncounterPoiNode extends BasePoiNode {
+  type: 'encounter';
+  details: EncounterDetails;
+}
 
-type ActionHelper = { chance?: number }; // Optional chance to perform the action
+/**
+ * Все остальные типы POI пока типизируем как "generic".
+ * Когда конкретный тип начнёт активно использоваться в UI/логике — выделяешь ему свой Details
+ * и добавляешь в union ниже.
+ */
+export interface GenericPoiNode extends BasePoiNode {
+  type: 'loot' | 'facility' | 'dungeon' | 'settlement' | 'base' | 'boss' | 'quest';
+  details: Record<string, any>;
+}
 
-type ActionCore =
-  | { kind: 'modifySelfProgress'; delta: number }
-  | { kind: 'setSelfProgress'; value: number }
-  | { kind: 'changeCurrentCellParam'; cellParam: string; delta: number }
-  | {
-      kind: 'changeCellParamInRadius';
-      cellParam: string;
-      delta: number;
-      radius: number;
-      perCellChance?: number;
-    }
-  | { kind: 'replaceSelf'; toPoiId: string }
-  | { kind: 'addPoiToCurrentCell'; poiId: string; params?: Record<string, any> }
-  | {
-      kind: 'addPoisInRadius';
-      poiId: string;
-      params?: Record<string, any>;
-      radius: number;
-      perCellChance?: number;
-    };
-// | { kind: 'removePoi'; poiId: string };
-
-export type PoiAction = ActionCore & ActionHelper;
-
-export type EffectsMap = Record<string, PoiTriggerRule[]>;
+export type PoiNode = CellPoiNode | EncounterPoiNode | GenericPoiNode;
+export type NonCellNode = EncounterPoiNode | GenericPoiNode;

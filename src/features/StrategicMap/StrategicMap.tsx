@@ -14,7 +14,7 @@ export const StrategicMap = () => {
       <LeftPanel />
       <MainPanel />
       <BottomBar />
-      <PoiPreview />
+      {/* <PoiPreview /> */}
     </div>
   );
 };

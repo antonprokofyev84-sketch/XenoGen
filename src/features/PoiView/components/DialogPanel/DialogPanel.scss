@@ -1,0 +1,80 @@
+@use '@/styles/variables' as *;
+
+.dialogPanel {
+  background-color: $color-bg-dark; // Темный фон как в StatsPanel
+  border: 1px solid $color-border;
+  border-radius: 8px;
+  padding: 1rem;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow: hidden;
+
+  // Стиль заголовка панели (как в StatsPanel)
+  .panelHeader {
+    text-align: center;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+
+    h3 {
+      margin: 0;
+      font-size: 1.2rem;
+      color: $btn-color-grey;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: normal;
+    }
+  }
+
+  .dialogContainer {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden; // Чтобы скролл был только у контента
+    gap: 1.5rem;
+  }
+
+  .sectionTitle {
+    color: $btn-color-yellow;
+    font-size: 0.85rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.2rem;
+    margin-top: 0;
+  }
+
+  // Область с текстом (скроллится)
+  .scrollableContent {
+    flex: 1;
+    overflow-y: auto;
+    @include custom-scrollbar;
+    padding-right: 5px;
+
+    .dialogTextSection {
+      p {
+        margin: 0;
+        line-height: 1.6;
+        color: #e0e0e0;
+        font-size: 0.95rem;
+      }
+    }
+
+    .dialogLogSection {
+      margin-top: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .interactionLogList {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+  }
+}

@@ -1,0 +1,43 @@
+.interactionLogItem {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 0.5rem;
+  background-color: rgba(255, 255, 255, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.interactionLogHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: #e0e0e0;
+  font-size: 0.95rem;
+  flex-wrap: wrap;
+}
+
+.interactionLogSummary {
+  color: #e0e0e0;
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+}
+
+.interactionLogNarrative {
+  color: #e0e0e0;
+}
+
+.interactionLogAction {
+  color: #bdbdbd;
+  font-size: 0.85rem;
+}
+
+.interactionLogResult {
+  &.success {
+    color: $btn-color-green;
+  }
+
+  &.fail {
+    color: $btn-color-red;
+  }
+}

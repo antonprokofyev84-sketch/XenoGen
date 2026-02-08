@@ -1,8 +1,6 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
-import { createMapSlice, mapSelectors } from '@/state/gameSlices/map';
-import type { MapSlice } from '@/state/gameSlices/map';
 import { createWorldSlice, worldSelectors } from '@/state/gameSlices/world';
 import type { WorldSlice } from '@/state/gameSlices/world';
 
@@ -12,6 +10,8 @@ import { createEquipmentSlice, equipmentSelectors } from './gameSlices/equipment
 import type { EquipmentSlice } from './gameSlices/equipment';
 import { createFactionsSlice, factionsSelectors } from './gameSlices/factions';
 import type { FactionsSlice } from './gameSlices/factions';
+import { createInteractionSlice, interactionSelectors } from './gameSlices/interaction';
+import type { InteractionSlice } from './gameSlices/interaction';
 import { createInventorySlice, inventorySelectors } from './gameSlices/inventory';
 import type { InventorySlice } from './gameSlices/inventory';
 import { createPartySlice, partySelectors } from './gameSlices/party';
@@ -25,18 +25,19 @@ import type { TraitsSlice } from './gameSlices/traits';
 import { createUISlice } from './gameSlices/ui';
 import type { UISlice } from './gameSlices/ui';
 
+//TODO change naming to names with "Slice"
 export type StoreState = {
   characters: CharactersSlice;
   ui: UISlice;
   traits: TraitsSlice;
   world: WorldSlice;
-  map: MapSlice;
   party: PartySlice;
   shelter: ShelterSlice;
-  pois: PoiSlice;
+  poiSlice: PoiSlice;
   factions: FactionsSlice;
   equipment: EquipmentSlice;
   inventory: InventorySlice;
+  interactionSlice: InteractionSlice;
 };
 
 export const useGameState = create<StoreState>()(
@@ -45,12 +46,12 @@ export const useGameState = create<StoreState>()(
     ui: createUISlice(set, get, api),
     traits: createTraitsSlice(set, get, api),
     equipment: createEquipmentSlice(set, get, api),
-    map: createMapSlice(set, get, api),
     characters: createCharactersSlice(set, get, api),
     party: createPartySlice(set, get, api),
     shelter: createShelterSlice(set, get, api),
-    pois: createPoiSlice(set, get, api),
+    poiSlice: createPoiSlice(set, get, api),
     factions: createFactionsSlice(set, get, api),
+    interactionSlice: createInteractionSlice(set, get, api),
     inventory: createInventorySlice(set, get, api),
   })),
 );
@@ -58,12 +59,12 @@ export const useGameState = create<StoreState>()(
 export {
   traitsSelectors,
   equipmentSelectors,
-  mapSelectors,
   characterSelectors,
   partySelectors,
   shelterSelectors,
   poiSelectors,
   factionsSelectors,
+  interactionSelectors,
   worldSelectors,
   inventorySelectors,
 };

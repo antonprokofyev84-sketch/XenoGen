@@ -1,9 +1,8 @@
 import { useShallow } from 'zustand/react/shallow';
 
 import textData from '@/locales/en.json';
-import { mapSelectors } from '@/state/gameSlices/map';
-import { poiSelectors } from '@/state/gameSlices/poi';
-import { useGameState } from '@/state/useGameState';
+import { poiSelectors, useGameState } from '@/state/useGameState';
+import { useMapInteractionStore } from '@/state/useMapInteractionStore';
 
 import { ExplorationStatus } from '../ExplorationStatus/ExplorationStatus';
 import { LeftPanelFooter } from '../LeftPanelFooter/LeftPanelFooter';
@@ -42,16 +41,15 @@ const StatProgressBar = ({
 
 export const LeftPanel = () => {
   const partyPosition = useGameState((state) => state.party.currentPartyPosition);
-  const selectedCellId = useGameState((state) => state.map.selectedCellId);
-  const cellData = useGameState(useShallow(mapSelectors.selectCellById(selectedCellId!)));
+  const selectedCellId = useMapInteractionStore((state) => state.focusedPoiId);
+  const selectedCell = useGameState(poiSelectors.selectPoiById(selectedCellId!));
+  const travelToPoi = useGameState((state) => state.world.actions.travelToPoi);
+
   const poisToDisplay = useGameState(
-    useShallow(poiSelectors.selectVisiblePoisByCellId(selectedCellId!)),
+    useShallow(poiSelectors.selectDiscoveredChildrenOfPoi(selectedCellId!)),
   );
-  const setSelectedPoiId = useGameState((state) => state.map.actions.setSelectedPoiId);
 
-  console.log('LeftPanel rendered');
-
-  if (!cellData) {
+  if (!selectedCell || selectedCell.type !== 'cell') {
     return (
       <aside className="leftPanel">
         <div className="panelHeader">
@@ -66,37 +64,38 @@ export const LeftPanel = () => {
 
   // Определяем, актуальны ли разведданные
   const isCellExplored =
-    cellData.explorationDaysLeft === null ||
-    (cellData.explorationDaysLeft && cellData.explorationDaysLeft > 0);
+    selectedCell.details.explorationDaysLeft === null ||
+    (selectedCell.details.explorationDaysLeft && selectedCell.details.explorationDaysLeft > 0);
 
   return (
     <aside className="leftPanel">
       <div className="panelHeader">
         <h3>
-          {textData.mapCellTypes[cellData.type]} ({cellData.col}, {cellData.row})
+          {textData.mapCellTypes[selectedCell.details.terrain]} ({selectedCell.details.col},{' '}
+          {selectedCell.details.row})
         </h3>
         <ExplorationStatus />
       </div>
       <div className="panelContent">
         {/* Показываем блок статов только если ячейка была посещена */}
-        {cellData.isVisited ? (
+        {selectedCell.details.visitedTimes > 0 ? (
           <div className="statsSection">
             <StatProgressBar
               label="Threat"
-              level={cellData.threatLevel}
-              progress={cellData.threatProgress}
+              level={Math.floor(selectedCell.details.threat / 100)}
+              progress={selectedCell.details.threat % 100}
               isIntelOutdated={!isCellExplored}
             />
             <StatProgressBar
               label="Prosperity"
-              level={cellData.prosperityLevel}
-              progress={cellData.prosperityProgress}
+              level={Math.floor(selectedCell.details.prosperity / 100)}
+              progress={selectedCell.details.prosperity % 100}
               isIntelOutdated={!isCellExplored}
             />
             <StatProgressBar
               label="Contamination"
-              level={cellData.contaminationLevel}
-              progress={cellData.contaminationProgress}
+              level={Math.floor(selectedCell.details.contamination / 100)}
+              progress={selectedCell.details.contamination % 100}
               isIntelOutdated={!isCellExplored}
             />
           </div>
@@ -116,11 +115,11 @@ export const LeftPanel = () => {
                   key={poi.id}
                   className="poiButton"
                   onClick={() => {
-                    setSelectedPoiId(poi.id);
+                    travelToPoi(poi.id);
                   }}
                   disabled={partyPosition !== selectedCellId}
                 >
-                  {textData.poi[poi.poiTemplateId as keyof typeof textData.poi]?.name ||
+                  {textData.poi[poi.details.poiTemplateId as keyof typeof textData.poi]?.name ||
                     'Unknown POI'}
                 </button>
               ))
