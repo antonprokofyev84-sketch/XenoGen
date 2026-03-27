@@ -36,15 +36,15 @@ export interface CurrentInteraction {
   services: InteractionServiceState[];
 }
 
+/** Persisted interaction state (without log), survives across visits within a day */
+export type InteractionMemory = Omit<CurrentInteraction, 'interactionLog'>;
+
 export interface InteractionSlice {
   currentInteraction: CurrentInteraction | null;
+  isTradeOpen: boolean;
 
-  /**
-   * Накопленное напряжение до конца дня.
-   * Ключ — id POI или NPC.
-   */
-  tensionById: Record<string, number>;
-  // TODO: нужно созранять все взаимодействие а не только tension
+  /** Persisted interaction snapshots, keyed by npcId or poiId. Cleared at end of day. */
+  interactionMemoryById: Record<string, InteractionMemory>;
 
   actions: {
     startInteraction: (params: {
@@ -54,8 +54,10 @@ export interface InteractionSlice {
     }) => void;
     performService: (serviceId: InteractionService) => void;
     updateTension: (delta: number) => void;
+    openTrade: () => void;
+    closeTrade: () => void;
     endInteraction: () => void;
-    clearAllTension: () => void;
+    clearDailyMemory: () => void;
   };
 }
 
@@ -112,9 +114,21 @@ const startInteractionDraft = (
     }
   }
 
+  const key = npcId ?? poiId;
+  const memory = state.interactionSlice.interactionMemoryById[key];
+
+  // If we have a stored memory, restore it with a fresh log
+  if (memory) {
+    state.interactionSlice.currentInteraction = {
+      ...memory,
+      interactionLog: [{ action: 'enter', success: true, tension: memory.tension }],
+    };
+    applyForceTensionReactionDraft(state);
+    return;
+  }
+
   if (initialTension === undefined) {
-    const storedTension = state.interactionSlice.tensionById[npcId ?? poiId];
-    initialTension = storedTension ?? computeInitialTension(effectiveRelation);
+    initialTension = computeInitialTension(effectiveRelation);
   }
 
   const baseServices = getServiceNamesById(poi?.type as string);
@@ -241,15 +255,27 @@ const buildRollLog = (
   };
 };
 
+const endInteractionDraft = (state: StoreState) => {
+  const interaction = state.interactionSlice.currentInteraction;
+  if (!interaction) return;
+
+  const key = interaction.npcId ?? interaction.poiId;
+  const { interactionLog, ...memory } = interaction;
+  state.interactionSlice.interactionMemoryById[key] = memory;
+  state.interactionSlice.currentInteraction = null;
+};
+
 export const interactionDraft = {
   startInteraction: startInteractionDraft,
   applyForceExitServices: applyForceExitServicesDraft,
   updateTension: updateTensionDraft,
+  endInteraction: endInteractionDraft,
 };
 
 export const createInteractionSlice: GameSlice<InteractionSlice> = (set, get) => ({
   currentInteraction: null,
-  tensionById: {},
+  isTradeOpen: false,
+  interactionMemoryById: {},
 
   actions: {
     startInteraction: (params) => {
@@ -261,6 +287,18 @@ export const createInteractionSlice: GameSlice<InteractionSlice> = (set, get) =>
     updateTension: (delta) => {
       set((state) => {
         updateTensionDraft(state, delta);
+      });
+    },
+
+    openTrade: () => {
+      set((state) => {
+        state.interactionSlice.isTradeOpen = true;
+      });
+    },
+
+    closeTrade: () => {
+      set((state) => {
+        state.interactionSlice.isTradeOpen = false;
       });
     },
 
@@ -319,6 +357,11 @@ export const createInteractionSlice: GameSlice<InteractionSlice> = (set, get) =>
           effects: effectLogs,
         });
 
+        // Open trade modal on successful trade service
+        if (serviceId === 'trade' && isSuccess) {
+          draftState.interactionSlice.isTradeOpen = true;
+        }
+
         // Check tension threshold
         applyForceTensionReactionDraft(draftState);
       });
@@ -332,18 +375,13 @@ export const createInteractionSlice: GameSlice<InteractionSlice> = (set, get) =>
 
     endInteraction: () => {
       set((state) => {
-        const interaction = state.interactionSlice.currentInteraction;
-        if (!interaction) return;
-
-        state.interactionSlice.tensionById[interaction.npcId ?? interaction.poiId] =
-          interaction.tension;
-        state.interactionSlice.currentInteraction = null;
+        endInteractionDraft(state);
       });
     },
 
-    clearAllTension: () => {
+    clearDailyMemory: () => {
       set((state) => {
-        state.interactionSlice.tensionById = {};
+        state.interactionSlice.interactionMemoryById = {};
       });
     },
   },

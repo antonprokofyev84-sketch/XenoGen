@@ -1,0 +1,176 @@
+@use '@/styles/variables' as *;
+
+.tradeOfferArea {
+  border: 1px solid $color-border;
+  border-radius: 6px;
+  background-color: rgba(0, 0, 0, 0.3);
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-height: 120px;
+
+  .offerHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 0.3rem;
+    border-bottom: 1px solid rgba($color-border, 0.5);
+
+    .offerTitle {
+      font-size: 0.75rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: $btn-color-yellow;
+    }
+
+    .offerTotal {
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: #fff;
+      font-family: monospace;
+    }
+  }
+
+  .offerContent {
+    display: flex;
+    gap: 0.5rem;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .offerItems {
+    flex: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-content: start;
+    overflow-y: auto;
+    @include custom-scrollbar;
+
+    .offerItem {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      cursor: pointer;
+
+      &:hover .offerItemIcon {
+        transform: scale(1.05);
+        box-shadow: 0 0 8px rgba($btn-color-red, 0.4);
+        border-color: $btn-color-red;
+      }
+    }
+
+    .offerItemIcon {
+      width: 60px;
+      height: 60px;
+      position: relative;
+      background-color: #222;
+      border: 2px solid #555;
+      border-radius: 4px;
+      padding: 3px;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.1s ease;
+
+      @include rarity-border;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+
+      .offerQty {
+        position: absolute;
+        bottom: 1px;
+        right: 3px;
+        color: #fff;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+        pointer-events: none;
+      }
+    }
+
+    .offerPrice {
+      font-size: 0.65rem;
+      color: #aaa;
+      font-family: monospace;
+    }
+  }
+
+  .offerMoney {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex-shrink: 0;
+    padding: 0.3rem;
+    border-left: 1px solid rgba($color-border, 0.4);
+
+    .moneyLabel {
+      font-size: 0.9rem;
+      color: $btn-color-yellow;
+      font-weight: bold;
+    }
+
+    .moneyValue {
+      font-size: 0.85rem;
+      color: #ccc;
+      font-family: monospace;
+    }
+
+    .moneyControls {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+
+      input[type='number'] {
+        width: 70px;
+        padding: 3px 6px;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid $color-border;
+        border-radius: 3px;
+        color: #fff;
+        font-size: 0.8rem;
+        font-family: monospace;
+        outline: none;
+
+        &:focus {
+          border-color: $btn-color-yellow;
+        }
+      }
+
+      // Hide number spinners
+      input[type='number']::-webkit-inner-spin-button,
+      input[type='number']::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      input[type='number'] {
+        -moz-appearance: textfield;
+      }
+
+      .moneyBtn {
+        padding: 3px 8px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid $color-border;
+        border-radius: 3px;
+        color: #aaa;
+        font-size: 0.7rem;
+        cursor: pointer;
+        transition: all 0.15s;
+
+        &:hover {
+          color: #fff;
+          border-color: $btn-color-yellow;
+          background: rgba($btn-color-yellow, 0.1);
+        }
+      }
+    }
+  }
+}

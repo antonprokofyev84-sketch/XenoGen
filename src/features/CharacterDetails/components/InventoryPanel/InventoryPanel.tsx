@@ -6,39 +6,40 @@ import MeleeIcon from '@/assets/icons/meleeWeapon.svg?react';
 import RangeIcon from '@/assets/icons/rangeWeapon.svg?react';
 import { useGameState } from '@/state/useGameState';
 import type { Rarity } from '@/types/common.types';
-import type { ItemType } from '@/types/inventory.types';
+import type { ItemTypeFilter } from '@/types/inventory.types';
 
 import { InventoryGrid } from '../InventoryGrid/InventoryGrid';
 
 import './InventoryPanel.scss';
 
-interface InventoryPanelProps {
-  activeTab: ItemType;
-  characterId: string;
-  onTabChange: (tab: ItemType) => void;
-  onItemRef: (el: HTMLElement | null) => void;
+interface TabConfig {
+  key: string;
+  filter: ItemTypeFilter;
+  Icon?: React.FunctionComponent<React.SVGProps<SVGSVGElement>>;
+  text?: string;
 }
 
-const TABS_CONFIG: {
-  type: ItemType;
-  Icon: React.FunctionComponent<React.SVGProps<SVGSVGElement>>;
-}[] = [
-  { type: 'meleeWeapon', Icon: MeleeIcon },
-  { type: 'rangeWeapon', Icon: RangeIcon },
-  { type: 'armor', Icon: ArmorIcon },
-  { type: 'gadget', Icon: GadgetIcon },
+const TABS_CONFIG: TabConfig[] = [
+  { key: 'all', filter: ['meleeWeapon', 'rangeWeapon', 'armor', 'gadget'], text: 'All' },
+  { key: 'meleeWeapon', filter: ['meleeWeapon'], Icon: MeleeIcon },
+  { key: 'rangeWeapon', filter: ['rangeWeapon'], Icon: RangeIcon },
+  { key: 'armor', filter: ['armor'], Icon: ArmorIcon },
+  { key: 'gadget', filter: ['gadget'], Icon: GadgetIcon },
 ];
 
 const ALL_RARITIES: Rarity[] = ['common', 'uncommon', 'rare', 'unique'];
 
-export const InventoryPanel = ({
-  activeTab,
-  onTabChange,
-  characterId,
-  onItemRef,
-}: InventoryPanelProps) => {
+interface InventoryPanelProps {
+  characterId: string;
+  onItemRef: (el: HTMLElement | null) => void;
+}
+
+export const InventoryPanel = ({ characterId, onItemRef }: InventoryPanelProps) => {
   const goToScreen = useGameState((state) => state.ui.goToScreen);
+  const [activeTabKey, setActiveTabKey] = useState('all');
   const [selectedRarities, setSelectedRarities] = useState<Set<Rarity>>(new Set(ALL_RARITIES));
+
+  const activeTab = TABS_CONFIG.find((t) => t.key === activeTabKey) ?? TABS_CONFIG[0];
 
   const toggleRarity = (rarity: Rarity) => {
     const next = new Set(selectedRarities);
@@ -55,19 +56,18 @@ export const InventoryPanel = ({
       {/* --- ВЕРХ: ТАБЫ + КНОПКА ЗАКРЫТИЯ --- */}
       <div className="tabsHeader">
         <div className="tabsList">
-          {TABS_CONFIG.map(({ type, Icon }) => (
+          {TABS_CONFIG.map(({ key, Icon, text }) => (
             <button
-              key={type}
-              onClick={() => onTabChange(type)}
-              className={`tabButton ${activeTab === type ? 'active' : ''}`}
-              title={type}
+              key={key}
+              onClick={() => setActiveTabKey(key)}
+              className={`tabButton ${activeTabKey === key ? 'active' : ''}`}
+              title={key}
             >
-              <Icon className="tabIcon" />
+              {Icon ? <Icon className="tabIcon" /> : <span className="tabText">{text}</span>}
             </button>
           ))}
         </div>
 
-        {/* Кнопка закрытия теперь внутри хедера */}
         <button
           className="closeButton"
           onClick={() => goToScreen('strategicMap')}
@@ -80,7 +80,7 @@ export const InventoryPanel = ({
       {/* --- ЦЕНТР: СЕТКА --- */}
       <div className="gridContainer">
         <InventoryGrid
-          activeTab={activeTab}
+          typeFilter={activeTab.filter}
           characterId={characterId}
           rarityFilters={Array.from(selectedRarities)}
           onItemRef={onItemRef}

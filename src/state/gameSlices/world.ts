@@ -144,6 +144,8 @@ export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
       beforeState.world.actions.changeTime(travel.timeCost);
 
       set((state) => {
+        interactionDraft.endInteraction(state);
+
         const poi = state.poiSlice.pois[targetPoiId];
         if (!poi) return;
 

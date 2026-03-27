@@ -1,28 +1,30 @@
 import { useMemo } from 'react';
 
+import { useShallow } from 'zustand/react/shallow';
+
 import { inventorySelectors } from '@/state/gameSlices/inventory';
 import { useGameState } from '@/state/useGameState';
 import type { Rarity } from '@/types/common.types';
-import type { ItemType } from '@/types/inventory.types';
+import type { InventoryItem, ItemTypeFilter } from '@/types/inventory.types';
 import { assetsVersion } from '@/utils/assetsVersion';
 
 import './InventoryGrid.scss';
 
 interface InventoryGridProps {
-  activeTab: ItemType;
+  typeFilter: ItemTypeFilter;
   characterId: string;
   rarityFilters: Rarity[];
-  onItemRef: (el: HTMLElement | null) => void; // <-- Колбек для передачи рефа родителю
+  onItemRef: (el: HTMLElement | null) => void;
 }
 
 export const InventoryGrid = ({
-  activeTab,
+  typeFilter,
   characterId,
   rarityFilters,
   onItemRef,
 }: InventoryGridProps) => {
   // --- STATE ---
-  const items = useGameState(inventorySelectors.selectItemsByType(activeTab));
+  const items = useGameState(useShallow(inventorySelectors.selectPlayerItemsByFilter(typeFilter)));
   const selectedItem = useGameState((s) => s.inventory.selectedItem);
   const selectItemAction = useGameState((s) => s.inventory.actions.selectItem);
 
@@ -31,7 +33,7 @@ export const InventoryGrid = ({
     if (!items) return [];
     return rarityFilters.length === 0
       ? items
-      : items.filter((i) => rarityFilters.includes(i.rarity));
+      : items.filter((i: InventoryItem) => rarityFilters.includes(i.rarity));
   }, [items, rarityFilters]);
 
   // --- HELPERS ---
@@ -42,7 +44,7 @@ export const InventoryGrid = ({
 
   // --- CLICK HANDLER ---
   const handleItemClick = (item: any) => {
-    selectItemAction(item, 'inventory');
+    selectItemAction(characterId, item, 'inventory');
     // onItemRef не нужен здесь, так как ref сработает автоматически при ререндере
     // благодаря условию ref={active ? onItemRef : null} ниже
   };
@@ -64,7 +66,7 @@ export const InventoryGrid = ({
             {/* Визуальный контейнер */}
             <div className={`iconContainer ${item.rarity} ${active ? 'active' : ''}`}>
               <img
-                src={assetsVersion(`/images/${activeTab}/${item.templateId}.png`)}
+                src={assetsVersion(`/images/${item.type}/${item.templateId}.png`)}
                 alt=""
                 loading="lazy"
                 onError={(e) => {

@@ -4,6 +4,7 @@ import ArmorIcon from '@/assets/icons/armor.svg?react';
 import GadgetIcon from '@/assets/icons/gadget.svg?react';
 import MeleeIcon from '@/assets/icons/meleeWeapon.svg?react';
 import RangeIcon from '@/assets/icons/rangeWeapon.svg?react';
+import { PROTAGONIST_ID } from '@/constants';
 import { characterSelectors } from '@/state/gameSlices/characters';
 import { equipmentSelectors } from '@/state/gameSlices/equipment';
 import { useGameState } from '@/state/useGameState';
@@ -94,7 +95,7 @@ export const CharacterPanel = ({
 
   const handleSlotClick = (slot: EquipmentSlot, item: InventoryItem | null | undefined) => {
     if (item) {
-      selectItemAction(item, slot);
+      selectItemAction(PROTAGONIST_ID, item, slot);
     }
   };
 

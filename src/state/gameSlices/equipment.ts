@@ -1,11 +1,11 @@
 import { DEFAULT_ARMOR_ID, DEFAULT_MELEE_ID } from '@/constants';
+import { PROTAGONIST_ID } from '@/constants';
 import type { StoreState } from '@/state/useGameState';
 import { equipmentFactory } from '@/systems/equipment/equipmentFactory';
 // Импортируем новые типы характеристик
 import type { MainStats, SecondaryStats, Skills, StatBlock } from '@/types/character.types';
 import type { EquipmentSlot, EquipmentSlots, WeaponSlots } from '@/types/equipment.types';
 import type { InventoryItem } from '@/types/inventory.types';
-import type { ItemType } from '@/types/inventory.types';
 
 import type { GameSlice } from '../types';
 
@@ -30,7 +30,7 @@ const isWeaponSlot = (slot: EquipmentSlot): slot is WeaponSlots =>
   slot === 'rangeSecondary';
 
 // Проверка совместимости предмета и слота
-const isValidSlotForType = (slot: EquipmentSlot, type: ItemType): boolean => {
+const isValidSlotForType = (slot: EquipmentSlot, type: InventoryItem['type']): boolean => {
   if (type === 'meleeWeapon') return slot === 'meleePrimary' || slot === 'meleeSecondary';
   if (type === 'rangeWeapon') return slot === 'rangePrimary' || slot === 'rangeSecondary';
   if (type === 'armor') return slot === 'armor';
@@ -165,7 +165,7 @@ export const createEquipmentSlice: GameSlice<EquipmentSlice> = (set, get) => ({
       if (removedItem) {
         // 3. Добавляем в инвентарь (через экшен инвентаря)
         // Мы создаем объект InventoryItem, quantity всегда 1 при снятии
-        state.inventory.actions.addItem({
+        state.inventory.actions.addItem(PROTAGONIST_ID, {
           ...removedItem,
           quantity: 1,
         });
@@ -188,13 +188,12 @@ export const createEquipmentSlice: GameSlice<EquipmentSlice> = (set, get) => ({
 
       // --- ШАГ 1: Валидация наличия (БЕЗ УДАЛЕНИЯ) ---
       if (!force) {
-        const itemsArray = state.inventory.items[type];
-        if (!itemsArray) {
-          console.warn(`[Equipment] Inventory corrupted: bucket ${type} missing`);
+        const playerItems = state.inventory.containers[PROTAGONIST_ID]?.items;
+        if (!playerItems) {
+          console.warn(`[Equipment] Inventory corrupted: no items array`);
           return false;
         }
-        // Проверяем, есть ли предмет в наличии
-        const existing = itemsArray.find(
+        const existing = playerItems.find(
           (existingItem) =>
             existingItem.templateId === templateId &&
             existingItem.rarity === rarity &&
@@ -255,7 +254,10 @@ export const createEquipmentSlice: GameSlice<EquipmentSlice> = (set, get) => ({
       // --- ШАГ 5: Удаление из инвентаря (COMMIT) ---
       // Только теперь, когда мы уверены, что слот свободен и валиден, забираем предмет
       if (!force) {
-        const removedSuccess = state.inventory.actions.removeItem({ ...item, quantity: 1 });
+        const removedSuccess = state.inventory.actions.removeItem(PROTAGONIST_ID, {
+          ...item,
+          quantity: 1,
+        });
         if (!removedSuccess) {
           console.error(`[Equipment] Critical error: Item vanished during equip transaction.`);
           // Теоретически, можно попробовать "вернуть" снятый предмет (шаг 4) обратно в слот,

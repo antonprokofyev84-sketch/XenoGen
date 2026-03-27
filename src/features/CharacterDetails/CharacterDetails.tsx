@@ -5,7 +5,6 @@ import { useShallow } from 'zustand/react/shallow';
 
 import { partySelectors } from '@/state/gameSlices/party';
 import { useGameState } from '@/state/useGameState';
-import type { ItemType } from '@/types/inventory.types';
 
 import { CharacterPanel } from './components/CharacterPanel/CharacterPanel';
 import { InventoryPanel } from './components/InventoryPanel/InventoryPanel';
@@ -41,11 +40,6 @@ export const CharacterDetails = () => {
     });
     unselectItem();
   };
-
-  // -----------------------------
-  // ACTIVE TAB
-  // -----------------------------
-  const [activeTab, setActiveTab] = useState<ItemType>('meleeWeapon');
 
   // -----------------------------
   // FLOATING UI (POPUP)
@@ -85,12 +79,7 @@ export const CharacterDetails = () => {
       />
 
       {/* КОЛОНКА 3: Инвентарь */}
-      <InventoryPanel
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        characterId={activeCharacterId}
-        onItemRef={refs.setReference}
-      />
+      <InventoryPanel characterId={activeCharacterId} onItemRef={refs.setReference} />
 
       {/* POPUP */}
       {selectedItem && (

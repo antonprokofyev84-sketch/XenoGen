@@ -9,6 +9,8 @@ export type ItemType =
   | 'consumable'
   | 'misc';
 
+export type ItemTypeFilter = ItemType[] | null;
+
 export interface InventoryItem {
   templateId: string;
   type: ItemType;
@@ -16,9 +18,7 @@ export interface InventoryItem {
   quantity: number;
 }
 
-export type InventoryStorage = Record<ItemType, InventoryItem[]>;
-
 export interface InventoryContainer {
-  items: InventoryStorage;
+  items: InventoryItem[];
   money: number;
 }
