@@ -1,3 +1,4 @@
+import { PROTAGONIST_ID } from '@/constants';
 import { SERVICE_RULES, getServiceNamesById, getServicesState } from '@/data/poi.services';
 import { EffectManager } from '@/systems/effects/effectManager';
 import {
@@ -5,7 +6,7 @@ import {
   resolveEffectiveRelation,
   resolveInteractionEffects,
 } from '@/systems/interaction/interactionRules';
-import { type StatRollResult, rollStatCheck } from '@/systems/rolls/statRollService';
+import { rollStatCheck } from '@/systems/rolls/statRollService';
 import type { ResolvedTriggerRules } from '@/types/effects.types';
 import type {
   ForceBehavior,
@@ -13,6 +14,7 @@ import type {
   InteractionService,
   InteractionServiceRule,
   InteractionServiceState,
+  ServiceOutcome,
 } from '@/types/interaction.types';
 import type { NonCellNode } from '@/types/poi.types';
 
@@ -32,7 +34,9 @@ export interface CurrentInteraction {
   initialTension: number;
   /** Текущее напряжение */
   tension: number;
-  interactionLog?: InteractionLogEvent[];
+  /** Number of trade attempts in this interaction (for experience diminishing returns) */
+  tradeAttempts: number;
+  interactionLog: InteractionLogEvent[];
   services: InteractionServiceState[];
 }
 
@@ -41,7 +45,7 @@ export type InteractionMemory = Omit<CurrentInteraction, 'interactionLog'>;
 
 export interface InteractionSlice {
   currentInteraction: CurrentInteraction | null;
-  isTradeOpen: boolean;
+  isTrading: boolean;
 
   /** Persisted interaction snapshots, keyed by npcId or poiId. Cleared at end of day. */
   interactionMemoryById: Record<string, InteractionMemory>;
@@ -52,7 +56,11 @@ export interface InteractionSlice {
       effectiveRelation?: number;
       initialTension?: number;
     }) => void;
-    performService: (serviceId: InteractionService) => void;
+    performService: (
+      serviceId: InteractionService,
+      ruleOverride?: Partial<InteractionServiceRule>,
+      characterId?: string,
+    ) => ServiceOutcome | undefined;
     updateTension: (delta: number) => void;
     openTrade: () => void;
     closeTrade: () => void;
@@ -153,6 +161,7 @@ const startInteractionDraft = (
     effectiveRelation,
     initialTension,
     tension: initialTension,
+    tradeAttempts: 0,
     interactionLog,
     services,
   };
@@ -183,16 +192,15 @@ const applyForceExitServicesDraft = (state: StoreState) => {
     const currentInteraction = state.interactionSlice.currentInteraction;
     currentInteraction.services = services;
 
-    if (!currentInteraction.interactionLog) {
-      currentInteraction.interactionLog = [];
-    }
-
     if (forceAction) {
       currentInteraction.interactionLog.push({
         action: forceAction,
         tension: currentInteraction.tension,
       });
     }
+
+    // Close trade modal if force-exit triggers while trading
+    state.interactionSlice.isTrading = false;
   }
 };
 
@@ -206,53 +214,81 @@ const updateTensionDraft = (state: StoreState, delta: number) => {
 // Helper functions for service execution
 
 /**
- * Determines if a service succeeds based on rule and effective relation
+ * Resolves a service attempt into a ServiceOutcome.
+ *
+ * Resolution order:
+ * 1. No rule at all → auto-success
+ * 2. autoSuccessRelation defined and relation meets threshold → auto-success
+ * 3. checkStat defined → stat roll (uses rule.difficulty if set, else relation-derived difficulty)
+ * 4. difficulty defined without checkStat → pure d100 vs difficulty
+ * 5. Fallback → auto-success
  */
-const determineServiceSuccess = (
+const resolveService = (
   rule: InteractionServiceRule | undefined,
   effectiveRelation: number,
   state: StoreState,
-): { success: boolean; rollDetails?: StatRollResult } => {
-  // Auto-success if no rule or high enough relation
-  if (
-    !rule ||
-    rule.autoSuccessRelation === undefined ||
-    effectiveRelation >= rule.autoSuccessRelation
-  ) {
+  characterId: string = PROTAGONIST_ID,
+): ServiceOutcome => {
+  // 1. No rule → auto-success
+  if (!rule) return { success: true };
+
+  // 2. Auto-success by relation threshold
+  if (rule.autoSuccessRelation !== undefined && effectiveRelation >= rule.autoSuccessRelation) {
     return { success: true };
   }
 
-  // Stat-based check
+  // 3. Stat check
   if (rule.checkStat) {
+    const difficulty =
+      rule.difficulty ??
+      (rule.autoSuccessRelation !== undefined ? rule.autoSuccessRelation - effectiveRelation : 50);
+
     const rollDetails = rollStatCheck(state, {
-      characterId: 'protagonist',
+      characterId,
       stat: rule.checkStat,
-      difficulty: rule.autoSuccessRelation - effectiveRelation,
+      difficulty,
     });
-    return { success: rollDetails.success, rollDetails };
+
+    return {
+      success: rollDetails.success,
+      rollLog: {
+        stat: rule.checkStat,
+        rollValue: rollDetails.roll,
+        targetValue: rollDetails.totalChance,
+        difference: rollDetails.statValue - rollDetails.difficulty,
+      },
+      effects: rollDetails.success ? rule.onSuccess : rule.onFail,
+    };
   }
 
-  // Fallback: random chance
-  const chance = 100 + effectiveRelation - rule.autoSuccessRelation;
-  const roll = Math.floor(Math.random() * 100) + 1;
-  return { success: roll <= chance };
-};
+  // 4. Pure difficulty check (no stat)
+  if (rule.difficulty !== undefined) {
+    const roll = Math.floor(Math.random() * 100) + 1;
+    const success = roll <= 100 - rule.difficulty;
+    return {
+      success,
+      rollLog: {
+        rollValue: roll,
+        targetValue: 100 - rule.difficulty,
+        difference: 100 - rule.difficulty - roll,
+      },
+      effects: success ? rule.onSuccess : rule.onFail,
+    };
+  }
 
-/**
- * Constructs roll log from roll details if available
- */
-const buildRollLog = (
-  rule: InteractionServiceRule | undefined,
-  rollDetails: StatRollResult | undefined,
-): InteractionLogEvent['roll'] | undefined => {
-  if (!rollDetails || !rule?.checkStat) return undefined;
+  // 5. Relation-derived random chance (legacy path: autoSuccessRelation set but no stat/difficulty)
+  if (rule.autoSuccessRelation !== undefined) {
+    const chance = 100 + effectiveRelation - rule.autoSuccessRelation;
+    const roll = Math.floor(Math.random() * 100) + 1;
+    const success = roll <= chance;
+    return {
+      success,
+      effects: success ? rule.onSuccess : rule.onFail,
+    };
+  }
 
-  return {
-    stat: rule.checkStat,
-    rollValue: rollDetails.roll,
-    targetValue: rollDetails.totalChance,
-    difference: rollDetails.statValue - rollDetails.difficulty,
-  };
+  // 6. No checks defined → auto-success
+  return { success: true, effects: rule.onSuccess };
 };
 
 const endInteractionDraft = (state: StoreState) => {
@@ -274,7 +310,7 @@ export const interactionDraft = {
 
 export const createInteractionSlice: GameSlice<InteractionSlice> = (set, get) => ({
   currentInteraction: null,
-  isTradeOpen: false,
+  isTrading: false,
   interactionMemoryById: {},
 
   actions: {
@@ -292,31 +328,30 @@ export const createInteractionSlice: GameSlice<InteractionSlice> = (set, get) =>
 
     openTrade: () => {
       set((state) => {
-        state.interactionSlice.isTradeOpen = true;
+        state.interactionSlice.isTrading = true;
       });
     },
 
     closeTrade: () => {
       set((state) => {
-        state.interactionSlice.isTradeOpen = false;
+        state.interactionSlice.isTrading = false;
       });
     },
 
-    performService: (serviceId) => {
+    // here we can pass completely custom rule which is not defined in SERVICE_RULES, for example for quest-specific services
+    performService: (serviceId, ruleOverride, characterId) => {
       // Phase 1: Determine outcome and resolve effects (outside draft - read phase)
       const state = get();
       const interaction = state.interactionSlice.currentInteraction;
-      if (!interaction) return;
+      if (!interaction) return undefined;
 
-      const rule = SERVICE_RULES[serviceId];
-      const { success: isSuccess, rollDetails } = determineServiceSuccess(
-        rule,
-        interaction.effectiveRelation,
-        state,
-      );
+      const staticRule = SERVICE_RULES[serviceId];
+      const rule: InteractionServiceRule | undefined = ruleOverride
+        ? { ...staticRule, ...ruleOverride }
+        : staticRule;
 
-      const effectsToApply = isSuccess ? rule?.onSuccess : rule?.onFail;
-      const rollLog = buildRollLog(rule, rollDetails);
+      const outcome = resolveService(rule, interaction.effectiveRelation, state, characterId);
+      const effectsToApply = outcome.effects ?? (outcome.success ? rule?.onSuccess : rule?.onFail);
 
       // Resolve effects in read phase (no draft state needed)
       let resolvedRules: ResolvedTriggerRules | undefined;
@@ -333,10 +368,16 @@ export const createInteractionSlice: GameSlice<InteractionSlice> = (set, get) =>
         const currentInteraction = draftState.interactionSlice.currentInteraction;
         if (!currentInteraction) return;
 
+        // Track execution count for registered services; unregistered services (e.g. tradeOffer) skip tracking
         const service = currentInteraction.services.find((s) => s.id === serviceId);
-        if (!service) return;
+        if (service) {
+          service.executedTimes += 1;
+        }
 
-        service.executedTimes += 1;
+        // Track trade attempts for experience diminishing returns
+        if (serviceId === 'tradeOffer') {
+          currentInteraction.tradeAttempts += 1;
+        }
 
         // Apply effects and collect logs if they exist
         let effectLogs;
@@ -345,26 +386,24 @@ export const createInteractionSlice: GameSlice<InteractionSlice> = (set, get) =>
         }
 
         // Always log the interaction, even without effects
-        if (!currentInteraction.interactionLog) {
-          currentInteraction.interactionLog = [];
-        }
-
         currentInteraction.interactionLog.push({
           action: serviceId,
-          success: isSuccess,
+          success: outcome.success,
           tension: currentInteraction.tension,
-          roll: rollLog,
+          roll: outcome.rollLog,
           effects: effectLogs,
         });
 
         // Open trade modal on successful trade service
-        if (serviceId === 'trade' && isSuccess) {
-          draftState.interactionSlice.isTradeOpen = true;
+        if (serviceId === 'trade' && outcome.success) {
+          draftState.interactionSlice.isTrading = true;
         }
 
         // Check tension threshold
         applyForceTensionReactionDraft(draftState);
       });
+
+      return outcome;
     },
 
     applyForceExitServices: () => {

@@ -1,5 +1,5 @@
+import { ItemIcon } from '@/components/ItemIcon/ItemIcon';
 import type { TradeOfferItem } from '@/types/trade.types';
-import { assetsVersion } from '@/utils/assetsVersion';
 
 import './TradeOfferArea.scss';
 
@@ -42,17 +42,13 @@ export const TradeOfferArea = ({
               onClick={() => onRemoveItem(item)}
               title={`${item.templateId} — $${getItemPrice(item)} each (click to remove)`}
             >
-              <div className={`offerItemIcon ${item.rarity}`}>
-                <img
-                  src={assetsVersion(`/images/${item.type}/${item.templateId}.png`)}
-                  alt=""
-                  loading="lazy"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.visibility = 'hidden';
-                  }}
-                />
-                {item.quantity > 1 && <span className="offerQty">x{item.quantity}</span>}
-              </div>
+              <ItemIcon
+                templateId={item.templateId}
+                type={item.type}
+                rarity={item.rarity}
+                quantity={item.quantity}
+                className="offerItemIcon"
+              />
               <span className="offerPrice">${getItemPrice(item) * item.quantity}</span>
             </div>
           ))}

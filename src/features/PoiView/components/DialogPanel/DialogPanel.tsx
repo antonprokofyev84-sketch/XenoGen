@@ -7,7 +7,7 @@ import './DialogPanel.scss';
 
 export const DialogPanel = () => {
   const currentInteraction = useGameState(interactionSelectors.selectCurrentInteraction);
-  const interactionLog = currentInteraction?.interactionLog;
+  const interactionLog = currentInteraction?.interactionLog ?? [];
 
   return (
     <div className="dialogPanel">
@@ -19,7 +19,7 @@ export const DialogPanel = () => {
       <div className="dialogContainer">
         {/* Scrollable Text Area */}
         <div className="scrollableContent">
-          {interactionLog && interactionLog.length > 0 && (
+          {interactionLog.length > 0 && (
             <div className="dialogLogSection">
               <div className="interactionLogList">
                 {interactionLog.map((logItem, index) => (

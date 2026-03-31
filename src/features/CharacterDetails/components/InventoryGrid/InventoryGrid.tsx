@@ -2,11 +2,11 @@ import { useMemo } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
 
+import { ItemIcon } from '@/components/ItemIcon/ItemIcon';
 import { inventorySelectors } from '@/state/gameSlices/inventory';
 import { useGameState } from '@/state/useGameState';
 import type { Rarity } from '@/types/common.types';
 import type { InventoryItem, ItemTypeFilter } from '@/types/inventory.types';
-import { assetsVersion } from '@/utils/assetsVersion';
 
 import './InventoryGrid.scss';
 
@@ -63,18 +63,13 @@ export const InventoryGrid = ({
             ref={active ? onItemRef : null}
             onClick={() => handleItemClick(item)}
           >
-            {/* Визуальный контейнер */}
-            <div className={`iconContainer ${item.rarity} ${active ? 'active' : ''}`}>
-              <img
-                src={assetsVersion(`/images/${item.type}/${item.templateId}.png`)}
-                alt=""
-                loading="lazy"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.visibility = 'hidden';
-                }}
-              />
-              {item.quantity > 1 && <span className="itemQuantity">x{item.quantity}</span>}
-            </div>
+            <ItemIcon
+              templateId={item.templateId}
+              type={item.type}
+              rarity={item.rarity}
+              quantity={item.quantity}
+              className={active ? 'active' : ''}
+            />
           </div>
         );
       })}

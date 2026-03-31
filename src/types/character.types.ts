@@ -1,4 +1,4 @@
-export type MainStatKey = 'str' | 'dex' | 'con' | 'per' | 'int' | 'will';
+export type MainStatKey = 'str' | 'dex' | 'con' | 'per' | 'int' | 'will' | 'bty';
 export type MainStats = Record<MainStatKey, number>;
 
 export type SkillKey =
@@ -8,7 +8,8 @@ export type SkillKey =
   | 'science'
   | 'medicine'
   | 'charisma'
-  | 'survival';
+  | 'survival'
+  | 'trade';
 export type Skills = Record<SkillKey, number>;
 
 export type SecondaryStatKey =
@@ -25,7 +26,6 @@ export type SecondaryStats = Record<SecondaryStatKey, number>;
 export type BaseStatsKey =
   | 'age'
   | 'gameAge'
-  | 'beauty'
   | 'fame'
   | 'baseHp'
   | 'baseStamina'

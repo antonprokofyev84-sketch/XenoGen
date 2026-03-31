@@ -1,19 +1,20 @@
-import { useCallback, useMemo, useReducer } from 'react';
+import { useCallback, useMemo, useReducer, useState } from 'react';
 
 import { PROTAGONIST_ID } from '@/constants';
-import { useGameState } from '@/state/useGameState';
+import { characterSelectors, useGameState } from '@/state/useGameState';
 import {
   calculateOfferTotal,
+  calculateTradeBaseCost,
   getItemBasePrice,
-  isTradeAcceptable,
 } from '@/systems/trade/tradeExecution';
+import { buildTradeOfferRule, evaluateTradeNegotiation } from '@/systems/trade/tradeNegotiation';
 import { getBuyMultiplier, getSellMultiplier } from '@/systems/trade/tradePricing';
 import type { InventoryItem } from '@/types/inventory.types';
 import type { TradeOffer, TradeOfferItem } from '@/types/trade.types';
 
+import { TradeInfoColumn } from './components/TradeInfoColumn';
 import { TradeInventoryPanel } from './components/TradeInventoryPanel';
 import { TradeOfferArea } from './components/TradeOfferArea';
-import { TradeSummary } from './components/TradeSummary';
 
 import './TradeModal.scss';
 
@@ -98,18 +99,23 @@ function tradeReducer(state: TradeState, action: TradeAction): TradeState {
 
 export const TradeModal = () => {
   const [state, dispatch] = useReducer(tradeReducer, initialTradeState);
+  const [lastResult, setLastResult] = useState<'success' | 'fail' | null>(null);
 
   // --- Store selectors ---
   const interaction = useGameState((s) => s.interactionSlice.currentInteraction);
   const closeTrade = useGameState((s) => s.interactionSlice.actions.closeTrade);
+  const performService = useGameState((s) => s.interactionSlice.actions.performService);
 
   const playerContainer = useGameState((s) => s.inventory.containers[PROTAGONIST_ID]);
   const traderId = interaction?.poiId ?? '';
   const traderContainer = useGameState((s) => s.inventory.containers[traderId]);
+  const tradeSkill = useGameState(
+    (s) => characterSelectors.selectEffectiveSkills(PROTAGONIST_ID)(s)?.trade ?? 0,
+  );
 
   // Store-mutating actions
-  const addItemAction = useGameState((s) => s.inventory.actions.addItem);
-  const removeItemAction = useGameState((s) => s.inventory.actions.removeItem);
+  const addItemsAction = useGameState((s) => s.inventory.actions.addItems);
+  const removeItemsAction = useGameState((s) => s.inventory.actions.removeItems);
   const modifyMoneyAction = useGameState((s) => s.inventory.actions.modifyMoney);
 
   if (!interaction || !playerContainer) return null;
@@ -195,6 +201,17 @@ export const TradeModal = () => {
 
   const playerTotal = calculateOfferTotal(playerOffer, sellMultiplier);
   const traderTotal = calculateOfferTotal(traderOffer, buyMultiplier);
+  const traderBaseCost = calculateTradeBaseCost(traderOffer);
+
+  const negotiation = useMemo(
+    () => evaluateTradeNegotiation(playerTotal, traderTotal, traderBaseCost, tradeSkill),
+    [playerTotal, traderTotal, traderBaseCost, tradeSkill],
+  );
+
+  // Items-only values (without money) for quick-fill calculation
+  const playerItemsValue = playerTotal - state.playerMoneyOffer;
+  const traderItemsExpected = traderTotal - state.traderMoneyOffer;
+  const traderItemsBase = traderBaseCost - state.traderMoneyOffer;
 
   const hasAnyOffer =
     state.playerOffer.length > 0 ||
@@ -202,50 +219,53 @@ export const TradeModal = () => {
     state.traderOffer.length > 0 ||
     state.traderMoneyOffer > 0;
 
-  const canConfirm =
-    hasAnyOffer && isTradeAcceptable(playerOffer, sellMultiplier, traderOffer, buyMultiplier);
-
   // --- Trade execution ---
   const handleConfirm = useCallback(() => {
-    if (!canConfirm) return;
+    if (!hasAnyOffer) return;
 
-    // Remove player offer items from player, add to trader
-    for (const offerItem of state.playerOffer) {
-      const itemPayload = {
-        templateId: offerItem.templateId,
-        type: offerItem.type,
-        rarity: offerItem.rarity,
-        quantity: offerItem.quantity,
-      };
-      removeItemAction(PROTAGONIST_ID, itemPayload);
-      if (traderId) addItemAction(traderId, itemPayload);
+    setLastResult(null);
+
+    const rule = buildTradeOfferRule(
+      negotiation.satisfaction,
+      traderTotal,
+      interaction.tradeAttempts,
+    );
+    const outcome = performService('tradeOffer', rule);
+
+    if (!outcome?.success) {
+      setLastResult('fail');
+      return;
     }
 
-    // Add trader offer items to player, remove from trader
-    for (const offerItem of state.traderOffer) {
-      const itemPayload = {
-        templateId: offerItem.templateId,
-        type: offerItem.type,
-        rarity: offerItem.rarity,
-        quantity: offerItem.quantity,
-      };
-      addItemAction(PROTAGONIST_ID, itemPayload);
-      if (traderId) removeItemAction(traderId, itemPayload);
+    // Accepted — execute item transfer
+    if (state.playerOffer.length > 0) {
+      removeItemsAction(PROTAGONIST_ID, state.playerOffer);
+      if (traderId) addItemsAction(traderId, state.playerOffer);
     }
 
-    // Money transfer
-    if (state.playerMoneyOffer > 0) {
-      modifyMoneyAction(PROTAGONIST_ID, -state.playerMoneyOffer);
-      if (traderId) modifyMoneyAction(traderId, state.playerMoneyOffer);
-    }
-    if (state.traderMoneyOffer > 0) {
-      modifyMoneyAction(PROTAGONIST_ID, state.traderMoneyOffer);
-      if (traderId) modifyMoneyAction(traderId, -state.traderMoneyOffer);
+    if (state.traderOffer.length > 0) {
+      addItemsAction(PROTAGONIST_ID, state.traderOffer);
+      if (traderId) removeItemsAction(traderId, state.traderOffer);
     }
 
+    const netMoney = state.traderMoneyOffer - state.playerMoneyOffer;
+    if (netMoney !== 0) {
+      modifyMoneyAction(PROTAGONIST_ID, netMoney);
+      if (traderId) modifyMoneyAction(traderId, -netMoney);
+    }
+
+    setLastResult('success');
     dispatch({ type: 'RESET' });
-    closeTrade();
-  }, [canConfirm, state, traderId, addItemAction, removeItemAction, modifyMoneyAction, closeTrade]);
+  }, [
+    hasAnyOffer,
+    negotiation.satisfaction,
+    performService,
+    state,
+    traderId,
+    addItemsAction,
+    removeItemsAction,
+    modifyMoneyAction,
+  ]);
 
   const handleCancel = useCallback(() => {
     dispatch({ type: 'RESET' });
@@ -256,27 +276,16 @@ export const TradeModal = () => {
     dispatch({ type: 'RESET' });
   }, []);
 
+  const handleQuickFill = useCallback((playerMoney: number, traderMoney: number) => {
+    dispatch({ type: 'SET_PLAYER_MONEY', value: playerMoney });
+    dispatch({ type: 'SET_TRADER_MONEY', value: traderMoney });
+  }, []);
+
   return (
     <div className="tradeModalOverlay" onClick={handleCancel}>
       <div className="tradeModal" onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
-        <div className="tradeHeader">
-          <h2 className="tradeTitle">Trade</h2>
-          <div className="tradeContext">
-            <span className="contextLabel">
-              Relation: <strong>{Math.round(effectiveRelation)}</strong>
-            </span>
-            <span className="contextLabel">
-              Tension: <strong>{Math.round(tension)}</strong>
-            </span>
-          </div>
-          <button className="closeBtn" onClick={handleCancel}>
-            ✕
-          </button>
-        </div>
-
-        {/* Main content: two inventory panels */}
         <div className="tradeBody">
+          {/* Left: Player inventory + offer */}
           <div className="tradeSide">
             <TradeInventoryPanel
               title="Your Inventory"
@@ -298,6 +307,30 @@ export const TradeModal = () => {
             />
           </div>
 
+          {/* Center: Trade info, satisfaction, quick-fill, actions */}
+          <TradeInfoColumn
+            effectiveRelation={effectiveRelation}
+            tension={tension}
+            playerTotal={playerTotal}
+            traderTotal={traderTotal}
+            satisfaction={negotiation.satisfaction}
+            lastResult={lastResult}
+            hasAnyOffer={hasAnyOffer}
+            onCancel={handleCancel}
+            onReset={handleReset}
+            onConfirm={handleConfirm}
+            onQuickFill={handleQuickFill}
+            playerMoneyOffer={state.playerMoneyOffer}
+            traderMoneyOffer={state.traderMoneyOffer}
+            playerItemsValue={playerItemsValue}
+            traderItemsExpected={traderItemsExpected}
+            traderItemsBase={traderItemsBase}
+            tradeSkill={tradeSkill}
+            maxPlayerMoney={playerContainer.money}
+            maxTraderMoney={traderMoney}
+          />
+
+          {/* Right: Trader inventory + offer */}
           <div className="tradeSide">
             <TradeInventoryPanel
               title="Trader Inventory"
@@ -319,17 +352,6 @@ export const TradeModal = () => {
             />
           </div>
         </div>
-
-        {/* Summary + Actions */}
-        <TradeSummary
-          playerTotal={playerTotal}
-          traderTotal={traderTotal}
-          onCancel={handleCancel}
-          onReset={handleReset}
-          onConfirm={handleConfirm}
-          canConfirm={canConfirm}
-          hasAnyOffer={hasAnyOffer}
-        />
       </div>
     </div>
   );

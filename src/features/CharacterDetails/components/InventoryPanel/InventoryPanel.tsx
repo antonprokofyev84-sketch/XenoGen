@@ -4,8 +4,9 @@ import ArmorIcon from '@/assets/icons/armor.svg?react';
 import GadgetIcon from '@/assets/icons/gadget.svg?react';
 import MeleeIcon from '@/assets/icons/meleeWeapon.svg?react';
 import RangeIcon from '@/assets/icons/rangeWeapon.svg?react';
+import { RarityFilters } from '@/components/RarityFilters/RarityFilters';
+import { useRarityFilters } from '@/components/RarityFilters/useRarityFilters';
 import { useGameState } from '@/state/useGameState';
-import type { Rarity } from '@/types/common.types';
 import type { ItemTypeFilter } from '@/types/inventory.types';
 
 import { InventoryGrid } from '../InventoryGrid/InventoryGrid';
@@ -27,8 +28,6 @@ const TABS_CONFIG: TabConfig[] = [
   { key: 'gadget', filter: ['gadget'], Icon: GadgetIcon },
 ];
 
-const ALL_RARITIES: Rarity[] = ['common', 'uncommon', 'rare', 'unique'];
-
 interface InventoryPanelProps {
   characterId: string;
   onItemRef: (el: HTMLElement | null) => void;
@@ -37,19 +36,9 @@ interface InventoryPanelProps {
 export const InventoryPanel = ({ characterId, onItemRef }: InventoryPanelProps) => {
   const goToScreen = useGameState((state) => state.ui.goToScreen);
   const [activeTabKey, setActiveTabKey] = useState('all');
-  const [selectedRarities, setSelectedRarities] = useState<Set<Rarity>>(new Set(ALL_RARITIES));
+  const { selectedRarities, toggleRarity, ALL_RARITIES } = useRarityFilters();
 
   const activeTab = TABS_CONFIG.find((t) => t.key === activeTabKey) ?? TABS_CONFIG[0];
-
-  const toggleRarity = (rarity: Rarity) => {
-    const next = new Set(selectedRarities);
-    if (next.has(rarity)) {
-      next.delete(rarity);
-    } else {
-      next.add(rarity);
-    }
-    setSelectedRarities(next);
-  };
 
   return (
     <div className="inventoryPanel">
@@ -88,19 +77,7 @@ export const InventoryPanel = ({ characterId, onItemRef }: InventoryPanelProps) 
       </div>
 
       {/* --- НИЗ: ФИЛЬТРЫ --- */}
-      <div className="filtersFooter">
-        {ALL_RARITIES.map((rarity) => (
-          <label key={rarity} className={`rarityCheckbox ${rarity}`}>
-            <input
-              type="checkbox"
-              checked={selectedRarities.has(rarity)}
-              onChange={() => toggleRarity(rarity)}
-            />
-            <span className="checkmark"></span>
-            <span className="labelName">{rarity}</span>
-          </label>
-        ))}
-      </div>
+      <RarityFilters rarities={ALL_RARITIES} selected={selectedRarities} onToggle={toggleRarity} />
     </div>
   );
 };

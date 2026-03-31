@@ -1,14 +1,27 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+
+import {
+  FloatingPortal,
+  autoUpdate,
+  flip,
+  offset,
+  shift,
+  useDismiss,
+  useFloating,
+  useInteractions,
+} from '@floating-ui/react';
 
 import ArmorIcon from '@/assets/icons/armor.svg?react';
 import GadgetIcon from '@/assets/icons/gadget.svg?react';
 import MeleeIcon from '@/assets/icons/meleeWeapon.svg?react';
 import RangeIcon from '@/assets/icons/rangeWeapon.svg?react';
+import { RarityFilters } from '@/components/RarityFilters/RarityFilters';
+import { useRarityFilters } from '@/components/RarityFilters/useRarityFilters';
 import { filterItemsByType } from '@/state/gameSlices/inventory';
-import type { Rarity } from '@/types/common.types';
 import type { InventoryItem, ItemTypeFilter } from '@/types/inventory.types';
 import type { TradeOfferItem } from '@/types/trade.types';
 
+import { ItemDetailsTooltip } from './ItemDetailsTooltip/ItemDetailsTooltip';
 import { TradeInventoryGrid } from './TradeInventoryGrid';
 
 import './TradeInventoryPanel.scss';
@@ -37,7 +50,6 @@ const TABS_CONFIG: TabConfig[] = [
 ];
 
 const EXTRA_TAB_TYPES = ['resource', 'consumable', 'misc'] as const;
-const ALL_RARITIES: Rarity[] = ['common', 'uncommon', 'rare', 'unique'];
 
 export const TradeInventoryPanel = ({
   title,
@@ -48,14 +60,31 @@ export const TradeInventoryPanel = ({
   onItemClick,
 }: TradeInventoryPanelProps) => {
   const [activeTabKey, setActiveTabKey] = useState('meleeWeapon');
-  const [selectedRarities, setSelectedRarities] = useState<Set<Rarity>>(new Set(ALL_RARITIES));
+  const { selectedRarities, toggleRarity, ALL_RARITIES } = useRarityFilters();
+  const [tooltipItem, setTooltipItem] = useState<InventoryItem | null>(null);
 
-  const toggleRarity = (rarity: Rarity) => {
-    const next = new Set(selectedRarities);
-    if (next.has(rarity)) next.delete(rarity);
-    else next.add(rarity);
-    setSelectedRarities(next);
-  };
+  const { refs, floatingStyles, context } = useFloating({
+    open: !!tooltipItem,
+    onOpenChange: (open) => {
+      if (!open) setTooltipItem(null);
+    },
+    placement: 'right-start',
+    whileElementsMounted: autoUpdate,
+    middleware: [offset(8), flip(), shift({ padding: 10 })],
+  });
+
+  const dismiss = useDismiss(context);
+  const { getFloatingProps } = useInteractions([dismiss]);
+
+  const handleAltClick = useCallback(
+    (item: InventoryItem, element: HTMLElement) => {
+      setTooltipItem((prev) =>
+        prev?.templateId === item.templateId && prev?.rarity === item.rarity ? null : item,
+      );
+      refs.setReference(element);
+    },
+    [refs],
+  );
 
   const activeFilter: ItemTypeFilter = useMemo(() => {
     const tab = TABS_CONFIG.find((t) => t.key === activeTabKey);
@@ -121,7 +150,12 @@ export const TradeInventoryPanel = ({
       <div className="panelGrid">
         <TradeInventoryGrid
           items={filteredItems}
-          onItemClick={onItemClick}
+          onItemClick={(item) => {
+            setTooltipItem(null);
+            refs.setReference(null);
+            onItemClick(item);
+          }}
+          onItemAltClick={handleAltClick}
           offeredItems={offeredForGrid}
           renderOverlay={(item) => {
             const price = getItemPrice(item);
@@ -130,20 +164,20 @@ export const TradeInventoryPanel = ({
         />
       </div>
 
+      {/* Alt-click item details tooltip */}
+      {tooltipItem && (
+        <FloatingPortal>
+          <ItemDetailsTooltip
+            ref={refs.setFloating}
+            item={tooltipItem}
+            style={floatingStyles}
+            {...getFloatingProps()}
+          />
+        </FloatingPortal>
+      )}
+
       {/* Rarity filters */}
-      <div className="panelFilters">
-        {ALL_RARITIES.map((rarity) => (
-          <label key={rarity} className={`rarityCheckbox ${rarity}`}>
-            <input
-              type="checkbox"
-              checked={selectedRarities.has(rarity)}
-              onChange={() => toggleRarity(rarity)}
-            />
-            <span className="checkmark" />
-            <span className="labelName">{rarity}</span>
-          </label>
-        ))}
-      </div>
+      <RarityFilters rarities={ALL_RARITIES} selected={selectedRarities} onToggle={toggleRarity} />
     </div>
   );
 };

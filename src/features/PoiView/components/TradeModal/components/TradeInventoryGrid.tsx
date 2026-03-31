@@ -1,14 +1,15 @@
 import type { ReactNode } from 'react';
 
+import { ItemIcon } from '@/components/ItemIcon/ItemIcon';
 import type { Rarity } from '@/types/common.types';
 import type { InventoryItem } from '@/types/inventory.types';
-import { assetsVersion } from '@/utils/assetsVersion';
 
 import './TradeInventoryGrid.scss';
 
 interface TradeInventoryGridProps {
   items: InventoryItem[];
   onItemClick: (item: InventoryItem) => void;
+  onItemAltClick?: (item: InventoryItem, element: HTMLElement) => void;
   /** Items currently in the trade offer — shown dimmed in the main grid */
   offeredItems?: { templateId: string; rarity: Rarity; quantity: number }[];
   /** Optional overlay rendered on top of each item card (e.g. price badge) */
@@ -20,6 +21,7 @@ interface TradeInventoryGridProps {
 export const TradeInventoryGrid = ({
   items,
   onItemClick,
+  onItemAltClick,
   offeredItems,
   renderOverlay,
   compact,
@@ -43,21 +45,24 @@ export const TradeInventoryGrid = ({
           <div
             key={`${item.templateId}-${item.rarity}-${index}`}
             className={`tradeItem ${isFullyOffered ? 'offered' : ''}`}
-            onClick={() => !isFullyOffered && onItemClick(item)}
+            onClick={(e) => {
+              if (isFullyOffered) return;
+              if (e.altKey && onItemAltClick) {
+                onItemAltClick(item, e.currentTarget);
+              } else {
+                onItemClick(item);
+              }
+            }}
           >
-            <div className={`iconContainer ${item.rarity}`}>
-              <img
-                src={assetsVersion(`/images/${item.type}/${item.templateId}.png`)}
-                alt=""
-                loading="lazy"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.visibility = 'hidden';
-                }}
-              />
-              {remainingQty > 1 && <span className="itemQuantity">x{remainingQty}</span>}
+            <ItemIcon
+              templateId={item.templateId}
+              type={item.type}
+              rarity={item.rarity}
+              quantity={remainingQty}
+            >
               {isFullyOffered && <div className="offeredOverlay" />}
               {renderOverlay?.(item)}
-            </div>
+            </ItemIcon>
           </div>
         );
       })}

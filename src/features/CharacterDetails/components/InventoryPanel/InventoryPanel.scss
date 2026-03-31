@@ -45,6 +45,10 @@
         fill: currentColor;
       }
 
+      .tabText {
+        font-size: 1.5rem;
+      }
+
       &:hover {
         color: $btn-color-white;
         background-color: rgba(255, 255, 255, 0.05);
@@ -95,78 +99,5 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
-  }
-
-  // --- FILTERS FOOTER ---
-  .filtersFooter {
-    display: flex;
-    justify-content: center;
-    gap: 1.5rem;
-    padding-top: 0.5rem;
-    border-top: 1px solid rgba($color-border, 0.5);
-
-    .rarityCheckbox {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-      font-size: 0.9rem;
-      user-select: none;
-      color: $btn-color-grey;
-      transition: color 0.2s;
-
-      input {
-        display: none;
-      }
-
-      .checkmark {
-        width: 14px;
-        height: 14px;
-        border: 2px solid #555;
-        border-radius: 3px;
-        display: inline-block;
-        position: relative;
-        transition: all 0.2s;
-      }
-
-      &:hover {
-        color: #fff;
-      }
-
-      input:checked + .checkmark {
-        background-color: currentColor;
-        border-color: currentColor;
-        box-shadow: 0 0 4px currentColor;
-      }
-
-      &.common {
-        color: $rarity-common;
-        input:checked ~ .labelName {
-          color: #fff;
-          text-shadow: 0 0 3px $rarity-common;
-        }
-      }
-      &.uncommon {
-        color: $rarity-uncommon;
-        input:checked ~ .labelName {
-          color: #fff;
-          text-shadow: 0 0 3px $rarity-uncommon;
-        }
-      }
-      &.rare {
-        color: $rarity-rare;
-        input:checked ~ .labelName {
-          color: #fff;
-          text-shadow: 0 0 3px $rarity-rare;
-        }
-      }
-      &.unique {
-        color: $rarity-unique;
-        input:checked ~ .labelName {
-          color: #fff;
-          text-shadow: 0 0 3px $rarity-unique;
-        }
-      }
-    }
   }
 }

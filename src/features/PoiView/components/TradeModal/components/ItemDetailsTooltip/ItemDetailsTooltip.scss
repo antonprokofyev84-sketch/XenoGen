@@ -1,0 +1,136 @@
+@use '@/styles/variables' as *;
+
+.itemDetailsTooltip {
+  background-color: rgba(20, 20, 20, 0.95);
+  border: 1px solid $color-border;
+  border-radius: 6px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+  width: 260px;
+  backdrop-filter: blur(4px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  @include rarity-border;
+
+  .tooltipHeader {
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+    @include rarity-bg;
+
+    .titleRow {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 4px;
+    }
+
+    .itemName {
+      font-size: 1rem;
+      font-weight: bold;
+      color: #fff;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    }
+
+    .rarityLabel {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      opacity: 0.9;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .priceRow {
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.9);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+
+      .priceValue {
+        font-weight: bold;
+        color: $btn-color-yellow;
+        text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5);
+      }
+      .icon {
+        width: 12px;
+        height: 12px;
+        fill: $btn-color-yellow;
+      }
+    }
+  }
+
+  .tooltipBody {
+    padding: 8px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .section {
+    .sectionTitle {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      color: #777;
+      margin-bottom: 4px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 2px;
+    }
+
+    &.requirements {
+      .reqGrid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .reqItem {
+        font-size: 0.75rem;
+        background: rgba(0, 0, 0, 0.3);
+        padding: 2px 6px;
+        border-radius: 4px;
+        color: #aaa;
+      }
+    }
+
+    &.baseStats,
+    &.mods {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      .statRow {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.85rem;
+
+        .label {
+          color: #bbb;
+        }
+        .value {
+          font-weight: 600;
+          color: #fff;
+
+          &.highlight {
+            color: #eee;
+          }
+          &.positive {
+            color: $btn-color-green;
+          }
+          &.negative {
+            color: $btn-color-red;
+          }
+        }
+      }
+    }
+
+    &.description {
+      margin-top: 4px;
+      font-style: italic;
+      color: #888;
+      font-size: 0.8rem;
+      line-height: 1.4;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding-top: 8px;
+    }
+  }
+}

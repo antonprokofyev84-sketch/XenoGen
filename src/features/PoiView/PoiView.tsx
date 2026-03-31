@@ -7,7 +7,7 @@ import { TradeModal } from './components/TradeModal/TradeModal';
 import './PoiView.scss';
 
 export const PoiView = () => {
-  const isTradeOpen = useGameState((s) => s.interactionSlice.isTradeOpen);
+  const isTradeOpen = useGameState((s) => s.interactionSlice.isTrading);
 
   return (
     <div className="poiView">

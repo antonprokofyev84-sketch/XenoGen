@@ -31,6 +31,9 @@ export interface InventorySlice {
     addItem: (containerId: string, item: InventoryItem) => boolean;
     removeItem: (containerId: string, item: InventoryItem) => boolean;
 
+    addItems: (containerId: string, items: InventoryItem[]) => boolean;
+    removeItems: (containerId: string, items: InventoryItem[]) => boolean;
+
     modifyMoney: (containerId: string, delta: number) => boolean;
 
     transferAll: (fromContainerId: string, toContainerId: string) => void;
@@ -76,6 +79,33 @@ export const inventorySelectors = {
   selectPlayerMoney: (state: StoreState) => state.inventory.containers[PROTAGONIST_ID]?.money ?? 0,
 };
 
+// --- DRAFT HELPERS (operate on immer draft) ---
+
+function addItemDraft(container: InventoryContainer, item: InventoryItem): void {
+  const existing = container.items.find(
+    (i) => i.templateId === item.templateId && i.rarity === item.rarity,
+  );
+  if (existing) {
+    existing.quantity += item.quantity;
+  } else {
+    container.items.push({ ...item });
+  }
+}
+
+function removeItemDraft(container: InventoryContainer, item: InventoryItem): void {
+  const index = container.items.findIndex(
+    (i) => i.templateId === item.templateId && i.rarity === item.rarity,
+  );
+  if (index === -1) return;
+
+  const existing = container.items[index];
+  if (existing.quantity > item.quantity) {
+    existing.quantity -= item.quantity;
+  } else {
+    container.items.splice(index, 1);
+  }
+}
+
 // --- SLICE IMPLEMENTATION ---
 
 export const createInventorySlice: GameSlice<InventorySlice> = (set, get) => ({
@@ -111,16 +141,7 @@ export const createInventorySlice: GameSlice<InventorySlice> = (set, get) => ({
       set((state) => {
         const container = state.inventory.containers[containerId];
         if (!container) return;
-
-        const existing = container.items.find(
-          (i) => i.templateId === item.templateId && i.rarity === item.rarity,
-        );
-
-        if (existing) {
-          existing.quantity += item.quantity;
-        } else {
-          container.items.push({ ...item });
-        }
+        addItemDraft(container, item);
         success = true;
       });
       return success;
@@ -131,19 +152,29 @@ export const createInventorySlice: GameSlice<InventorySlice> = (set, get) => ({
       set((state) => {
         const container = state.inventory.containers[containerId];
         if (!container) return;
+        removeItemDraft(container, item);
+        success = true;
+      });
+      return success;
+    },
 
-        const index = container.items.findIndex(
-          (i) => i.templateId === item.templateId && i.rarity === item.rarity,
-        );
+    addItems: (containerId, items) => {
+      let success = false;
+      set((state) => {
+        const container = state.inventory.containers[containerId];
+        if (!container) return;
+        for (const item of items) addItemDraft(container, item);
+        success = true;
+      });
+      return success;
+    },
 
-        if (index === -1) return;
-
-        const existing = container.items[index];
-        if (existing.quantity > item.quantity) {
-          existing.quantity -= item.quantity;
-        } else {
-          container.items.splice(index, 1);
-        }
+    removeItems: (containerId, items) => {
+      let success = false;
+      set((state) => {
+        const container = state.inventory.containers[containerId];
+        if (!container) return;
+        for (const item of items) removeItemDraft(container, item);
         success = true;
       });
       return success;
@@ -175,17 +206,9 @@ export const createInventorySlice: GameSlice<InventorySlice> = (set, get) => ({
         target.money += source.money;
         source.money = 0;
 
-        source.items.forEach((srcItem) => {
-          const existing = target.items.find(
-            (t) => t.templateId === srcItem.templateId && t.rarity === srcItem.rarity,
-          );
-
-          if (existing) {
-            existing.quantity += srcItem.quantity;
-          } else {
-            target.items.push({ ...srcItem });
-          }
-        });
+        for (const srcItem of source.items) {
+          addItemDraft(target, srcItem);
+        }
 
         source.items = [];
       });

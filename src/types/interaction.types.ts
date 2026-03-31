@@ -9,7 +9,8 @@ export type InteractionService =
   | 'leave'
   | 'retreat'
   | 'testService'
-  | 'mock';
+  | 'mock'
+  | string; // allow custom services for POIs
 
 export interface InteractionServiceState {
   id: InteractionService;
@@ -20,8 +21,16 @@ export interface InteractionServiceState {
 export interface InteractionServiceRule {
   autoSuccessRelation?: number;
   checkStat?: SkillKey | MainStatKey;
+  /** Fixed difficulty for stat check (0-100). When omitted, difficulty is derived from relation gap. */
+  difficulty?: number;
   onSuccess?: InteractionEffectDescriptor[];
   onFail?: InteractionEffectDescriptor[];
+}
+
+export interface ServiceOutcome {
+  success: boolean;
+  rollLog?: InteractionLogEvent['roll'];
+  effects?: InteractionEffectDescriptor[];
 }
 
 export type InteractionEffectDescriptor =

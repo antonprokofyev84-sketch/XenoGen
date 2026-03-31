@@ -66,35 +66,9 @@
     .offerItemIcon {
       width: 60px;
       height: 60px;
-      position: relative;
-      background-color: #222;
-      border: 2px solid #555;
       border-radius: 4px;
       padding: 3px;
-      box-sizing: border-box;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       transition: all 0.1s ease;
-
-      @include rarity-border;
-
-      img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-      }
-
-      .offerQty {
-        position: absolute;
-        bottom: 1px;
-        right: 3px;
-        color: #fff;
-        font-size: 0.7rem;
-        font-weight: 600;
-        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-        pointer-events: none;
-      }
     }
 
     .offerPrice {

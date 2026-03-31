@@ -15,7 +15,8 @@
     "con": "Constitution",
     "per": "Perception",
     "int": "Intelligence",
-    "will": "Willpower"
+    "will": "Willpower",
+    "bty": "Beauty"
   },
   "skills": {
     "melee": "Melee",
@@ -24,7 +25,8 @@
     "science": "Science",
     "medicine": "Medicine",
     "charisma": "Charisma",
-    "survival": "Survival"
+    "survival": "Survival",
+    "trade": "Trade"
   },
   "secondaryStats": {
     "maxHp": "Max HP",

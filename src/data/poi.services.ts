@@ -8,7 +8,17 @@ import type {
 
 //this need to be refactored later may be based on poi templateId as a key
 export const POI_SERVICES: Record<string, InteractionService[]> = {
-  encounter: ['attack', 'trade', 'leave', 'testService', 'mock'],
+  encounter: [
+    'attack',
+    'trade',
+    'leave',
+    'testService',
+    'mock',
+    'testDex',
+    'testStr',
+    'testSurvival',
+    'testLuck',
+  ],
   forceLeave: ['leave'],
   forceAttack: ['attack'],
   forceRetreat: ['attack', 'retreat'],
@@ -22,6 +32,10 @@ export const POI_SERVICES_INITIAL_STATE: Record<InteractionService, InteractionS
   retreat: { id: 'retreat', executedTimes: 0 },
   testService: { id: 'testService', executedTimes: 0, maxExecutions: 3 },
   mock: { id: 'mock', executedTimes: 0 },
+  testDex: { id: 'testDex', executedTimes: 0, maxExecutions: 2 },
+  testStr: { id: 'testStr', executedTimes: 0, maxExecutions: 2 },
+  testSurvival: { id: 'testSurvival', executedTimes: 0, maxExecutions: 2 },
+  testLuck: { id: 'testLuck', executedTimes: 0, maxExecutions: 2 },
 };
 
 export const getServiceNamesById = (id: string) => {
@@ -66,5 +80,30 @@ export const SERVICE_RULES: Partial<Record<InteractionService, InteractionServic
       { type: 'modifyTension', delta: 80 },
       { type: 'modifyTargetAffection', delta: -20 },
     ],
+  },
+  // Stat check with fixed difficulty
+  testDex: {
+    checkStat: 'dex',
+    difficulty: 40,
+    onSuccess: [{ type: 'modifySkill', skill: 'melee', delta: 1 }],
+    onFail: [{ type: 'modifyTension', delta: 15 }],
+  },
+  testStr: {
+    checkStat: 'str',
+    difficulty: 50,
+    onSuccess: [{ type: 'modifySkill', skill: 'melee', delta: 1 }],
+    onFail: [{ type: 'modifyTension', delta: 15 }],
+  },
+  testSurvival: {
+    checkStat: 'survival',
+    difficulty: 35,
+    onSuccess: [{ type: 'modifySkill', skill: 'survival', delta: 2 }],
+    onFail: [{ type: 'modifyTension', delta: 10 }],
+  },
+  // Pure difficulty check — no stat, just d100 vs difficulty
+  testLuck: {
+    difficulty: 60,
+    onSuccess: [{ type: 'modifyTargetAffection', delta: 5 }],
+    onFail: [{ type: 'modifyTension', delta: 25 }],
   },
 };

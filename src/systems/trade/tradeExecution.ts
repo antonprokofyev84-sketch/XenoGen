@@ -37,18 +37,13 @@ export function calculateOfferTotal(offer: TradeOffer, multiplier: number): numb
   return itemsTotal + offer.money;
 }
 
-// TODO тут нужно расчитывать процент приемлемости сделки, а не просто булевое значение
 /**
- * Check whether the trader would accept the current deal.
- * Player offer is valued at sell multiplier, trader offer at buy multiplier.
+ * Calculate the raw base cost of a trade offer (no multiplier applied).
  */
-export function isTradeAcceptable(
-  playerOffer: TradeOffer,
-  sellMultiplier: number,
-  traderOffer: TradeOffer,
-  buyMultiplier: number,
-): boolean {
-  const playerTotal = calculateOfferTotal(playerOffer, sellMultiplier);
-  const traderTotal = calculateOfferTotal(traderOffer, buyMultiplier);
-  return playerTotal >= traderTotal;
+export function calculateTradeBaseCost(offer: TradeOffer): number {
+  const itemsTotal = offer.items.reduce(
+    (sum, item) => sum + getItemBasePrice(item) * item.quantity,
+    0,
+  );
+  return itemsTotal + offer.money;
 }

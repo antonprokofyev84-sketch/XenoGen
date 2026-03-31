@@ -16,3 +16,15 @@ export interface TradeOffer {
 
 /** Trade evaluation result shown in the summary bar */
 export type TradeBalance = 'favorable' | 'fair' | 'unfavorable';
+
+/** Full negotiation breakdown for a trade offer */
+export interface TradeNegotiationInfo {
+  baseCost: number;
+  expectedPrice: number;
+  offeredPrice: number;
+  fullWindow: number;
+  availableWindow: number;
+  minimumNegotiatedPrice: number;
+  /** 0..1 — offer quality within the accessible negotiation window */
+  satisfaction: number;
+}

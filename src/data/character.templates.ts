@@ -10,7 +10,6 @@ export const PROTAGONIST_TEMPLATE: Character = {
   baseStats: {
     age: 30,
     gameAge: 0,
-    beauty: 5,
     fame: 0,
     baseHp: 30,
     baseStamina: 20,
@@ -26,6 +25,7 @@ export const PROTAGONIST_TEMPLATE: Character = {
     per: initialMainStatValue,
     int: initialMainStatValue,
     will: initialMainStatValue,
+    bty: initialMainStatValue,
   },
   skills: {
     melee: 0,
@@ -35,6 +35,7 @@ export const PROTAGONIST_TEMPLATE: Character = {
     medicine: 0,
     charisma: 0,
     survival: 0,
+    trade: 0,
   },
 };
 

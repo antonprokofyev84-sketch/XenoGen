@@ -156,6 +156,7 @@ export const characterSelectors = {
         medicine: Math.floor(mainStats.int / 5 + mainStats.dex / 15 + mainStats.per / 15),
         charisma: Math.floor(mainStats.will / 5 + mainStats.int / 10),
         survival: Math.floor(mainStats.per / 5 + mainStats.con / 15 + mainStats.will / 15),
+        trade: Math.floor(mainStats.int / 10 + mainStats.bty / 10 + mainStats.will / 10),
       };
     },
 
