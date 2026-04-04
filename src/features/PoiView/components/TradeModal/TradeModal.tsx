@@ -285,8 +285,8 @@ export const TradeModal = () => {
     <div className="tradeModalOverlay" onClick={handleCancel}>
       <div className="tradeModal" onClick={(e) => e.stopPropagation()}>
         <div className="tradeBody">
-          {/* Left: Player inventory + offer */}
-          <div className="tradeSide">
+          {/* Left: Player inventory */}
+          <div className="tradeSide tradeSidePlayer">
             <TradeInventoryPanel
               title="Your Inventory"
               items={playerContainer.items}
@@ -295,24 +295,13 @@ export const TradeModal = () => {
               getItemPrice={getPlayerItemPrice}
               onItemClick={handlePlayerItemClick}
             />
-            <TradeOfferArea
-              title="Your Offer"
-              items={state.playerOffer}
-              money={state.playerMoneyOffer}
-              totalValue={playerTotal}
-              getItemPrice={getPlayerItemPrice}
-              onRemoveItem={handleRemovePlayerOffer}
-              onMoneyChange={(val) => dispatch({ type: 'SET_PLAYER_MONEY', value: val })}
-              maxMoney={playerContainer.money}
-            />
           </div>
 
-          {/* Center: Trade info, satisfaction, quick-fill, actions */}
+          {/* Center: context -> controls -> offers -> result -> actions */}
           <TradeInfoColumn
             effectiveRelation={effectiveRelation}
             tension={tension}
-            playerTotal={playerTotal}
-            traderTotal={traderTotal}
+            differenceValue={traderTotal - playerTotal}
             satisfaction={negotiation.satisfaction}
             lastResult={lastResult}
             hasAnyOffer={hasAnyOffer}
@@ -328,10 +317,35 @@ export const TradeModal = () => {
             tradeSkill={tradeSkill}
             maxPlayerMoney={playerContainer.money}
             maxTraderMoney={traderMoney}
+            offersContent={
+              <>
+                <TradeOfferArea
+                  title="Your Offer"
+                  items={state.playerOffer}
+                  money={state.playerMoneyOffer}
+                  totalValue={playerTotal}
+                  getItemPrice={getPlayerItemPrice}
+                  onRemoveItem={handleRemovePlayerOffer}
+                  onMoneyChange={(val) => dispatch({ type: 'SET_PLAYER_MONEY', value: val })}
+                  maxMoney={playerContainer.money}
+                />
+                <TradeOfferArea
+                  title="Their Offer"
+                  items={state.traderOffer}
+                  money={state.traderMoneyOffer}
+                  totalValue={traderTotal}
+                  getItemPrice={getTraderItemPrice}
+                  onRemoveItem={handleRemoveTraderOffer}
+                  onMoneyChange={(val) => dispatch({ type: 'SET_TRADER_MONEY', value: val })}
+                  maxMoney={traderMoney}
+                  scrollLeft
+                />
+              </>
+            }
           />
 
-          {/* Right: Trader inventory + offer */}
-          <div className="tradeSide">
+          {/* Right: Trader inventory */}
+          <div className="tradeSide tradeSideTrader">
             <TradeInventoryPanel
               title="Trader Inventory"
               items={traderItems}
@@ -339,16 +353,6 @@ export const TradeModal = () => {
               offerItems={state.traderOffer}
               getItemPrice={getTraderItemPrice}
               onItemClick={handleTraderItemClick}
-            />
-            <TradeOfferArea
-              title="Their Offer"
-              items={state.traderOffer}
-              money={state.traderMoneyOffer}
-              totalValue={traderTotal}
-              getItemPrice={getTraderItemPrice}
-              onRemoveItem={handleRemoveTraderOffer}
-              onMoneyChange={(val) => dispatch({ type: 'SET_TRADER_MONEY', value: val })}
-              maxMoney={traderMoney}
             />
           </div>
         </div>

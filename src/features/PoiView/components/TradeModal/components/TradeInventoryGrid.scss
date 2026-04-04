@@ -5,7 +5,9 @@ $cell-size-compact: 80px;
 $cell-gap: 8px;
 
 .tradeInventoryGrid {
-  width: 100%;
+  // Round down to whole cells so no partial column is visible
+  $cell-step: calc(#{$cell-size} + #{$cell-gap});
+  width: calc(round(down, calc(100% - 8px), $cell-step) + 8px);
   padding: 4px;
   box-sizing: border-box;
   overflow-y: auto;
@@ -20,14 +22,15 @@ $cell-gap: 8px;
   background-color: rgba(0, 0, 0, 0.2);
   background-image:
     linear-gradient(#333 1px, transparent 1px), linear-gradient(90deg, #333 1px, transparent 1px);
-  background-size: calc(#{$cell-size} + #{$cell-gap}) calc(#{$cell-size} + #{$cell-gap});
+  background-size: $cell-step $cell-step;
   background-position: -1px -1px;
 
   &.compact {
+    $compact-step: calc(#{$cell-size-compact} + #{$cell-gap});
+    width: calc(round(down, calc(100% - 8px), $compact-step) + 8px);
     grid-template-columns: repeat(auto-fill, $cell-size-compact);
     grid-auto-rows: $cell-size-compact;
-    background-size: calc(#{$cell-size-compact} + #{$cell-gap})
-      calc(#{$cell-size-compact} + #{$cell-gap});
+    background-size: $compact-step $compact-step;
   }
 
   .tradeItem {

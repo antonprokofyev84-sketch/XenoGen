@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { type ReactNode, useMemo } from 'react';
 
 import { calculateNegotiationWindow } from '@/systems/trade/tradeNegotiation';
 
@@ -11,8 +11,7 @@ import './TradeInfoColumn.scss';
 interface TradeInfoColumnProps {
   effectiveRelation: number;
   tension: number;
-  playerTotal: number;
-  traderTotal: number;
+  differenceValue: number;
   satisfaction: number;
   lastResult: 'success' | 'fail' | null;
   hasAnyOffer: boolean;
@@ -29,6 +28,7 @@ interface TradeInfoColumnProps {
   tradeSkill: number;
   maxPlayerMoney: number; // playerContainer.money
   maxTraderMoney: number; // traderContainer.money
+  offersContent: ReactNode;
 }
 
 type ChanceZone = 'safe' | 'risky' | 'dangerous' | 'insult';
@@ -43,13 +43,6 @@ function getChanceZone(satisfaction: number): ChanceZone {
   if (satisfaction < 0.8) return 'risky';
   return 'safe';
 }
-
-const ZONE_LABELS: Record<ChanceZone, string> = {
-  safe: 'Almost certain',
-  risky: 'Risky',
-  dangerous: 'Unlikely',
-  insult: 'Insulting offer',
-};
 
 const QUICK_FILL_TARGETS = [0.5, 0.75, 0.9, 1] as const;
 
@@ -169,8 +162,7 @@ function calculateQuickFill(
 export const TradeInfoColumn = ({
   effectiveRelation,
   tension,
-  playerTotal,
-  traderTotal,
+  differenceValue,
   satisfaction,
   lastResult,
   hasAnyOffer,
@@ -186,8 +178,8 @@ export const TradeInfoColumn = ({
   tradeSkill,
   maxPlayerMoney,
   maxTraderMoney,
+  offersContent,
 }: TradeInfoColumnProps) => {
-  const difference = traderTotal - playerTotal;
   const chancePercent = Math.round(satisfaction * 100);
   const zone = getChanceZone(satisfaction);
 
@@ -230,39 +222,24 @@ export const TradeInfoColumn = ({
 
       {/* Context: Relation & Tension */}
       <div className="infoContext">
-        <div className="contextRow">
+        <div className="contextCell">
           <span className="contextLabel">Relation</span>
           <span className="contextValue">{Math.round(effectiveRelation)}</span>
         </div>
-        <div className="contextRow">
+        <div className="contextCell">
           <span className="contextLabel">Tension</span>
           <span className="contextValue">{Math.round(tension)}</span>
         </div>
       </div>
 
-      {/* Offer Totals */}
-      <div className="infoTotals">
-        <div className="totalBlock">
-          <span className="totalLabel">You offer</span>
-          <span className="totalAmount">${playerTotal}</span>
-        </div>
-        <div className="totalBlock">
-          <span className="totalLabel">They offer</span>
-          <span className="totalAmount">${traderTotal}</span>
-        </div>
-        <div className="totalBlock diff">
-          <span className="totalLabel">Difference</span>
-          <span className={`totalAmount ${difference >= 0 ? 'positive' : 'negative'}`}>
-            {difference >= 0 ? '+' : ''}
-            {difference}
-          </span>
-        </div>
-      </div>
-
       {/* Satisfaction Indicator */}
       <div className={`infoChance ${zone}`}>
-        <span className="chanceLabel">{ZONE_LABELS[zone]}</span>
+        <span className="chanceLabel">Acceptance chance</span>
         <span className="chancePercent">{chancePercent}%</span>
+        <span className="chanceHint">
+          Value difference: {differenceValue >= 0 ? '+' : ''}
+          {differenceValue}
+        </span>
       </div>
 
       {/* Quick-fill Buttons */}
@@ -281,6 +258,9 @@ export const TradeInfoColumn = ({
         ))}
       </div>
 
+      {/* Offer areas are the main interaction surface */}
+      <div className="infoOffers">{offersContent}</div>
+
       {/* Trade Result */}
       {lastResult && (
         <div className={`tradeResult ${lastResult}`}>
@@ -290,15 +270,21 @@ export const TradeInfoColumn = ({
 
       {/* Action Buttons */}
       <div className="infoActions">
-        <button className="tradeBtn reset" onClick={onReset} disabled={!hasAnyOffer}>
-          Reset
-        </button>
-        <button className={`tradeBtn confirm ${zone}`} onClick={onConfirm} disabled={!hasAnyOffer}>
-          Propose
-        </button>
-        <button className="tradeBtn cancel" onClick={onCancel}>
-          Cancel
-        </button>
+        <div className="actionsMain">
+          <button className="tradeBtn reset" onClick={onReset} disabled={!hasAnyOffer}>
+            Reset
+          </button>
+          <button
+            className={`tradeBtn confirm ${zone}`}
+            onClick={onConfirm}
+            disabled={!hasAnyOffer}
+          >
+            Propose
+          </button>
+          <button className="tradeBtn cancel" onClick={onCancel}>
+            Cancel
+          </button>
+        </div>
       </div>
     </div>
   );

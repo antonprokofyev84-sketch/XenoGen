@@ -1,19 +1,22 @@
 @use '@/styles/variables' as *;
 
 .tradeOfferArea {
-  border: 1px solid $color-border;
+  // border: 1px solid $color-border;
   border-radius: 6px;
-  background-color: rgba(0, 0, 0, 0.3);
+  background-color: #2a2a2a;
   padding: 0.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  min-height: 120px;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
 
   .offerHeader {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
+    gap: 1rem;
     padding-bottom: 0.3rem;
     border-bottom: 1px solid rgba($color-border, 0.5);
 
@@ -35,26 +38,53 @@
 
   .offerContent {
     display: flex;
-    gap: 0.5rem;
+    flex-direction: column;
     flex: 1;
     min-height: 0;
+    overflow: hidden;
   }
 
-  .offerItems {
+  .offerItemsScroll {
     flex: 1;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    align-content: start;
-    overflow-y: auto;
+    min-height: 0;
+    overflow-y: scroll;
     @include custom-scrollbar;
+  }
+
+  &.scrollLeft .offerItemsScroll {
+    direction: rtl;
+  }
+
+  $offer-cell: 80px;
+  $offer-gap: 6px;
+
+  .offerItems {
+    direction: ltr;
+    height: max-content;
+    width: calc(3 * #{$offer-cell} + #{$offer-gap} + 3 * 4px + 1px);
+    min-height: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, $offer-cell);
+    grid-auto-rows: $offer-cell;
+    gap: $offer-gap;
+    padding: 4px;
+    box-sizing: border-box;
+    align-content: start;
+    background-color: #222;
+
+    background-image:
+      linear-gradient(#333 1px, transparent 1px), linear-gradient(90deg, #333 1px, transparent 1px);
+    background-size: calc(#{$offer-cell} + #{$offer-gap}) calc(#{$offer-cell} + #{$offer-gap});
 
     .offerItem {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 2px;
+      justify-content: center;
+      width: $offer-cell;
+      height: $offer-cell;
       cursor: pointer;
+      position: relative;
 
       &:hover .offerItemIcon {
         transform: scale(1.05);
@@ -64,27 +94,30 @@
     }
 
     .offerItemIcon {
-      width: 60px;
-      height: 60px;
+      width: $offer-cell;
+      height: $offer-cell;
       border-radius: 4px;
       padding: 3px;
       transition: all 0.1s ease;
     }
 
     .offerPrice {
-      font-size: 0.65rem;
+      position: absolute;
+      bottom: 2px;
+      font-size: 0.6rem;
       color: #aaa;
       font-family: monospace;
+      text-shadow: 0 0 3px #000;
     }
   }
 
   .offerMoney {
     display: flex;
     align-items: center;
-    gap: 0.3rem;
-    flex-shrink: 0;
-    padding: 0.3rem;
-    border-left: 1px solid rgba($color-border, 0.4);
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid rgba($color-border, 0.4);
 
     .moneyLabel {
       font-size: 0.9rem;
@@ -99,12 +132,15 @@
     }
 
     .moneyControls {
+      flex: 1;
       display: flex;
       align-items: center;
       gap: 4px;
+      margin-left: auto;
 
       input[type='number'] {
-        width: 70px;
+        flex: 1;
+        min-width: 0;
         padding: 3px 6px;
         background: rgba(0, 0, 0, 0.3);
         border: 1px solid $color-border;
@@ -126,6 +162,7 @@
         margin: 0;
       }
       input[type='number'] {
+        appearance: textfield;
         -moz-appearance: textfield;
       }
 
