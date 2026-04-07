@@ -7,7 +7,7 @@ import {
 } from '@/data/travel.rules';
 import type { StoreState } from '@/state/useGameState';
 import type { CellType } from '@/types/map.types';
-import type { PoiNode } from '@/types/poi.types';
+import type { PoiNode } from '@/types/poi';
 import type { MovementMode } from '@/types/travel.types';
 import type { ToD, Weather } from '@/types/world.types';
 

@@ -1,4 +1,10 @@
-import { LOWER_LEVEL_CHANCE, MAX_MEMBERS, SAME_LEVEL_CHANCE } from '@/data/combat.rules';
+import {
+  BUDGET_FOR_LEVEL,
+  LOWER_LEVEL_CHANCE,
+  MAX_MEMBERS,
+  SAME_LEVEL_CHANCE,
+} from '@/data/combat.rules';
+import { ENEMY_TEMPLATES_DB } from '@/data/enemy.templates';
 import type { EnemyTemplate } from '@/types/enemy.types';
 
 import { enemyFactory } from '../enemy/enemyFactory';
@@ -17,6 +23,11 @@ type GroupGenOptions = {
   difficultyLevel: number;
   budget: number;
   allowedTemplates: EnemyTemplate[];
+};
+
+type EncounterGroupGenOptions = {
+  level: number;
+  faction?: string;
 };
 
 const pickLevel = (base: number) => {
@@ -75,4 +86,18 @@ export function generateEnemyGroup(opts: GroupGenOptions) {
   console.log(group);
 
   return group; // может быть пустым — это ок на данном этапе
+}
+
+export function generateEncounterEnemyGroup(opts: EncounterGroupGenOptions) {
+  const { level, faction } = opts;
+  const budget = BUDGET_FOR_LEVEL[Math.min(level, BUDGET_FOR_LEVEL.length - 1)] ?? 2;
+  const allowedTemplates = Object.values(ENEMY_TEMPLATES_DB).filter(
+    (template) => !faction || template.faction === faction,
+  );
+
+  return generateEnemyGroup({
+    difficultyLevel: level,
+    budget,
+    allowedTemplates,
+  });
 }

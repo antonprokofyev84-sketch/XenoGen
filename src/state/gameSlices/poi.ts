@@ -7,9 +7,7 @@ import {
 } from '@/systems/poi/poiFactory';
 import { generatePoiSeedsForCell } from '@/systems/poi/poiSeedGenerator';
 import { poiStrategies } from '@/systems/poi/poiStrategies';
-import type { NonCellNode, PoiDetails, PoiNode } from '@/types/poi.types';
-import type { InitialPoi } from '@/types/poi_initial.types';
-import type { EffectsMap } from '@/types/poi_template.types';
+import type { EffectsMap, InitialPoi, NonCellNode, PoiDetails, PoiNode } from '@/types/poi';
 
 import type { GameSlice } from '../types';
 
@@ -93,7 +91,7 @@ export const poiSelectors = {
       // may be i should add isDiscovered=true to cell poi details too?
       return node.childrenIds
         .map((id) => state.poiSlice.pois[id] as NonCellNode)
-        .filter((poi) => poi && poi.details.isDiscovered);
+        .filter((poi) => poi && 'isDiscovered' in poi.details && poi.details.isDiscovered);
     },
 };
 

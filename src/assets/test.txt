@@ -123,3 +123,15 @@ Add architectural variety to the housing: in addition to the common 1–2 floor 
 Add subtle low-tech cyberpunk elements: old security cameras, exposed cables, battery packs, improvised lighting, a few small service drones, worn solar panels, old LED signboards.
 
 Style: realistic textures, muted rural tones, high detail, readable isometric game map.
+
+
+
+A dimly lit post-apocalyptic bar interior with subtle cyberpunk elements. The place is clean and maintained — not luxurious, but orderly and functional, like a well-kept local bar. Surfaces are worn but tidy, no trash or clutter.
+Lighting is low and atmospheric, with soft, warm light creating a calm half-dark mood. Only a couple of dim light sources are present, leaving parts of the room in shadow.
+The interior combines aged metal and wood, with minimal technology: one or two small, old screens showing faint static or simple interfaces. No excessive neon or futuristic overload.
+Only a few patrons are present. Two people sit at the bar, clearly different from each other — for example, a bulky scavenger in patched gear and a thin man in a hood. In the background, one or two small tables are occupied by just a couple more people, sitting quietly and talking or drinking.
+Behind the counter stands a tired bartender with a single mechanical arm (only the bartender has a prosthetic), calmly cleaning a glass.
+A waitress in worn but clean futuristic clothing leans slightly toward one of the patrons, speaking quietly.
+Deeper in the bar, a simple dance pole is barely visible in the shadows.
+The atmosphere is quiet, slightly smoky, and grounded. Cinematic but realistic, soft shadows, volumetric light, high detail, 4k, minimal tech, low-tech cyberpunk, no clutter, no heavy neon, no duplicates, diverse characters.
+3x4!

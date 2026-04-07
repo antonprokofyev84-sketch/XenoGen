@@ -2,13 +2,14 @@ import { RARITY_ORDER } from '@/constants';
 import { ENEMY_TEMPLATES_DB } from '@/data/enemy.templates';
 import { ITEMS_TEMPLATES_DB } from '@/data/items.templates';
 import { LEVEL_BONUS, LOOT_RULES_BY_TEMPLATE } from '@/data/loot.rules';
-import type { CombatUnit } from '@/types/combat.types';
+import type { CombatLoot, CombatLootResources, CombatUnit } from '@/types/combat.types';
 import type { Rarity } from '@/types/common.types';
-import type { CombatLoot, InventoryItem, ItemType } from '@/types/inventory.types';
+import type { InventoryItem, ItemType } from '@/types/inventory.types';
 import type { LootEntry, LootRule } from '@/types/loot.types';
 import { randomInRange } from '@/utils/utils';
 
 type SlotItemMinimal = { templateId: string; rarity: Rarity; type: ItemType };
+type LootResourceId = keyof CombatLootResources;
 
 // --- КОНСТАНТЫ ---
 const COMPENSATION_CHANCE = 0.66 as const;
@@ -43,6 +44,14 @@ function addItemToLoot(storage: InventoryItem[], item: InventoryItem) {
   } else {
     storage.push({ ...item });
   }
+}
+
+function createCombatLootResources(): CombatLootResources {
+  return {
+    money: 0,
+    scrap: 0,
+    food: 0,
+  };
 }
 
 // --- ЛОГИКА ГЕНЕРАЦИИ ---
@@ -87,16 +96,36 @@ function processLootTable(enemy: CombatUnit, lootRule: LootRule): SimpleLootResu
   return results;
 }
 
+function processUnitLootTable(
+  enemy: CombatUnit,
+  onItem: (item: InventoryItem) => void,
+  onResource: (resourceId: LootResourceId, quantity: number) => void,
+) {
+  const lootRule = LOOT_RULES_BY_TEMPLATE[enemy.templateId];
+  if (!lootRule) return;
+
+  const tableLoot = processLootTable(enemy, lootRule);
+
+  for (const lootItem of tableLoot) {
+    if (lootItem.type === 'resource') {
+      onResource(lootItem.id as LootResourceId, lootItem.quantity);
+      continue;
+    }
+
+    onItem({
+      templateId: lootItem.id,
+      type: lootItem.type as ItemType,
+      rarity: 'common',
+      quantity: lootItem.quantity,
+    });
+  }
+}
+
 // --- ГЛАВНАЯ ФУНКЦИЯ ---
 
 export const generateLoot = (enemies: CombatUnit[]): CombatLoot => {
   const itemsStorage: InventoryItem[] = [];
-
-  const resources = {
-    money: 0,
-    scrap: 0,
-    food: 0,
-  };
+  const resources = createCombatLootResources();
 
   for (const enemy of enemies) {
     if (enemy.status !== 'dead' && enemy.status !== 'unconscious') continue;
@@ -129,24 +158,13 @@ export const generateLoot = (enemies: CombatUnit[]): CombatLoot => {
       processEquipmentSlot(enemy.equipment.gadget);
     }
 
-    const lootRule = LOOT_RULES_BY_TEMPLATE[enemy.templateId];
-    if (lootRule) {
-      const tableLoot = processLootTable(enemy, lootRule);
-
-      for (const lootItem of tableLoot) {
-        if (lootItem.type === 'resource') {
-          resources[lootItem.id as keyof typeof resources] += lootItem.quantity;
-          continue;
-        }
-
-        addItemToLoot(itemsStorage, {
-          templateId: lootItem.id,
-          type: lootItem.type as ItemType,
-          rarity: 'common',
-          quantity: lootItem.quantity,
-        });
-      }
-    }
+    processUnitLootTable(
+      enemy,
+      (item) => addItemToLoot(itemsStorage, item),
+      (resourceId, quantity) => {
+        resources[resourceId] += quantity;
+      },
+    );
   }
 
   return {

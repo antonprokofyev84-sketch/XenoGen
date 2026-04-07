@@ -12,7 +12,8 @@ import { CombatView } from './components/CombatView/CombatView';
 
 export const Combat = () => {
   const selectedPoi = useGameState(useShallow(poiSelectors.selectSelectedPoi));
-  const enemyGroup = selectedPoi?.details?.enemyGroup || [];
+  const enemyGroup =
+    selectedPoi && selectedPoi.type === 'encounter' ? selectedPoi.details.combatUnits || [] : [];
   const initializeCombat = useCombatState((state) => state.actions.initializeCombat);
 
   const combatStatus = useCombatState((state) => state.combatResult.combatStatus);

@@ -1,4 +1,4 @@
-import type { BasePoiNode, CellDetails, EncounterDetails, PoiType } from './poi.types';
+import type { BasePoiNode, CellDetails, EncounterDetails, PoiType } from './poi';
 
 type InitialBasePoiNode = Omit<BasePoiNode, 'childrenIds'>;
 

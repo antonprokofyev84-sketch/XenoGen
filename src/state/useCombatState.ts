@@ -22,8 +22,8 @@ import {
   blankMetric,
 } from '@/systems/combat/combatMetricHelpers';
 import type { CharacterUpdates, CombatResult, CombatUnit } from '@/types/combat.types';
+import type { CombatLoot } from '@/types/combat.types';
 import type { WeaponSlots } from '@/types/equipment.types';
-import type { CombatLoot } from '@/types/inventory.types';
 
 const POSITION_SWAP_MAP = [1, 0, 3, 2] as const;
 

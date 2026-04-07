@@ -1,4 +1,4 @@
-import type { PoiTemplate } from '@/types/poi_template.types';
+import type { PoiTemplate } from '@/types/poi';
 
 export const POI_TEMPLATES_DB: Record<string, PoiTemplate> = {
   scavenger_group: {

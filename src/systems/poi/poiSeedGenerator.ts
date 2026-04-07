@@ -1,4 +1,4 @@
-import type { CellDetails } from '@/types/poi.types';
+import type { CellDetails } from '@/types/poi';
 
 type GeneratedPoiSeed = { poiTemplateId: string; level?: number };
 type GenerationContext = { cellDetails: CellDetails; count: number };

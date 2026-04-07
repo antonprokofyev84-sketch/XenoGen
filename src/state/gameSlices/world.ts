@@ -4,8 +4,10 @@ import {
   STAMINA_RECOVERY_PER_HOUR,
   START_DATE,
 } from '@/constants';
+import { generateEncounterEnemyGroup } from '@/systems/combat/enemyGroupGenerator';
 import { PoiEffectManager } from '@/systems/effects/poiEffectManager';
 import { TraitEffectManager } from '@/systems/effects/traitEffectManager';
+import { generatetUnitsInventory } from '@/systems/inventory/unitsInventoryGenerator';
 import { TravelManager } from '@/systems/travel/travelManager';
 import type { CombatResult } from '@/types/combat.types';
 import type { EffectLog } from '@/types/logs.types';
@@ -153,6 +155,29 @@ export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
         if (poi.type === 'cell' && daysPassed > 0) {
           scoutCellDraft(state, targetPoiId);
         }
+
+        if (poi.type === 'encounter') {
+          const encounterLevel = Math.max(1, poi.details.level ?? 1);
+          const hasCombatUnits =
+            Array.isArray(poi.details.combatUnits) && poi.details.combatUnits.length > 0;
+
+          if (!hasCombatUnits) {
+            poi.details.combatUnits = generateEncounterEnemyGroup({
+              level: encounterLevel,
+              faction: poi.details.faction,
+            });
+          }
+
+          const hasGeneratedUnits =
+            Array.isArray(poi.details.combatUnits) && poi.details.combatUnits.length > 0;
+          const combatUnits = hasGeneratedUnits ? poi.details.combatUnits : null;
+          const traderContainer = state.inventory.containers[targetPoiId];
+
+          if (combatUnits && !traderContainer) {
+            state.inventory.containers[targetPoiId] = generatetUnitsInventory(combatUnits);
+          }
+        }
+
         partyDraft.moveToPoi(state, targetPoiId, travel.staminaCost);
         interactionDraft.startInteraction(state, { poiId: targetPoiId });
         state.ui.currentScreen = poi.type === 'cell' ? 'strategicMap' : 'poiView';

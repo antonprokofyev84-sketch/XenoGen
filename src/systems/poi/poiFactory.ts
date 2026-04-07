@@ -5,10 +5,11 @@ import type {
   EncounterDetails,
   EncounterPoiNode,
   GenericPoiNode,
+  InitialCellDetails,
+  InitialPoi,
   PoiNode,
-} from '@/types/poi.types';
-import type { InitialCellDetails, InitialPoi } from '@/types/poi_initial.types';
-import type { PoiTemplate } from '@/types/poi_template.types';
+  PoiTemplate,
+} from '@/types/poi';
 import { makeInstanceId, stripLastUnderscoreSegment } from '@/utils/utils';
 
 /* ======================================
@@ -148,10 +149,14 @@ export function createPoiFromTemplate({
     }
 
     default: {
+      const spotDiscoverableDefaults =
+        template.type === 'spot' ? { isDiscovered: true, explorationThreshold: 0 } : {};
+
       return {
         ...base,
         type: template.type as GenericPoiNode['type'],
         details: {
+          ...spotDiscoverableDefaults,
           ...template.details,
           ...detailsOverride,
         },
@@ -187,7 +192,7 @@ export function createPoiFromDescriptor(entry: InitialPoi): PoiNode {
     poiTemplateId,
     parentId: entry.parentId,
     rootCellId: entry.rootCellId,
-    level: entry.details.level,
+    level: 'level' in entry.details ? entry.details.level : undefined,
     detailsOverride: entry.details,
   });
 }

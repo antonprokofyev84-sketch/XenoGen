@@ -1,4 +1,4 @@
-import type { InitialPoi } from '@/types/poi_initial.types';
+import type { InitialPoi } from '@/types/poi';
 
 export const INITIAL_POI: InitialPoi[] = [
   // cells

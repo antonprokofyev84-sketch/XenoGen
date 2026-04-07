@@ -1,4 +1,4 @@
-import type { NonCellNode, PoiType } from '@/types/poi.types';
+import type { NonCellNode, PoiType } from '@/types/poi';
 
 const POI_ICON_PRIORITY: Partial<Record<PoiType, number>> = {
   boss: 100,
@@ -17,7 +17,8 @@ export function resolveCellIcon(pois: NonCellNode[]) {
 
     if (priority > bestPriority) {
       bestPriority = priority;
-      best = { icon: poi.type, faction: poi.details?.faction };
+      const faction = 'faction' in poi.details ? poi.details.faction : undefined;
+      best = { icon: poi.type, faction };
     }
   }
 

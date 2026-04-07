@@ -1,5 +1,5 @@
 import type { ForceBehavior, InteractionService } from './interaction.types';
-import type { PoiType } from './poi.types';
+import type { PoiType } from './poi';
 
 // ========================
 // Mood

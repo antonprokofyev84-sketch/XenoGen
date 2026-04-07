@@ -1,6 +1,5 @@
 import { POI_TEMPLATES_DB } from '@/data/poi.templates';
-import type { CellPoiNode, EncounterPoiNode, PoiNode, PoiType } from '@/types/poi.types';
-import type { PoiTriggerRule } from '@/types/poi_template.types';
+import type { CellPoiNode, EncounterPoiNode, PoiNode, PoiTriggerRule, PoiType } from '@/types/poi';
 
 // все стратегии вызываются внутри сеттера состояния, поэтому могут мутировать POI напрямую
 // стратегии мошут менять детали POI но не могут добавлять/удалять POI для этого есть эффекты

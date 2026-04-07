@@ -1,7 +1,7 @@
 // import { GRID_COLS, GRID_ROWS } from '@/constants';
 import { poiDraft } from '@/state/gameSlices/poi';
 import type { StoreState } from '@/state/useGameState';
-import type { EffectsMap, PoiAction } from '@/types/poi_template.types';
+import type { EffectsMap, PoiAction } from '@/types/poi';
 
 type EffectContext = { state: StoreState };
 

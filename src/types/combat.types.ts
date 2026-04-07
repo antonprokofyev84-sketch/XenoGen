@@ -4,6 +4,17 @@ import type { InventoryItem } from './inventory.types';
 import type { EffectLog } from './logs.types';
 import type { WeaponInstance } from './weapon.types';
 
+export interface CombatLootResources {
+  money: number;
+  scrap: number;
+  food: number;
+}
+
+export interface CombatLoot {
+  items: InventoryItem[];
+  resources: CombatLootResources;
+}
+
 export interface CombatStats {
   hp: number;
   armor: number;

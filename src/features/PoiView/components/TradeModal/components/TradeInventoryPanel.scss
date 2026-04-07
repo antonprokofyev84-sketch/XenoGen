@@ -38,7 +38,8 @@
   .panelTabs {
     display: flex;
     gap: 0.5rem;
-    justify-content: center;
+    justify-content: flex-start;
+    flex-wrap: wrap;
     padding-bottom: 0.3rem;
     border-bottom: 1px solid rgba($color-border, 0.5);
 
@@ -55,6 +56,13 @@
         width: 24px;
         height: 24px;
         fill: currentColor;
+      }
+
+      .tabText {
+        font-size: 0.65rem;
+        font-weight: bold;
+        letter-spacing: 0.5px;
+        font-family: inherit;
       }
 
       &.text {

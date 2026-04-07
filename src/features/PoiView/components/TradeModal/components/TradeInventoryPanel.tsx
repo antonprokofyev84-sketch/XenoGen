@@ -43,13 +43,15 @@ interface TradeInventoryPanelProps {
 }
 
 const TABS_CONFIG: TabConfig[] = [
+  { key: 'all', filter: null, text: 'All' },
   { key: 'meleeWeapon', filter: ['meleeWeapon'], Icon: MeleeIcon },
   { key: 'rangeWeapon', filter: ['rangeWeapon'], Icon: RangeIcon },
   { key: 'armor', filter: ['armor'], Icon: ArmorIcon },
   { key: 'gadget', filter: ['gadget'], Icon: GadgetIcon },
+  { key: 'resource', filter: ['resource'], text: 'RES' },
+  { key: 'consumable', filter: ['consumable'], text: 'CON' },
+  { key: 'misc', filter: ['misc'], text: 'MSC' },
 ];
-
-const EXTRA_TAB_TYPES = ['resource', 'consumable', 'misc'] as const;
 
 export const TradeInventoryPanel = ({
   title,
@@ -59,7 +61,7 @@ export const TradeInventoryPanel = ({
   getItemPrice,
   onItemClick,
 }: TradeInventoryPanelProps) => {
-  const [activeTabKey, setActiveTabKey] = useState('meleeWeapon');
+  const [activeTabKey, setActiveTabKey] = useState('all');
   const { selectedRarities, toggleRarity, ALL_RARITIES } = useRarityFilters();
   const [tooltipItem, setTooltipItem] = useState<InventoryItem | null>(null);
 
@@ -87,10 +89,8 @@ export const TradeInventoryPanel = ({
   );
 
   const activeFilter: ItemTypeFilter = useMemo(() => {
-    const tab = TABS_CONFIG.find((t) => t.key === activeTabKey);
-    if (tab) return tab.filter;
-    // Extra tab — activeTabKey is the type itself
-    return [activeTabKey as InventoryItem['type']];
+    const tab = TABS_CONFIG.find((t) => t.key === activeTabKey) ?? TABS_CONFIG[0];
+    return tab.filter;
   }, [activeTabKey]);
 
   const filteredItems = useMemo(() => {
@@ -107,11 +107,6 @@ export const TradeInventoryPanel = ({
         quantity: o.quantity,
       })),
     [offerItems],
-  );
-
-  const visibleExtraTabs = useMemo(
-    () => EXTRA_TAB_TYPES.filter((type) => items.some((i) => i.type === type)),
-    [items],
   );
 
   return (
@@ -131,17 +126,7 @@ export const TradeInventoryPanel = ({
             className={`tabButton ${activeTabKey === key ? 'active' : ''}`}
             title={key}
           >
-            {Icon ? <Icon className="tabIcon" /> : <span>{text}</span>}
-          </button>
-        ))}
-        {visibleExtraTabs.map((type) => (
-          <button
-            key={type}
-            onClick={() => setActiveTabKey(type)}
-            className={`tabButton text ${activeTabKey === type ? 'active' : ''}`}
-            title={type}
-          >
-            {type.slice(0, 3).toUpperCase()}
+            {Icon ? <Icon className="tabIcon" /> : <span className="tabText">{text}</span>}
           </button>
         ))}
       </div>

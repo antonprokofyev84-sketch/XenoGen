@@ -16,7 +16,7 @@ import type {
   InteractionServiceState,
   ServiceOutcome,
 } from '@/types/interaction.types';
-import type { NonCellNode } from '@/types/poi.types';
+import type { NonCellNode } from '@/types/poi';
 
 import type { GameSlice } from '../types';
 import type { StoreState } from '../useGameState';
@@ -89,6 +89,7 @@ const startInteractionDraft = (
 ) => {
   const { poiId, effectiveRelation: providedRelation, initialTension: providedTension } = params;
   const poi = state.poiSlice.pois[poiId] as NonCellNode | undefined;
+
   const npcId = poi?.details?.ownerId;
   const poiType = poi?.type;
 
@@ -101,7 +102,7 @@ const startInteractionDraft = (
     // пока зафиксируем нейтральное
     factionId = 'neutral'; // заглушка
   } else {
-    factionId = poi?.details?.faction;
+    factionId = poi?.details && 'faction' in poi.details ? poi.details.faction : undefined;
   }
 
   if (effectiveRelation === undefined) {
