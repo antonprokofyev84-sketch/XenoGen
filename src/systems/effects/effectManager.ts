@@ -1,6 +1,7 @@
 import { characterDraft } from '@/state/gameSlices/characters';
 import { factionsDraft } from '@/state/gameSlices/factions';
 import { interactionDraft } from '@/state/gameSlices/interaction';
+import { partyDraft } from '@/state/gameSlices/party';
 import type { StoreState } from '@/state/useGameState';
 import type {
   CharacterCondition,
@@ -239,6 +240,10 @@ function applyWorldEffect(draft: StoreState, effect: WorldEffect): WorldEffectCo
         return null;
       }
       return factionsDraft.changeReputation(draft, factionId, effect.delta);
+    }
+    case 'modifyPartyStamina': {
+      partyDraft.changeStamina(draft, effect.delta);
+      return { type: 'modifyPartyStamina', delta: effect.delta };
     }
     default:
       console.warn(`[WorldEffect] Unknown effect type`, effect);

@@ -1,4 +1,5 @@
-import { interactionSelectors, useGameState } from '@/state/useGameState';
+import { interactionSelectors, poiSelectors, useGameState } from '@/state/useGameState';
+import { isNonCell } from '@/types/poi/nodes';
 
 import { DialogOptions } from '../DialogOptions/DialogOptions';
 import { InteractionLogItem } from '../InteractionLogItem/InteractionLogItem';
@@ -9,11 +10,15 @@ export const DialogPanel = () => {
   const currentInteraction = useGameState(interactionSelectors.selectCurrentInteraction);
   const interactionLog = currentInteraction?.interactionLog ?? [];
 
+  const poiId = currentInteraction?.poiId ?? null;
+  const poi = useGameState((state) => (poiId ? poiSelectors.selectPoiById(poiId)(state) : null));
+  const poiTemplateId = poi && isNonCell(poi) ? poi.details.poiTemplateId : null;
+
   return (
     <div className="dialogPanel">
       {/* Заголовок в стиле StatsPanel */}
       <div className="panelHeader">
-        <h3>Interaction</h3>
+        <h3>{poiTemplateId ?? 'Unknown'}</h3>
       </div>
 
       <div className="dialogContainer">

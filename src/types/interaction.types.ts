@@ -23,6 +23,10 @@ export interface InteractionServiceRule {
   checkStat?: SkillKey | MainStatKey;
   /** Fixed difficulty for stat check (0-100). When omitted, difficulty is derived from relation gap. */
   difficulty?: number;
+  /** Money cost deducted from protagonist on success. Service is disabled when insufficient funds. */
+  cost?: number;
+  /** Game-time cost in minutes, applied on success via world.actions.changeTime (handles day boundaries). */
+  timeCost?: number;
   onSuccess?: InteractionEffectDescriptor[];
   onFail?: InteractionEffectDescriptor[];
 }
@@ -54,6 +58,10 @@ export type InteractionEffectDescriptor =
   | {
       type: 'modifyMainStat';
       stat: MainStatKey;
+      delta: number;
+    }
+  | {
+      type: 'modifyPartyStamina';
       delta: number;
     };
 

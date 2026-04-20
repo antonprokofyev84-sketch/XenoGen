@@ -1,5 +1,4 @@
-import { PoiPreview } from '@/features/PoiPreview/PoiPreview';
-
+// import { PoiPreview } from '@/features/PoiPreview/PoiPreview';
 import { BottomBar } from './components/BottomBar/BottomBar';
 import { LeftPanel } from './components/LeftPanel/LeftPanel';
 import { MainPanel } from './components/MainPanel/MainPanel';

@@ -87,6 +87,13 @@ export function resolveInteractionEffects(
           delta: effect.delta,
         });
         break;
+
+      case 'modifyPartyStamina':
+        worldThen.push({
+          type: 'modifyPartyStamina',
+          delta: effect.delta,
+        });
+        break;
     }
   }
 

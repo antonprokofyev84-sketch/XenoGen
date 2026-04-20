@@ -41,12 +41,13 @@ const StatProgressBar = ({
 
 export const LeftPanel = () => {
   const partyPosition = useGameState((state) => state.party.currentPartyPosition);
-  const selectedCellId = useMapInteractionStore((state) => state.focusedPoiId);
-  const selectedCell = useGameState(poiSelectors.selectPoiById(selectedCellId!));
+  const focusedCellId = useMapInteractionStore((state) => state.focusedPoiId);
+  const selectedCellId = focusedCellId ?? partyPosition;
+  const selectedCell = useGameState(poiSelectors.selectPoiById(selectedCellId));
   const travelToPoi = useGameState((state) => state.world.actions.travelToPoi);
 
   const poisToDisplay = useGameState(
-    useShallow(poiSelectors.selectDiscoveredChildrenOfPoi(selectedCellId!)),
+    useShallow(poiSelectors.selectDiscoveredChildrenOfPoi(selectedCellId)),
   );
 
   if (!selectedCell || selectedCell.type !== 'cell') {
@@ -120,6 +121,7 @@ export const LeftPanel = () => {
                   disabled={partyPosition !== selectedCellId}
                 >
                   {textData.poi[poi.details.poiTemplateId as keyof typeof textData.poi]?.name ||
+                    poi.details.poiTemplateId ||
                     'Unknown POI'}
                 </button>
               ))

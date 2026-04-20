@@ -114,6 +114,7 @@ const changeStaminaDraft = (state: StoreState, delta: number) => {
   const allMemberIds = partySelectors.selectAllMemberIds(state);
 
   for (const memberId of allMemberIds) {
+    console.log('[changeStaminaDraft]', memberId, delta);
     // тут должен быть вызов драфт функции из characters.ts
     // но нужно пересмотреть архитектуру characters.ts
     // state.characters.actions.changeStamina(memberId, delta); //set внутри сета

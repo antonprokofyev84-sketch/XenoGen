@@ -1,5 +1,6 @@
 import { PROTAGONIST_ID } from '@/constants';
-import { SERVICE_RULES, getServiceNamesById, getServicesState } from '@/data/poi.services';
+import { SERVICE_RULES, getForcePresetServices, getServicesState } from '@/data/poi.services';
+import { POI_TEMPLATES_DB } from '@/data/poi.templates';
 import { EffectManager } from '@/systems/effects/effectManager';
 import {
   computeInitialTension,
@@ -140,10 +141,9 @@ const startInteractionDraft = (
     initialTension = computeInitialTension(effectiveRelation);
   }
 
-  const baseServices = getServiceNamesById(poi?.type as string);
-  if (npcId) {
-    baseServices.push('talk');
-  }
+  const poiTemplateId = poi?.details?.poiTemplateId;
+  const template = poiTemplateId ? POI_TEMPLATES_DB[poiTemplateId] : undefined;
+  const baseServices = [...(template?.services ?? [])];
 
   const services: InteractionServiceState[] = getServicesState(baseServices);
   const interactionLog: InteractionLogEvent[] = [
@@ -177,14 +177,14 @@ const applyForceExitServicesDraft = (state: StoreState) => {
   let forceAction: ForceBehavior;
   if (!isAttackServiceAvailable) {
     forceAction = 'forceLeave';
-    newServices = getServiceNamesById(forceAction);
+    newServices = getForcePresetServices(forceAction);
   } else {
     if (Math.random() < 0.5) {
       forceAction = 'forceAttack';
-      newServices = getServiceNamesById(forceAction);
+      newServices = getForcePresetServices(forceAction);
     } else {
       forceAction = 'forceRetreat';
-      newServices = getServiceNamesById(forceAction);
+      newServices = getForcePresetServices(forceAction);
     }
   }
 
@@ -232,6 +232,14 @@ const resolveService = (
 ): ServiceOutcome => {
   // 1. No rule → auto-success
   if (!rule) return { success: true };
+
+  // 1.5. Cost precondition: insufficient funds → fail
+  if (rule.cost !== undefined) {
+    const money = state.inventory.containers[PROTAGONIST_ID]?.money ?? 0;
+    if (money < rule.cost) {
+      return { success: false };
+    }
+  }
 
   // 2. Auto-success by relation threshold
   if (rule.autoSuccessRelation !== undefined && effectiveRelation >= rule.autoSuccessRelation) {
@@ -352,6 +360,7 @@ export const createInteractionSlice: GameSlice<InteractionSlice> = (set, get) =>
         : staticRule;
 
       const outcome = resolveService(rule, interaction.effectiveRelation, state, characterId);
+
       const effectsToApply = outcome.effects ?? (outcome.success ? rule?.onSuccess : rule?.onFail);
 
       // Resolve effects in read phase (no draft state needed)
@@ -378,6 +387,14 @@ export const createInteractionSlice: GameSlice<InteractionSlice> = (set, get) =>
         // Track trade attempts for experience diminishing returns
         if (serviceId === 'tradeOffer') {
           currentInteraction.tradeAttempts += 1;
+        }
+
+        // Deduct cost on success
+        if (outcome.success && rule?.cost !== undefined) {
+          const container = draftState.inventory.containers[PROTAGONIST_ID];
+          if (container) {
+            container.money -= rule.cost;
+          }
         }
 
         // Apply effects and collect logs if they exist

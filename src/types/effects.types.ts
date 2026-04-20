@@ -43,6 +43,10 @@ export type WorldEffectCore =
       type: 'modifyReputation';
       factionId?: string;
       delta: number;
+    }
+  | {
+      type: 'modifyPartyStamina';
+      delta: number;
     };
 
 export type PoiEffectCore = unknown;

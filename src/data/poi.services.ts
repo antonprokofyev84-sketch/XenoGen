@@ -7,18 +7,7 @@ import type {
 } from '@/types/interaction.types';
 
 //this need to be refactored later may be based on poi templateId as a key
-export const POI_SERVICES: Record<string, InteractionService[]> = {
-  encounter: [
-    'attack',
-    'trade',
-    'leave',
-    'testService',
-    'mock',
-    'testDex',
-    'testStr',
-    'testSurvival',
-    'testLuck',
-  ],
+export const FORCE_PRESETS: Record<string, InteractionService[]> = {
   forceLeave: ['leave'],
   forceAttack: ['attack'],
   forceRetreat: ['attack', 'retreat'],
@@ -36,10 +25,11 @@ export const POI_SERVICES_INITIAL_STATE: Record<InteractionService, InteractionS
   testStr: { id: 'testStr', executedTimes: 0, maxExecutions: 2 },
   testSurvival: { id: 'testSurvival', executedTimes: 0, maxExecutions: 2 },
   testLuck: { id: 'testLuck', executedTimes: 0, maxExecutions: 2 },
+  rest: { id: 'rest', executedTimes: 0, maxExecutions: 1 },
 };
 
-export const getServiceNamesById = (id: string) => {
-  return POI_SERVICES[id] ? [...POI_SERVICES[id]] : [];
+export const getForcePresetServices = (id: string) => {
+  return FORCE_PRESETS[id] ? [...FORCE_PRESETS[id]] : [];
 };
 
 export const getServicesState = (serviceNames: InteractionService[]): InteractionServiceState[] => {
@@ -105,5 +95,10 @@ export const SERVICE_RULES: Partial<Record<InteractionService, InteractionServic
     difficulty: 60,
     onSuccess: [{ type: 'modifyTargetAffection', delta: 5 }],
     onFail: [{ type: 'modifyTension', delta: 25 }],
+  },
+  rest: {
+    cost: 200,
+    timeCost: 120,
+    onSuccess: [{ type: 'modifyPartyStamina', delta: 40 }],
   },
 };

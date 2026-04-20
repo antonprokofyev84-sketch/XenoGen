@@ -119,6 +119,22 @@
       "name": "Scavenger Patrol",
       "desc": "A small, mobile group of scavengers."
     },
+    "test_tavern": {
+      "name": "Test Tavern",
+      "desc": "A rough roadside tavern used for interaction testing."
+    },
+    "tavern_bartender_spot": {
+      "name": "Bartender",
+      "desc": "Talk to the bartender."
+    },
+    "tavern_waitress_spot": {
+      "name": "Waitress",
+      "desc": "Talk to the waitress."
+    },
+    "tavern_free_table": {
+      "name": "Free Table",
+      "desc": "Sit down at an empty table."
+    },
     "abandoned_car": {
       "name": "Abandoned Car",
       "desc": "A rusted-out husk of a vehicle. Might be something inside."

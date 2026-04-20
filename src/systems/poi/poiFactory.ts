@@ -4,11 +4,15 @@ import type {
   CellPoiNode,
   EncounterDetails,
   EncounterPoiNode,
+  FacilityDetails,
+  FacilityPoiNode,
   GenericPoiNode,
   InitialCellDetails,
   InitialPoi,
   PoiNode,
   PoiTemplate,
+  SpotDetails,
+  SpotPoiNode,
 } from '@/types/poi';
 import { makeInstanceId, stripLastUnderscoreSegment } from '@/utils/utils';
 
@@ -97,6 +101,67 @@ export function resolveEncounterDetails({
   return details;
 }
 
+/**
+ * Собирает runtime FacilityDetails из template + overrides
+ */
+export function resolveFacilityDetails({
+  poiTemplateId,
+  detailsOverride = {},
+  detailsBase = {},
+}: {
+  poiTemplateId: string;
+  detailsOverride?: Partial<FacilityDetails>;
+  detailsBase?: Partial<FacilityDetails>;
+}): FacilityDetails {
+  const template = POI_TEMPLATES_DB[poiTemplateId];
+
+  if (!template) {
+    throw new Error(`Facility template not found: ${poiTemplateId}`);
+  }
+
+  detailsBase.isDiscovered = detailsBase.isDiscovered ?? false;
+  detailsBase.explorationThreshold = detailsBase.explorationThreshold ?? 0;
+
+  return {
+    poiTemplateId,
+    ...detailsBase,
+    ...template.details,
+    ...detailsOverride,
+  } as FacilityDetails;
+}
+
+/**
+ * Собирает runtime SpotDetails из template + overrides
+ */
+export function resolveSpotDetails({
+  poiTemplateId,
+  detailsOverride = {},
+  detailsBase = {},
+}: {
+  poiTemplateId: string;
+  detailsOverride?: Partial<SpotDetails>;
+  detailsBase?: Partial<SpotDetails>;
+}): SpotDetails {
+  const template = POI_TEMPLATES_DB[poiTemplateId];
+
+  if (!template) {
+    throw new Error(`Spot template not found: ${poiTemplateId}`);
+  }
+
+  detailsBase.isDiscovered = detailsBase.isDiscovered ?? true;
+  detailsBase.explorationThreshold = detailsBase.explorationThreshold ?? 0;
+
+  const details = {
+    poiTemplateId,
+    requiresOwner: false,
+    ...detailsBase,
+    ...template.details,
+    ...detailsOverride,
+  } as SpotDetails;
+
+  return details;
+}
+
 /* ======================================
    POI Factory
 ====================================== */
@@ -148,15 +213,37 @@ export function createPoiFromTemplate({
       } satisfies EncounterPoiNode;
     }
 
-    default: {
-      const spotDiscoverableDefaults =
-        template.type === 'spot' ? { isDiscovered: true, explorationThreshold: 0 } : {};
+    case 'facility': {
+      const details = resolveFacilityDetails({
+        poiTemplateId,
+        detailsOverride: detailsOverride as Partial<FacilityDetails>,
+      });
 
+      return {
+        ...base,
+        type: 'facility',
+        details,
+      } satisfies FacilityPoiNode;
+    }
+
+    case 'spot': {
+      const details = resolveSpotDetails({
+        poiTemplateId,
+        detailsOverride: detailsOverride as Partial<SpotDetails>,
+      });
+
+      return {
+        ...base,
+        type: 'spot',
+        details,
+      } satisfies SpotPoiNode;
+    }
+
+    default: {
       return {
         ...base,
         type: template.type as GenericPoiNode['type'],
         details: {
-          ...spotDiscoverableDefaults,
           ...template.details,
           ...detailsOverride,
         },

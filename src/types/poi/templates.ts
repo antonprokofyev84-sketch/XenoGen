@@ -2,6 +2,7 @@
  * POI Template система.
  * Генераль для всех типов, использует conditional types для type-safety.
  */
+import type { InteractionService } from '../interaction.types';
 import type { PoiTemplateTriggers } from './effects';
 import type { EncounterDetails } from './encounter';
 import type { FacilityDetails } from './facility';
@@ -36,6 +37,7 @@ export type PoiTemplateLevel<T extends TemplatePoiType> = {
 export type PoiTemplate<T extends TemplatePoiType = TemplatePoiType> = {
   type: T;
   details: Partial<TemplateDetailsFor<T>>;
+  services?: InteractionService[];
   triggers?: PoiTemplateTriggers;
   levels?: Record<number, PoiTemplateLevel<T>>;
 };

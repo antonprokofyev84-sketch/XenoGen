@@ -17,7 +17,7 @@ export function resolveCellIcon(pois: NonCellNode[]) {
 
     if (priority > bestPriority) {
       bestPriority = priority;
-      const faction = 'faction' in poi.details ? poi.details.faction : undefined;
+      const faction = 'faction' in poi.details ? poi.details.faction : 'neutral';
       best = { icon: poi.type, faction };
     }
   }

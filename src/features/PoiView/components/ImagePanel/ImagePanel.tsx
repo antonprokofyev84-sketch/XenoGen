@@ -1,27 +1,37 @@
+import { interactionSelectors, poiSelectors, useGameState } from '@/state/useGameState';
+import { resolvePoiImage } from '@/systems/poi/poiImageResolver';
+import { isNonCell } from '@/types/poi';
+import { assetsVersion } from '@/utils/assetsVersion';
+
 import './ImagePanel.scss';
 
 export const ImagePanel = () => {
-  // Placeholder image - replace with actual POI image
-  const poiImageUrl = '/images/placeholder-poi.jpg';
+  const currentInteraction = useGameState(interactionSelectors.selectCurrentInteraction);
+
+  const poiId = currentInteraction?.poiId ?? null;
+  const npcId = currentInteraction?.npcId ?? null;
+
+  console.log('ImagePanel render', { poiId, npcId });
+
+  const poi = useGameState((state) => (poiId ? poiSelectors.selectPoiById(poiId)(state) : null));
+
+  const poiTemplateId = poi && isNonCell(poi) ? poi.details.poiTemplateId : null;
+
+  const poiImageUrl = assetsVersion(resolvePoiImage(poiTemplateId, poiId, npcId));
+  console.log(poiImageUrl);
 
   return (
     <div className="imagePanel">
-      <div className="panelHeader">
-        <h3>Location View</h3>
-      </div>
-
       <div className="imageContainer">
         <div className="poiImage">
-          <img src={poiImageUrl} alt="Point of Interest" />
-          {/* Градиент теперь не нужен так сильно, если текст вынесен, но можно оставить для стиля */}
+          <img
+            src={poiImageUrl}
+            alt="Point of Interest"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.visibility = 'hidden';
+            }}
+          />
           <div className="vignette" />
-        </div>
-
-        {/* POI Info теперь выглядит как часть интерфейса панели */}
-        <div className="poiInfo">
-          <span className="locationLabel">Current Location</span>
-          <h4 className="locationName">Abandoned Outpost</h4>
-          <p className="locationDescription">A mysterious and intriguing place</p>
         </div>
       </div>
     </div>

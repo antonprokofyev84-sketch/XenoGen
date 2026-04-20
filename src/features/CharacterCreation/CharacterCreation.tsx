@@ -36,6 +36,7 @@ export const CharacterCreation = () => {
   const initializePois = useGameState((state) => state.poiSlice.actions.initializePois);
 
   const addItem = useGameState((state) => state.inventory.actions.addItem);
+  const modifyMoney = useGameState((state) => state.inventory.actions.modifyMoney);
 
   const handleStatChange = (statKey: MainStatKey, delta: number) => {
     characterActions.changeMainStat(protagonistId, statKey, delta);
@@ -72,6 +73,7 @@ export const CharacterCreation = () => {
     initializePois(INITIAL_POI);
 
     //test
+    modifyMoney('protagonist', 1000);
     addItem('protagonist', {
       templateId: 'fireAxe',
       rarity: 'uncommon',

@@ -152,4 +152,50 @@ export const INITIAL_POI: InitialPoi[] = [
       lifetimeDays: Infinity,
     },
   },
+
+  // Tavern (test facility in cell 3-1)
+
+  {
+    id: 'test_tavern',
+    type: 'facility',
+    parentId: '3-1',
+    rootCellId: '3-1',
+    details: {
+      poiTemplateId: 'tavern',
+      isDiscovered: true,
+    },
+  },
+  {
+    id: 'test_tavern_bartender_spot',
+    type: 'spot',
+    parentId: 'test_tavern',
+    rootCellId: '3-1',
+    details: {
+      poiTemplateId: 'tavern_bartender_spot',
+      isDiscovered: true,
+      requiresOwner: false,
+    },
+  },
+  {
+    id: 'test_tavern_waitress_spot',
+    type: 'spot',
+    parentId: 'test_tavern',
+    rootCellId: '3-1',
+    details: {
+      poiTemplateId: 'tavern_waitress_spot',
+      isDiscovered: true,
+      requiresOwner: false,
+    },
+  },
+  {
+    id: 'test_tavern_free_table',
+    type: 'spot',
+    parentId: 'test_tavern',
+    rootCellId: '3-1',
+    details: {
+      poiTemplateId: 'tavern_free_table',
+      isDiscovered: true,
+      requiresOwner: true,
+    },
+  },
 ];

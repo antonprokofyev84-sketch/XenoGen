@@ -11,6 +11,18 @@ export const POI_TEMPLATES_DB: Record<string, PoiTemplate> = {
       explorationThreshold: 35,
     },
 
+    services: [
+      'attack',
+      'trade',
+      'leave',
+      'testService',
+      'mock',
+      'testDex',
+      'testStr',
+      'testSurvival',
+      'testLuck',
+    ],
+
     triggers: {
       onDayPass: [
         {
@@ -110,8 +122,56 @@ export const POI_TEMPLATES_DB: Record<string, PoiTemplate> = {
     },
   },
 
+  tavern: {
+    type: 'facility',
+    details: {
+      poiTemplateId: 'tavern',
+      explorationThreshold: 0,
+    },
+    services: ['rest', 'leave'],
+  },
+
+  tavern_bartender_spot: {
+    type: 'spot',
+    details: {
+      poiTemplateId: 'tavern_bartender_spot',
+      explorationThreshold: 0,
+    },
+    services: ['trade', 'leave'],
+  },
+
+  tavern_waitress_spot: {
+    type: 'spot',
+    details: {
+      poiTemplateId: 'tavern_waitress_spot',
+      explorationThreshold: 0,
+    },
+    services: ['leave'],
+  },
+
+  tavern_free_table: {
+    type: 'spot',
+    details: {
+      poiTemplateId: 'tavern_free_table',
+      explorationThreshold: 0,
+    },
+    services: ['leave'],
+  },
+
   scavenger_patrol: {
     type: 'encounter',
+
+    services: [
+      'attack',
+      'trade',
+      'leave',
+      'testService',
+      'mock',
+      'testDex',
+      'testStr',
+      'testSurvival',
+      'testLuck',
+    ],
 
     // ===== base (applies to all levels) =====
     details: {

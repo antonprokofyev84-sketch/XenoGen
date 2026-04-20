@@ -1,3 +1,4 @@
+import type { InteractionService } from './interaction.types';
 import type { EncounterDetails } from './poi.types';
 
 /* =====================
@@ -61,6 +62,7 @@ export type PoiTemplateLevel<T extends TemplatePoiType> = {
 export type PoiTemplate<T extends TemplatePoiType = TemplatePoiType> = {
   type: T;
   details: Partial<PoiTemplateDetailsByType[T]>;
+  services?: InteractionService[];
   triggers?: PoiTemplateTriggers;
   levels?: Record<number, PoiTemplateLevel<T>>;
 };
