@@ -16,13 +16,9 @@ export const DialogPanel = () => {
 
   return (
     <div className="dialogPanel">
-      {/* Заголовок в стиле StatsPanel */}
-      <div className="panelHeader">
-        <h3>{poiTemplateId ?? 'Unknown'}</h3>
-      </div>
+      <h3 className="dialogTitle">{poiTemplateId ?? 'Unknown'}</h3>
 
       <div className="dialogContainer">
-        {/* Scrollable Text Area */}
         <div className="scrollableContent">
           {interactionLog.length > 0 && (
             <div className="dialogLogSection">
@@ -35,7 +31,6 @@ export const DialogPanel = () => {
           )}
         </div>
 
-        {/* Interaction Options (Fixed at bottom or separate block) */}
         <DialogOptions />
       </div>
     </div>

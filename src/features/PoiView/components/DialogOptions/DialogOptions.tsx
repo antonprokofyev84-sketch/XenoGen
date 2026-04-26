@@ -43,24 +43,31 @@ export const DialogOptions = () => {
 
   return (
     <div className="dialogOptions">
-      <div className="sectionTitle">Actions</div>
-      {actions.map((option) => {
-        const cost = SERVICE_RULES[option.id]?.cost;
-        const isDisabled =
-          (option.maxExecutions !== undefined && option.executedTimes >= option.maxExecutions) ||
-          (cost !== undefined && money < cost);
+      <h4 className="dialogOptionsTitle">Actions</h4>
+      <div className="dialogOptionsList">
+        {actions.map((option) => {
+          const cost = SERVICE_RULES[option.id]?.cost;
+          const isDisabled =
+            (option.maxExecutions !== undefined && option.executedTimes >= option.maxExecutions) ||
+            (cost !== undefined && money < cost);
+          const optionLabel = option.id
+            .replace(/([a-z])([A-Z])/g, '$1 $2')
+            .replace(/\b\w/g, (char) => char.toUpperCase());
 
-        return (
-          <button
-            key={option.id}
-            className={`dialogOption ${selectedOption === option.id ? 'selected' : ''}`}
-            onClick={() => handleOptionClick(option.id)}
-            disabled={isDisabled}
-          >
-            {option.id}
-          </button>
-        );
-      })}
+          return (
+            <button
+              key={option.id}
+              type="button"
+              className={`dialogOption ${selectedOption === option.id ? 'selected' : ''}`}
+              onClick={() => handleOptionClick(option.id)}
+              disabled={isDisabled}
+              aria-pressed={selectedOption === option.id}
+            >
+              {optionLabel}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 };

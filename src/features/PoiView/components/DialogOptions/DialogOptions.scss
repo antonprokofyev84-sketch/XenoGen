@@ -3,51 +3,62 @@
 .dialogOptions {
   flex-shrink: 0;
   display: flex;
-  flex-direction: column;
   gap: 0.5rem;
+  flex-direction: column;
 
-  .sectionTitle {
-    color: $btn-color-yellow;
-    font-size: 0.85rem;
-    font-weight: bold;
+  .dialogOptionsTitle {
+    margin: 0;
+    color: rgba($btn-color-yellow, 0.92);
+    font-size: 1rem;
+    font-weight: 700;
     text-transform: uppercase;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    margin-bottom: 0.5rem;
-    padding-bottom: 0.2rem;
-    margin-top: 0;
+    line-height: 1.5rem;
+  }
+
+  .dialogOptionsList {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-content: flex-start;
+    gap: 0.5rem;
+    min-height: 10.5rem;
   }
 }
 
 .dialogOption {
-  padding: 0.75rem 1rem;
-  background-color: rgba(255, 255, 255, 0.05);
-  border: 1px solid $color-border;
-  border-radius: 4px;
-  color: #ccc;
+  flex: 0 1 30%;
+  width: 30%;
+  min-width: 15rem;
+  padding: 0.5rem 1rem;
+  background: rgba(40, 48, 56, 0.64);
+  border: 1px solid rgba($color-border, 0.95);
+  border-radius: 0.5rem;
+  color: #d7dce2;
   cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 0.9rem;
-  text-align: left;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5rem;
+  text-align: center;
   font-family: inherit;
 
   &:hover:not(:disabled) {
-    background-color: rgba(255, 255, 255, 0.1);
-    border-color: $btn-color-yellow;
+    background: rgba(56, 66, 76, 0.78);
+    border-color: rgba($btn-color-yellow, 0.8);
     color: #fff;
   }
 
   &.selected {
-    background-color: rgba($btn-color-yellow, 0.1);
-    border-color: $btn-color-yellow;
-    color: $btn-color-yellow;
-  }
-
-  &:active:not(:disabled) {
-    transform: translateY(1px);
+    background: rgba($btn-color-yellow, 0.18);
+    border-color: rgba($btn-color-yellow, 0.9);
+    color: #fff3c8;
   }
 
   &:disabled {
     cursor: not-allowed;
-    opacity: 0.5;
+    opacity: 0.45;
   }
 }
