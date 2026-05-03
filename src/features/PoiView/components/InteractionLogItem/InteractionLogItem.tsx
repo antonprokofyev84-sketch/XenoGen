@@ -1,6 +1,6 @@
 import textData from '@/locales/en.json';
 import { interactionSelectors, useGameState } from '@/state/useGameState';
-import { resolveNarrativeText } from '@/systems/narrative/narrativeResolver';
+import { resolveNarrativeBlocks } from '@/systems/narrative/narrativeResolver';
 import type { InteractionLogEvent } from '@/types/interaction.types';
 
 import { EffectsSummary } from './EffectsSummary';
@@ -13,18 +13,17 @@ interface InteractionLogItemProps {
 
 export const InteractionLogItem = ({ log }: InteractionLogItemProps) => {
   const currentInteraction = useGameState(interactionSelectors.selectCurrentInteraction);
-  const narrativeText = resolveNarrativeText(log, {
+  const mainStatLabels = textData.mainStats as Record<string, string> | undefined;
+  const skillLabels = textData.skills as Record<string, string> | undefined;
+  const narrativeBlocks = resolveNarrativeBlocks(log, {
     npcId: currentInteraction?.npcId,
-    factionId: currentInteraction?.factionId,
-    poiType: currentInteraction?.poiType,
+    poiId: currentInteraction?.poiId,
+    poiTemplateId: currentInteraction?.poiTemplateId,
+    hasOwner: currentInteraction?.hasOwner,
     tension: log.tension,
   });
   const statLabel = log.roll?.stat
-    ? // @ts-ignore
-      textData.mainStats?.[log.roll.stat] ||
-      // @ts-ignore
-      textData.skills?.[log.roll.stat] ||
-      log.roll.stat
+    ? mainStatLabels?.[log.roll.stat] || skillLabels?.[log.roll.stat] || log.roll.stat
     : textData.interactionLog.reputation;
   const resultLabel =
     log.success === true ? textData.interactionLog.success : textData.interactionLog.fail;
@@ -38,12 +37,27 @@ export const InteractionLogItem = ({ log }: InteractionLogItemProps) => {
     </span>
   ) : null;
 
+  const narrativeContent = (
+    <div className="interactionLogNarrative">
+      {narrativeBlocks.map((block, index) =>
+        typeof block === 'string' ? (
+          <p key={`${log.action}-text-${index}`} className="interactionLogParagraph">
+            {block}
+          </p>
+        ) : (
+          <div key={`${log.action}-dialogue-${index}`} className="interactionLogDialogueLine">
+            <span className="interactionLogSpeaker">{block.speaker}:</span>
+            <span className="interactionLogDialogueText">{block.text}</span>
+          </div>
+        ),
+      )}
+    </div>
+  );
+
   return (
     <div className="interactionLogItem">
-      <div className="interactionLogHeader">
-        {rollSummary}
-        <span className="interactionLogNarrative">{narrativeText}</span>
-      </div>
+      {rollSummary ? <div className="interactionLogHeader">{rollSummary}</div> : null}
+      {narrativeContent}
       <EffectsSummary effects={log.effects} />
     </div>
   );

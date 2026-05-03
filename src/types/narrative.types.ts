@@ -1,5 +1,4 @@
 import type { ForceBehavior, InteractionService } from './interaction.types';
-import type { PoiType } from './poi';
 
 // ========================
 // Mood
@@ -8,53 +7,38 @@ import type { PoiType } from './poi';
 export type NarrativeMood = 'hostile' | 'neutral' | 'friendly';
 
 // ========================
+// New narrative schema primitives
+// ========================
+
+export type NarrativeOutcomeKey = 'success' | 'fail';
+
+export interface DialogueLine {
+  speaker: string;
+  text: string;
+}
+
+export type NarrativeBlock = string | DialogueLine;
+export type NarrativeVariant = string | NarrativeBlock[];
+export type NarrativeVariants = NarrativeVariant[];
+
+// A narrative key can either point directly to variants or opt into mood-specific variants.
+export type NarrativeMoodVariantMap = Partial<Record<NarrativeMood | 'default', NarrativeVariants>>;
+export type NarrativeKeyValue = NarrativeVariants | NarrativeMoodVariantMap;
+
+export type NarrativeKeyEntry = Partial<Record<string, NarrativeKeyValue>>;
+export type NarrativeOutcomeEntry = Partial<Record<NarrativeOutcomeKey, NarrativeKeyEntry>>;
+
+// ========================
 // Narrative context (passed into resolver from outside)
 // ========================
 
 export interface NarrativeContext {
   npcId?: string;
-  poiType?: PoiType;
-  factionId?: string;
+  poiId?: string;
+  poiTemplateId?: string;
+  hasOwner?: boolean;
   tension: number;
 }
-
-// ========================
-// Outcome bucket (success / fail texts)
-// ========================
-
-export interface NpcOutcomeBucket {
-  generalText?: string[];
-  poiTypeOverrides?: Record<string, string[]>;
-}
-
-export interface PoiOutcomeBucket {
-  generalText?: string[];
-  factionOverrides?: Record<string, string[]>;
-}
-
-// ========================
-// Mood bucket for service actions (has success/fail)
-// ========================
-
-export interface NpcServiceMoodBucket {
-  success?: NpcOutcomeBucket;
-  fail?: NpcOutcomeBucket;
-}
-
-export interface PoiServiceMoodBucket {
-  success?: PoiOutcomeBucket;
-  fail?: PoiOutcomeBucket;
-}
-
-// ========================
-// Action entries
-// ========================
-/**
- * If a mood bucket is missing, resolver may fallback to 'neutral'
- */
-
-export type NpcServiceActionEntry = Partial<Record<NarrativeMood, NpcServiceMoodBucket>>;
-export type PoiServiceActionEntry = Partial<Record<NarrativeMood, PoiServiceMoodBucket>>;
 
 // ========================
 // Narrative action key = any InteractionService + force behaviors + 'enter'
@@ -63,20 +47,10 @@ export type PoiServiceActionEntry = Partial<Record<NarrativeMood, PoiServiceMood
 export type NarrativeActionKey = InteractionService | ForceBehavior | 'enter';
 
 // ========================
-// Per-NPC narrative record
+// New POI-template-based narrative map
 // ========================
 
-export type NpcNarrativeActions = Partial<Record<NarrativeActionKey, NpcServiceActionEntry>>;
-
-// ========================
-// Per-PoiType narrative record
-// ========================
-
-export type PoiNarrativeActions = Partial<Record<NarrativeActionKey, PoiServiceActionEntry>>;
-
-// ========================
-// Top-level maps
-// ========================
-
-export type NpcNarrativesMap = Record<string, NpcNarrativeActions>;
-export type PoiNarrativesMap = Partial<Record<PoiType, PoiNarrativeActions>>;
+export type PoiTemplateNarrativeActions = Partial<
+  Record<NarrativeActionKey, NarrativeOutcomeEntry>
+>;
+export type PoiTemplateNarrativesMap = Record<string, PoiTemplateNarrativeActions>;

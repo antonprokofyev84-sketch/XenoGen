@@ -25,6 +25,30 @@
 
 .interactionLogNarrative {
   color: #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.interactionLogParagraph {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.interactionLogDialogueLine {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  line-height: 1.45;
+}
+
+.interactionLogSpeaker {
+  color: #f1d79a;
+  font-weight: 600;
+}
+
+.interactionLogDialogueText {
+  color: #e0e0e0;
 }
 
 .interactionLogAction {

@@ -15,6 +15,7 @@
  *  5. {poiId}            — empty specific place
  *  6. default            — fallback for the template
  */
+import { buildPoiPriorityKeys } from './poiPriorityKeys.ts';
 
 const EXTENSIONS = ['.webp', '.png'] as const;
 const FALLBACK_IMAGE = '/images/poi/default.png';
@@ -50,39 +51,8 @@ export function resolvePoiImage(
 ): string {
   const base = `/images/poi/${poiTemplateId}`;
 
-  // 1. {npcId}_{poiId}
-  if (npcId && poiId) {
-    const found = findImage(base, `${npcId}_${poiId}`);
-    if (found) return found;
-  }
-
-  // 2. {npcId}
-  if (npcId) {
-    const found = findImage(base, npcId);
-    if (found) return found;
-  }
-
-  // 3. defaultOwner_{poiId}
-  if (npcId && poiId) {
-    const found = findImage(base, `defaultOwner_${poiId}`);
-    if (found) return found;
-  }
-
-  // 4. defaultOwner
-  if (npcId) {
-    const found = findImage(base, 'defaultOwner');
-    if (found) return found;
-  }
-
-  // 5. {poiId}
-  if (poiId) {
-    const found = findImage(base, poiId);
-    if (found) return found;
-  }
-
-  // 6. default
-  {
-    const found = findImage(base, 'default');
+  for (const key of buildPoiPriorityKeys({ npcId, poiId })) {
+    const found = findImage(base, key);
     if (found) return found;
   }
 

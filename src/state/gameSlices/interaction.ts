@@ -26,9 +26,10 @@ const FORCE_EXIT_TENSION_THRESHOLD = 80;
 
 export interface CurrentInteraction {
   poiId: string; // poiId
-  poiType?: NonCellNode['type'];
+  poiTemplateId?: string;
   npcId?: string;
   factionId?: string;
+  hasOwner?: boolean;
   /** Отношение на момент входа (рассчитывается из репутации) */
   effectiveRelation: number;
   /** Напряжение на момент входа */
@@ -41,8 +42,18 @@ export interface CurrentInteraction {
   services: InteractionServiceState[];
 }
 
-/** Persisted interaction state (without log), survives across visits within a day */
-export type InteractionMemory = Omit<CurrentInteraction, 'interactionLog'>;
+/**
+ * Persisted interaction state scoped to the interaction subject (NPC or POI).
+ *
+ * This keeps volatile relationship pressure across revisits, but leaves
+ * location identity and current template services to be rebuilt from the
+ * POI the player is entering right now.
+ */
+export interface InteractionMemory {
+  tension: number;
+  tradeAttempts: number;
+  services: InteractionServiceState[];
+}
 
 export interface InteractionSlice {
   currentInteraction: CurrentInteraction | null;
@@ -80,6 +91,35 @@ const applyForceTensionReactionDraft = (state: StoreState) => {
   }
 };
 
+const restoreServicesFromMemory = (
+  baseServices: InteractionService[],
+  memoryServices: InteractionServiceState[],
+): InteractionServiceState[] => {
+  const currentServices = getServicesState(baseServices);
+  const memoryById = new Map(memoryServices.map((service) => [service.id, service]));
+
+  return currentServices.map((service) => ({
+    ...service,
+    executedTimes: memoryById.get(service.id)?.executedTimes ?? service.executedTimes,
+  }));
+};
+
+const mergeServicesHistory = (
+  historicalServices: InteractionServiceState[],
+  currentServices: InteractionServiceState[],
+): InteractionServiceState[] => {
+  const merged = new Map(historicalServices.map((service) => [service.id, service]));
+
+  for (const service of currentServices) {
+    merged.set(service.id, {
+      ...(merged.get(service.id) ?? {}),
+      ...service,
+    });
+  }
+
+  return Array.from(merged.values());
+};
+
 const startInteractionDraft = (
   state: StoreState,
   params: {
@@ -92,7 +132,8 @@ const startInteractionDraft = (
   const poi = state.poiSlice.pois[poiId] as NonCellNode | undefined;
 
   const npcId = poi?.details?.ownerId;
-  const poiType = poi?.type;
+  const poiTemplateId = poi?.details?.poiTemplateId;
+  const hasOwner = Boolean(npcId);
 
   let effectiveRelation = providedRelation;
   let initialTension = providedTension;
@@ -126,11 +167,22 @@ const startInteractionDraft = (
 
   const key = npcId ?? poiId;
   const memory = state.interactionSlice.interactionMemoryById[key];
+  const template = poiTemplateId ? POI_TEMPLATES_DB[poiTemplateId] : undefined;
+  const baseServices = [...(template?.services ?? [])];
 
-  // If we have a stored memory, restore it with a fresh log
+  // Restore subject-scoped state, but rebuild current location context and services.
   if (memory) {
     state.interactionSlice.currentInteraction = {
-      ...memory,
+      poiId,
+      poiTemplateId,
+      npcId,
+      factionId,
+      hasOwner,
+      effectiveRelation,
+      initialTension: memory.tension,
+      tension: memory.tension,
+      tradeAttempts: memory.tradeAttempts,
+      services: restoreServicesFromMemory(baseServices, memory.services),
       interactionLog: [{ action: 'enter', success: true, tension: memory.tension }],
     };
     applyForceTensionReactionDraft(state);
@@ -140,10 +192,6 @@ const startInteractionDraft = (
   if (initialTension === undefined) {
     initialTension = computeInitialTension(effectiveRelation);
   }
-
-  const poiTemplateId = poi?.details?.poiTemplateId;
-  const template = poiTemplateId ? POI_TEMPLATES_DB[poiTemplateId] : undefined;
-  const baseServices = [...(template?.services ?? [])];
 
   const services: InteractionServiceState[] = getServicesState(baseServices);
   const interactionLog: InteractionLogEvent[] = [
@@ -156,9 +204,10 @@ const startInteractionDraft = (
 
   state.interactionSlice.currentInteraction = {
     poiId,
-    poiType,
+    poiTemplateId,
     npcId,
     factionId,
+    hasOwner,
     effectiveRelation,
     initialTension,
     tension: initialTension,
@@ -187,11 +236,22 @@ const applyForceExitServicesDraft = (state: StoreState) => {
       newServices = getForcePresetServices(forceAction);
     }
   }
-
-  const services: InteractionServiceState[] = getServicesState(newServices);
   if (state.interactionSlice.currentInteraction) {
     const currentInteraction = state.interactionSlice.currentInteraction;
-    currentInteraction.services = services;
+    const key = currentInteraction.npcId ?? currentInteraction.poiId;
+    const existingMemory = state.interactionSlice.interactionMemoryById[key];
+    const historicalServices = mergeServicesHistory(
+      existingMemory?.services ?? [],
+      currentInteraction.services,
+    );
+
+    state.interactionSlice.interactionMemoryById[key] = {
+      tension: currentInteraction.tension,
+      tradeAttempts: currentInteraction.tradeAttempts,
+      services: historicalServices,
+    };
+
+    currentInteraction.services = getServicesState(newServices);
 
     if (forceAction) {
       currentInteraction.interactionLog.push({
@@ -305,8 +365,12 @@ const endInteractionDraft = (state: StoreState) => {
   if (!interaction) return;
 
   const key = interaction.npcId ?? interaction.poiId;
-  const { interactionLog, ...memory } = interaction;
-  state.interactionSlice.interactionMemoryById[key] = memory;
+  const existingMemory = state.interactionSlice.interactionMemoryById[key];
+  state.interactionSlice.interactionMemoryById[key] = {
+    tension: interaction.tension,
+    tradeAttempts: interaction.tradeAttempts,
+    services: mergeServicesHistory(existingMemory?.services ?? [], interaction.services),
+  };
   state.interactionSlice.currentInteraction = null;
 };
 

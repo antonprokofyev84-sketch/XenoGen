@@ -1,13 +1,14 @@
-import { npcNarratives } from '@/data/narrative/npcNarratives';
-import { poiNarratives } from '@/data/narrative/poiNarratives';
+import { POI_NARRATIVES } from '@/data/narrative/poiNarratives';
+import { buildPoiPriorityKeys } from '@/systems/poi/poiPriorityKeys.ts';
 import type { InteractionLogEvent } from '@/types/interaction.types';
 import type {
+  NarrativeBlock,
   NarrativeContext,
+  NarrativeKeyValue,
   NarrativeMood,
-  NpcNarrativeActions,
-  NpcServiceMoodBucket,
-  PoiNarrativeActions,
-  PoiServiceMoodBucket,
+  NarrativeVariant,
+  NarrativeVariants,
+  PoiTemplateNarrativeActions,
 } from '@/types/narrative.types';
 
 import { getMoodFromTension } from './narrativeMood';
@@ -16,144 +17,137 @@ import { getMoodFromTension } from './narrativeMood';
 // Generic fallback
 // ========================
 
+/**
+ * Final safety-net text when no narrative entry exists for the requested
+ * action/outcome pair.
+ */
 function genericFallback(action: string, success?: boolean): string {
   if (success === undefined) return action;
   return success ? `${action}: success` : `${action}: fail`;
 }
 
-// ========================
-// Safe random pick
-// ========================
+/**
+ * Resolver output is always block-based, so even the cheapest fallback is
+ * wrapped into a one-block narrative.
+ */
+function genericBlockFallback(action: string, success?: boolean): NarrativeBlock[] {
+  return [genericFallback(action, success)];
+}
 
-function pickRandom(variants?: readonly string[]): string | undefined {
+/**
+ * Picks one random variant from the outer variants array.
+ *
+ * The outer array represents alternative random outcomes; the chosen item is
+ * then normalized into ordered narrative blocks.
+ */
+function pickRandomVariant(variants?: NarrativeVariants): NarrativeVariant | undefined {
   if (!variants || variants.length === 0) return undefined;
+  if (variants.length === 1) return variants[0];
   return variants[Math.floor(Math.random() * variants.length)];
 }
 
-// ========================
-// Mood fallback: requested → neutral
-// ========================
+/**
+ * Normalizes any resolved variant into NarrativeBlock[].
+ *
+ * Simple string variants become a one-item array, while composite variants are
+ * already stored as ordered blocks and can pass through unchanged.
+ */
+function normalizeNarrativeVariant(variant?: NarrativeVariant): NarrativeBlock[] | undefined {
+  if (!variant) return undefined;
+  return typeof variant === 'string' ? [variant] : variant;
+}
 
-function resolveMoodBucket<T>(
-  moodMap: Partial<Record<NarrativeMood, T>> | undefined,
+/**
+ * Resolves the variant list stored under one narrative key.
+ *
+ * Keys can use either the simple format (`NarrativeVariants`) or the optional
+ * mood-aware format. When a mood map is used, resolver falls back to `default`.
+ */
+function resolveTemplateMoodVariants(
+  entry: NarrativeKeyValue | undefined,
   requestedMood: NarrativeMood,
-): T | undefined {
-  if (!moodMap) return undefined;
+): NarrativeVariants | undefined {
+  if (!entry) return undefined;
 
-  const direct = moodMap[requestedMood];
-  if (direct) return direct;
+  if (Array.isArray(entry)) {
+    return entry;
+  }
 
-  if (requestedMood !== 'neutral') {
-    return moodMap.neutral;
+  return entry[requestedMood] ?? entry.default;
+}
+
+/**
+ * Resolves one POI template action/outcome pair into ordered narrative blocks.
+ *
+ * The function walks the shared POI priority chain (`npcId_poiId` → `default`),
+ * picks the first matching narrative key, then resolves mood and random variant
+ * inside that key.
+ */
+function resolveTemplateNarrativeBlocks(
+  poiActions: PoiTemplateNarrativeActions,
+  action: string,
+  outcomeKey: 'success' | 'fail',
+  context: NarrativeContext,
+  mood: NarrativeMood,
+): NarrativeBlock[] | undefined {
+  const actionEntry = poiActions[action as keyof PoiTemplateNarrativeActions];
+  if (!actionEntry) return undefined;
+
+  const outcomeEntry = actionEntry[outcomeKey];
+  if (!outcomeEntry) return undefined;
+
+  // Narrative and image resolution share the same POI-specific fallback order,
+  // so text and visuals can specialize at the same granularity.
+  const priorityKeys = buildPoiPriorityKeys({
+    npcId: context.npcId,
+    poiId: context.poiId,
+    hasOwner: context.hasOwner,
+  });
+
+  for (const key of priorityKeys) {
+    const variant = pickRandomVariant(resolveTemplateMoodVariants(outcomeEntry[key], mood));
+    const blocks = normalizeNarrativeVariant(variant);
+    if (blocks) return blocks;
   }
 
   return undefined;
 }
 
-// ========================
-// NPC narrative resolution
-// ========================
-
-function resolveNpcText(
-  npcActions: NpcNarrativeActions,
-  action: string,
-  mood: NarrativeMood,
-  outcomeKey: 'success' | 'fail',
-  poiType?: string,
-): string | undefined {
-  const actionEntry = npcActions[action as keyof NpcNarrativeActions];
-  if (!actionEntry) return undefined;
-
-  const moodBucket = resolveMoodBucket<NpcServiceMoodBucket>(actionEntry, mood);
-  if (!moodBucket) return undefined;
-
-  const outcomeBucket = moodBucket[outcomeKey];
-  if (!outcomeBucket) return undefined;
-
-  // POI-type override
-  if (poiType) {
-    const override = pickRandom(outcomeBucket.poiTypeOverrides?.[poiType]);
-    if (override) return override;
-  }
-
-  return pickRandom(outcomeBucket.generalText);
-}
-
-// ========================
-// POI narrative resolution
-// ========================
-
-function resolvePoiText(
-  poiActions: PoiNarrativeActions,
-  action: string,
-  mood: NarrativeMood,
-  outcomeKey: 'success' | 'fail',
-  factionId?: string,
-): string | undefined {
-  const actionEntry = poiActions[action as keyof PoiNarrativeActions];
-  if (!actionEntry) return undefined;
-
-  const moodBucket = resolveMoodBucket<PoiServiceMoodBucket>(actionEntry, mood);
-  if (!moodBucket) return undefined;
-
-  const outcomeBucket = moodBucket[outcomeKey];
-  if (!outcomeBucket) return undefined;
-
-  // Faction override
-  if (factionId) {
-    const override = pickRandom(outcomeBucket.factionOverrides?.[factionId]);
-    if (override) return override;
-  }
-
-  return pickRandom(outcomeBucket.generalText);
-}
-
-// ========================
-// Public API
-// ========================
-
 /**
- * Resolves a single InteractionLogEvent into a narrative string.
+ * Public narrative resolver used by the interaction log.
  *
- * Priority:
- *   NPC → POI-type → generic fallback
- *
- * Pure function:
- *   - no store reads
- *   - no mutations
- *   - deterministic except random text choice
+ * It resolves POI_NARRATIVES by `poiTemplateId`, action, outcome, narrative key,
+ * optional mood, and random variant selection. Missing content falls back to a
+ * minimal action/outcome string so the UI remains readable during authoring.
  */
-export function resolveNarrativeText(
+export function resolveNarrativeBlocks(
   logEvent: InteractionLogEvent,
   context: NarrativeContext,
-): string {
-  const { npcId, poiType, factionId } = context;
+): NarrativeBlock[] {
   const { action, success, tension } = logEvent;
-
   const mood = getMoodFromTension(tension);
 
   // IMPORTANT:
   // success === undefined → treat as success (enter, passive events)
   const outcomeKey: 'success' | 'fail' = success === false ? 'fail' : 'success';
 
-  // 1) NPC-specific narrative
-  if (npcId) {
-    const npcActions = npcNarratives[npcId];
-    if (npcActions) {
-      const text = resolveNpcText(npcActions, action, mood, outcomeKey, poiType);
-      if (text) return text;
+  const poiTemplateId = context.poiTemplateId;
+
+  // The canonical resolver path is POI_NARRATIVES[poiTemplateId][action][outcome].
+  if (poiTemplateId) {
+    const templateActions = POI_NARRATIVES[poiTemplateId];
+    if (templateActions) {
+      const blocks = resolveTemplateNarrativeBlocks(
+        templateActions,
+        action,
+        outcomeKey,
+        context,
+        mood,
+      );
+      if (blocks) return blocks;
     }
   }
 
-  // 2) POI-type narrative
-  if (poiType) {
-    const poiActions = poiNarratives[poiType];
-    if (poiActions) {
-      const text = resolvePoiText(poiActions, action, mood, outcomeKey, factionId);
-      if (text) return text;
-    }
-  }
-
-  // 3) Generic fallback
-  return genericFallback(action, success);
+  // Cheap text fallback keeps the interaction log readable while content is incomplete.
+  return genericBlockFallback(action, success);
 }

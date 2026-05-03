@@ -1,19 +1,38 @@
-Narrative System Design (v1)
+# Narrative System Design (v1)
 
-1. Purpose
+## Purpose
 
-Narrative system handles:
+The narrative system handles:
 
-- enter descriptions
-- action result descriptions
-- optional dialogue-like lines inside narrative variants
+- enter descriptions;
+- action result descriptions;
+- optional dialogue-like lines inside narrative variants.
 
-It is based on `poiTemplateId`.
+Narrative resolution is based on `poiTemplateId`.
+That template id is the main narrative group.
+Specific variants are resolved inside the template group by priority keys.
 
-`poiTemplateId` is the main group.
-Specific narrative variants are resolved inside that template group by priority keys.
+Related documents:
 
-2. Narrative key priority
+- [PoiSystem](./PoiSystem.md)
+- [NpcSpatialSystem](./NpcSpatialSystem.md)
+- [TradeSystem](./TradeSystem.md)
+
+---
+
+## Narrative Subject Model
+
+In final v1 narrative resolution, the current subject comes from the selected POI and its optional occupant.
+
+- `poiTemplateId` identifies the narrative group;
+- `poiId` identifies the specific place;
+- optional `npcId` identifies the current occupant and interaction subject.
+
+Because v1 allows only one NPC per POI, a single `npcId` is enough for subject-specific narrative.
+
+---
+
+## Narrative Key Priority
 
 Priority from high to low:
 
@@ -21,131 +40,123 @@ Priority from high to low:
    Specific NPC in a specific place.
 
 2. `{npcId}`
-   Specific NPC at any spot of this template type.
+   Specific NPC at any POI of this template type.
 
 3. `defaultOwner_{poiId}`
-   Generic owner/NPC in a specific place.
+   Generic occupied-NPC fallback in a specific place.
 
 4. `defaultOwner`
-   Generic owner/NPC for this template type.
+   Generic occupied-NPC fallback for this template type.
 
 5. `{poiId}`
-   Empty specific place.
+   Specific place fallback without a subject-specific variant.
 
 6. `default`
-   Fallback for the template.
+   Final template fallback.
 
-7. Data shape
+The `defaultOwner` key names remain the canonical authoring keys in v1.
+They mean generic occupied-NPC fallback, not literal runtime ownership stored on the POI.
+
+---
+
+## Data Shape
 
 Structure:
 
+```text
 POI_NARRATIVES
 -> poiTemplateId
 -> action
 -> outcome
 -> narrativeKey
 -> narrative variants
+```
 
 Example:
 
+```ts
 export const POI_NARRATIVES = {
-tavern_bartender_spot: {
-enter: {
-success: {
-john_Bar01: [
-'В "Старом Баре" пахнет элем. Джон протирает стакан и кивает вам.',
-
+  tavern_bartender_spot: {
+    enter: {
+      success: {
+        npc_bob_tavern_bartender_spot: [
+          'The tavern smells of stale beer and wet coats. Bob looks up from the counter.',
           [
-            'Вы подходите к стойке.',
-            { speaker: 'john', text: 'Снова ты.' },
-            'Джон не прекращает протирать стакан, но взгляд у него становится тяжелее.',
+            'You step up to the bar.',
+            { speaker: 'Bob', text: 'Back again?' },
+            'He keeps polishing the same glass while waiting for your answer.',
           ],
         ],
 
-        john: [
-          'Джон стоит за стойкой и бросает на вас короткий взгляд.',
+        npc_bob: ['Bob stands behind the counter and studies you for a moment.'],
+
+        defaultOwner_tavern_bartender_spot: [
+          'A bartender waits behind the counter, already judging whether you are worth the trouble.',
         ],
 
-        defaultOwner_Bar01: [
-          'Бармен за стойкой "Старого Бара" оценивающе смотрит на вас.',
-        ],
+        defaultOwner: ['A bartender glances up as you approach the bar.'],
 
-        defaultOwner: [
-          'Бармен поднимает взгляд, когда вы подходите к стойке.',
-        ],
+        tavern_bartender_spot: ['The counter is scratched, sticky, and familiar.'],
 
-        Bar01: [
-          'Дубовая стойка "Старого Бара" покрыта царапинами и следами кружек.',
-        ],
-
-        default: [
-          'Вы подходите к барной стойке.',
-        ],
+        default: ['You approach the bar.'],
       },
     },
 
     trade: {
       success: {
-        john_Bar01: [
-          [
-            'Джон нехотя выкладывает товар на стойку.',
-            { speaker: 'john', text: 'Быстро выбирай. Я не весь день тут стою.' },
-          ],
+        npc_bob_tavern_bartender_spot: [
+          ['Bob lays the goods out one by one.', { speaker: 'Bob', text: 'Choose fast.' }],
         ],
 
-        defaultOwner: [
-          'Бармен называет цену и ждёт вашего ответа.',
-        ],
+        defaultOwner: ['The bartender quotes a price and waits.'],
 
-        default: [
-          'Сделка проходит без лишних слов.',
-        ],
+        default: ['The deal goes through without much talk.'],
       },
 
       fail: {
-        john_Bar01: [
-          [
-            'Джон даже не тянется к товару.',
-            { speaker: 'john', text: 'Для тебя сегодня ничего нет.' },
-          ],
+        npc_bob_tavern_bartender_spot: [
+          ['Bob does not even reach for the goods.', { speaker: 'Bob', text: 'Not for you.' }],
         ],
 
-        defaultOwner: [
-          'Бармен качает головой. Сделки не будет.',
-        ],
+        defaultOwner: ['The bartender refuses the deal.'],
 
-        default: [
-          'Ничего не выходит.',
-        ],
+        default: ['Nothing comes of it.'],
       },
     },
-
-},
+  },
 };
+```
 
-4. Narrative variant format
+---
 
-External array means variants.
+## Narrative Variant Format
 
-Each variant can be:
+The outer array stores random variants.
 
-A) Simple text variant:
+Each chosen variant can be:
 
-'Вы подходите к барной стойке.'
+### A simple text variant
 
-B) Composite variant:
+```ts
+'You approach the bar.';
+```
 
+### A composite variant
+
+```ts
 [
-'Вы подходите к стойке.',
-{ speaker: 'john', text: 'Снова ты.' },
-'В комнате становится тише.',
-]
+  'You step up to the counter.',
+  { speaker: 'Bob', text: 'Back again?' },
+  'The room gets quieter for a second.',
+];
+```
 
 Types:
 
+```ts
 type DialogueLine = {
-speaker: string;
-text: string;
+  speaker: string;
+  text: string;
 };
 
 type NarrativeBlock = string | DialogueLine;
@@ -153,129 +164,153 @@ type NarrativeBlock = string | DialogueLine;
 type NarrativeVariant = string | NarrativeBlock[];
 
 type NarrativeVariants = NarrativeVariant[];
+```
 
-5. Meaning of arrays
+---
+
+## Meaning Of Arrays
 
 Important rule:
 
-- outer array = random variants
-- inner array = ordered narrative blocks within one variant
+- outer array = random variants;
+- inner array = ordered narrative blocks inside one chosen variant.
 
 Example:
 
-john_Bar01: [
-'Simple variant one.',
+```ts
+npc_bob_tavern_bartender_spot: [
+  'Simple variant one.',
 
-[
-'Composite variant start.',
-{ speaker: 'john', text: 'Dialogue line.' },
-'Composite variant end.',
-],
-]
+  [
+    'Composite variant start.',
+    { speaker: 'Bob', text: 'Dialogue line.' },
+    'Composite variant end.',
+  ],
+];
+```
 
 This means:
 
-- choose either simple variant or composite variant
-- if composite variant is chosen, render all blocks in order
+- choose either the simple variant or the composite variant;
+- if the composite variant is chosen, render all blocks in order.
 
-6. Resolver algorithm
+---
+
+## Resolver Algorithm
 
 Input:
 
-- poiTemplateId
-- action
-- outcome
-- npcId optional
-- poiId
-- hasOwner
+- `poiTemplateId`
+- `action`
+- `outcome`
+- `npcId` optional
+- `poiId`
+- `hasNpcSubject`
 
 Step 1:
+
 Open:
 
+```text
 POI_NARRATIVES[poiTemplateId][action][outcome]
+```
 
 Step 2:
-Build priority keys:
 
-If npcId exists:
+Build priority keys.
+
+If `npcId` exists:
 
 1. `${npcId}_${poiId}`
 2. `${npcId}`
 
-If owner exists: 3. `defaultOwner_${poiId}` 4. `defaultOwner`
+If the POI currently has an NPC subject:
 
-Always: 5. `${poiId}` 6. `default`
+3. `defaultOwner_${poiId}`
+4. `defaultOwner`
+
+Always:
+
+5. `${poiId}`
+6. `default`
 
 Step 3:
-Find first existing key.
+
+Find the first existing key.
 
 Step 4:
-Pick random variant from that key.
+
+Pick one random variant from that key.
 
 Step 5:
+
 Normalize result:
 
-- if variant is string -> [variant]
-- if variant is array -> variant
+- if the variant is a string -> `[variant]`
+- if the variant is an array -> `variant`
 
 Final output is always:
 
+```ts
 NarrativeBlock[]
+```
 
-7. Optional mood support for future
+---
 
-Mood can be added later only where needed.
+## Mood Support
 
-Current simple format:
+Mood may be added only where needed.
 
-john_Bar01: [
-'Text variant.'
-]
+Simple format:
 
-Future mood format:
+```ts
+npc_bob: ['Text variant.'];
+```
 
-john_Bar01: {
-hostile: [
-'Hostile text variant.'
-],
+Mood-aware format:
 
-friendly: [
-'Friendly text variant.'
-],
-
-default: [
-'Default text variant.'
-],
+```ts
+npc_bob: {
+  hostile: ['Hostile text variant.'],
+  friendly: ['Friendly text variant.'],
+  default: ['Default text variant.'],
 }
+```
 
-Mood resolver:
+Resolver rule:
 
-- try selected mood
-- fallback to default
+- try the selected mood first;
+- fall back to `default`.
 
-This does not need to be added now.
+This stays optional per key.
 
-8. Rules
+---
+
+## Rules
 
 - Base grouping is always `poiTemplateId`.
-- `default` should exist for each important action/outcome.
-- Use specific keys only when needed.
-- Do not split dialogue into a separate system for now.
-- Dialogue lines are just blocks inside a narrative variant.
-- Keep external arrays as random variants.
+- `default` should exist for every important action and outcome.
+- Use NPC-specific keys only when needed.
+- Keep dialogue as ordered blocks inside one narrative variant.
+- Keep outer arrays as random variants.
 - Keep inner arrays as ordered blocks.
-- Use same key logic for image resolver if useful.
+- Use the same subject logic for image resolution.
+- Read `npcId` from Spatial occupancy, not from POI runtime ownership.
 
-9. Summary
+---
+
+## Summary
 
 Narrative is resolved as:
 
+```text
 poiTemplateId
 -> action
 -> outcome
 -> best available narrative key
 -> random variant
 -> normalized blocks
+```
 
 Key priority:
 
@@ -286,6 +321,4 @@ Key priority:
 5. `{poiId}`
 6. `default`
 
-TODO
-Переменные в текстах
-Базовый fallback для отсутствующих действий
+In final v1, `npcId` means the current occupant subject of the POI.
