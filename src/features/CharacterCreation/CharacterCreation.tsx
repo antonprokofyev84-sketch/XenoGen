@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import { Button } from '@/components/Button/Button';
 import { INITIAL_FACTIONS } from '@/data/initialFaction';
+import { INITIAL_NPCS } from '@/data/initialNpc';
 // import { INITIAL_MAP } from '@/data/initialMap';
 import { INITIAL_POI } from '@/data/initialPoi';
 import textData from '@/locales/en.json';
@@ -33,6 +34,7 @@ export const CharacterCreation = () => {
   const goToScreen = useGameState((state) => state.ui.goToScreen);
   const initializeFactions = useGameState((state) => state.factions.actions.initializeFactions);
   // const initializeMap = useGameState((state) => state.map.actions.initializeMap);
+  const initializeNpcs = useGameState((state) => state.npcSlice.actions.initializeNpcs);
   const initializePois = useGameState((state) => state.poiSlice.actions.initializePois);
 
   const addItem = useGameState((state) => state.inventory.actions.addItem);
@@ -70,6 +72,7 @@ export const CharacterCreation = () => {
 
     initializeFactions(INITIAL_FACTIONS);
     // initializeMap(INITIAL_MAP);
+    initializeNpcs(INITIAL_NPCS);
     initializePois(INITIAL_POI);
 
     //test

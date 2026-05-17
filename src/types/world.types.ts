@@ -1,2 +1,3 @@
 export type Weather = 'clear' | 'rain' | 'storm';
-export type ToD = 'morning' | 'day' | 'night';
+
+export type { TimeOfDayId as ToD } from '@/constants';

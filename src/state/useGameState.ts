@@ -14,6 +14,10 @@ import { createInteractionSlice, interactionSelectors } from './gameSlices/inter
 import type { InteractionSlice } from './gameSlices/interaction';
 import { createInventorySlice, inventorySelectors } from './gameSlices/inventory';
 import type { InventorySlice } from './gameSlices/inventory';
+import { createNpcSlice, npcSelectors } from './gameSlices/npc';
+import type { NpcSlice } from './gameSlices/npc';
+import { createOccupancySlice, occupancySelectors } from './gameSlices/occupancy';
+import type { OccupancySlice } from './gameSlices/occupancy';
 import { createPartySlice, partySelectors } from './gameSlices/party';
 import type { PartySlice } from './gameSlices/party';
 import { createPoiSlice, poiSelectors } from './gameSlices/poi';
@@ -37,6 +41,8 @@ export type StoreState = {
   factions: FactionsSlice;
   equipment: EquipmentSlice;
   inventory: InventorySlice;
+  npcSlice: NpcSlice;
+  occupancySlice: OccupancySlice;
   interactionSlice: InteractionSlice;
 };
 
@@ -51,6 +57,8 @@ export const useGameState = create<StoreState>()(
     shelter: createShelterSlice(set, get, api),
     poiSlice: createPoiSlice(set, get, api),
     factions: createFactionsSlice(set, get, api),
+    npcSlice: createNpcSlice(set, get, api),
+    occupancySlice: createOccupancySlice(set, get, api),
     interactionSlice: createInteractionSlice(set, get, api),
     inventory: createInventorySlice(set, get, api),
   })),
@@ -64,6 +72,8 @@ export {
   shelterSelectors,
   poiSelectors,
   factionsSelectors,
+  npcSelectors,
+  occupancySelectors,
   interactionSelectors,
   worldSelectors,
   inventorySelectors,

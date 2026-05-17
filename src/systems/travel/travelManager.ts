@@ -100,7 +100,7 @@ export const TravelManager = {
 //     targetCellId,
 //     terrain,
 //     weather = 'clear',
-//     timeOfDay = 'day',
+//     timeOfDay = 'afternoon',
 //     mode = 'foot',
 //     isFatigued = false,
 //   }: TravelCost) => {

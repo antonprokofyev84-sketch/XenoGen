@@ -13,6 +13,7 @@ import type { CombatResult } from '@/types/combat.types';
 import type { EffectLog } from '@/types/logs.types';
 import type { ToD, Weather } from '@/types/world.types';
 import { diffCalendarDays } from '@/utils/diffCalendarDays';
+import { getNextTimeOfDayStart, resolveTimeOfDay } from '@/utils/timeOfDay';
 
 import type { GameSlice } from '../types';
 import { partySelectors } from '../useGameState';
@@ -20,8 +21,6 @@ import type { StoreState } from '../useGameState';
 import { interactionDraft } from './interaction';
 import { partyDraft } from './party';
 import { poiDraft } from './poi';
-
-const MORNING_HOUR = 8; // 8:00 AM
 
 export interface WorldSlice {
   currentTime: number;
@@ -39,12 +38,7 @@ export interface WorldSlice {
 
 // Селектор для вычисляемого времени суток
 export const worldSelectors = {
-  selectTimeOfDay: (state: StoreState): ToD => {
-    const hours = new Date(state.world.currentTime).getHours();
-    if (hours < 6 || hours >= 20) return 'night';
-    if (hours < 12) return 'morning';
-    return 'day';
-  },
+  selectTimeOfDay: (state: StoreState): ToD => resolveTimeOfDay(state.world.currentTime),
 };
 
 function scoutCellDraft(state: StoreState, cellId: string) {
@@ -179,6 +173,7 @@ export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
         }
 
         partyDraft.moveToPoi(state, targetPoiId, travel.staminaCost);
+
         interactionDraft.startInteraction(state, { poiId: targetPoiId });
         state.ui.currentScreen = poi.type === 'cell' ? 'strategicMap' : 'poiView';
       });
@@ -194,13 +189,8 @@ export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
 
     restUntilMorning: () => {
       const state = get();
-      const currentDate = new Date(state.world.currentTime);
-
-      const nextMorning = new Date(currentDate);
-      nextMorning.setDate(currentDate.getDate() + 1);
-      nextMorning.setHours(MORNING_HOUR, 0, 0, 0);
-
-      const diffMs = nextMorning.getTime() - currentDate.getTime();
+      const nextMorning = getNextTimeOfDayStart(state.world.currentTime, 'morning');
+      const diffMs = nextMorning - state.world.currentTime;
       const diffMinutes = Math.round(diffMs / 60000);
 
       // Вызываем наш новый, более универсальный экшен

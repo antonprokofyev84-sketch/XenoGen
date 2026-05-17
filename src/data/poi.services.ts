@@ -19,6 +19,8 @@ export const POI_SERVICES_INITIAL_STATE: Record<InteractionService, InteractionS
   talk: { id: 'talk', executedTimes: 0 },
   leave: { id: 'leave', executedTimes: 0 },
   retreat: { id: 'retreat', executedTimes: 0 },
+  rumors: { id: 'rumors', executedTimes: 0 },
+  insult: { id: 'insult', executedTimes: 0 },
   testService: { id: 'testService', executedTimes: 0, maxExecutions: 3 },
   mock: { id: 'mock', executedTimes: 0 },
   testDex: { id: 'testDex', executedTimes: 0, maxExecutions: 2 },

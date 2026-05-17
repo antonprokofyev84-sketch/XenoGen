@@ -50,8 +50,11 @@ export const WEATHER_RULES: Record<Weather, BaseTravelRule> = {
 };
 
 export const TOD_RULES: Record<ToD, BaseTravelRule> = {
+  late_night: { staminaMult: 1.2, timeMult: 1.2 },
+  early_morning: { staminaMult: 1.1, timeMult: 1.1 },
   morning: { staminaMult: 0.8, timeMult: 0.8 },
-  day: { staminaMult: 1.0, timeMult: 1.0 },
+  afternoon: { staminaMult: 0.9, timeMult: 0.9 },
+  evening: { staminaMult: 1.1, timeMult: 1.1 },
   night: { staminaMult: 1.2, timeMult: 1.2 },
 };
 

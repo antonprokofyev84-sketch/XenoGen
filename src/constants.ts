@@ -16,3 +16,26 @@ export const DEFAULT_MELEE_ID = 'fists';
 export const RARITY_ORDER: Rarity[] = ['common', 'uncommon', 'rare', 'unique'];
 export const START_DATE = new Date('2069-05-10T08:00:00').getTime();
 export const DEFAULT_VISIT_DATE = new Date('2069-01-01T08:00:00').getTime();
+
+export const TIME_OF_DAY_IDS = [
+	'late_night',
+	'early_morning',
+	'morning',
+	'afternoon',
+	'evening',
+	'night',
+] as const;
+
+export type TimeOfDayId = (typeof TIME_OF_DAY_IDS)[number];
+
+export const HOURS_PER_TIME_SLOT = 4;
+export const TIME_OF_DAY_SLOT_COUNT = TIME_OF_DAY_IDS.length;
+
+export const TIME_OF_DAY_START_HOURS: Record<TimeOfDayId, number> = {
+	late_night: 0,
+	early_morning: 4,
+	morning: 8,
+	afternoon: 12,
+	evening: 16,
+	night: 20,
+};
