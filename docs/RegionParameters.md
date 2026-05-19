@@ -15,32 +15,38 @@ Base values come from the cell. Points of interest inside the cell can apply loc
 Prosperity represents the abundance of goods and market saturation in the region.
 
 Influences:
+
 - amount of goods available from traders;
 - chance that common goods are present;
 - stock size for mass goods;
 - rarity upgrade chance for items.
 
 Examples:
+
 - `prosperity 1` — almost no goods.
 - `prosperity 5` — average market.
 - `prosperity 10` — many goods and large stock.
 
 ---
 
-### supplyTier / techLevel
+### techLevel
 
-Supply tier represents access to technology and complex goods.
+`techLevel` (formerly `supplyTier`) represents access to technology and complex goods.
+
+Canonical code field: `RegionParameters.techLevel`.
 
 Influences:
+
 - which items can appear;
 - maximum complexity of weapons, armor, implants, medicine, genetic drugs, and other advanced goods;
 - enemy equipment quality.
 
 Examples:
-- `supplyTier 1` — primitive weapons, basic medicine, simple equipment.
-- `supplyTier 5/10` — advanced weapons, armor, implants, rare medicine, high-tech goods.
 
-Supply tier is better treated as access to supply and infrastructure, not as a physical property of the land.
+- `techLevel 1` — primitive weapons, basic medicine, simple equipment.
+- `techLevel 5/10` — advanced weapons, armor, implants, rare medicine, high-tech goods.
+
+`techLevel` is better treated as access to supply and infrastructure, not as a physical property of the land.
 
 ---
 
@@ -49,6 +55,7 @@ Supply tier is better treated as access to supply and infrastructure, not as a p
 Contamination represents how infected or polluted the region is.
 
 Influences:
+
 - mutant spawn;
 - infected events;
 - infected goods;
@@ -56,6 +63,7 @@ Influences:
 - access to genetic or experimental drugs.
 
 Examples:
+
 - `contamination 1` — clean region.
 - `contamination 10` — mutants, infected events, dangerous environment, high demand for protection.
 
@@ -66,6 +74,7 @@ Examples:
 Threat represents combat danger in the region.
 
 Influences:
+
 - enemy experience level;
 - enemy personal stats;
 - encounter difficulty;
@@ -75,6 +84,7 @@ Influences:
 - price of slaves or captives, if appropriate for the setting.
 
 Examples:
+
 - `threat 1` — weak or inexperienced enemies.
 - `threat 10` — veterans, professionals, killers, dangerous fighters.
 
@@ -84,7 +94,7 @@ Examples:
 
 ```text
 prosperity = how many goods are available.
-supplyTier = which goods and equipment are available.
+techLevel  = which goods and equipment are available.
 contamination = infection, mutants, infected events.
 threat = combat experience and danger of encounters.
 ```
@@ -115,7 +125,7 @@ Raider camp:
 - threat +1/+2
 
 Laboratory:
-- supplyTier +1/+2
+- techLevel +1/+2
 - contamination +1
 
 Rich club:
@@ -124,19 +134,20 @@ Rich club:
 
 Black market:
 - threat +1/+2
-- supplyTier +1
+- techLevel +1
 ```
 
-Final values for trading and encounters are calculated from the cell parameters plus POI modifiers.
+Final values are calculated from cell `regionParameters` plus any POI modifiers.
 
 ```ts
-finalProsperity = cell.prosperity + pointOfInterest.prosperityModifier;
-finalThreat = cell.threat + pointOfInterest.threatModifier;
-finalContamination = cell.contamination + pointOfInterest.contaminationModifier;
-finalSupplyTier = cell.supplyTier + pointOfInterest.supplyTierModifier;
+// All four keys live under cell.details.regionParameters
+finalProsperity = base.prosperity + poiModifier.prosperity;
+finalThreat = base.threat + poiModifier.threat;
+finalContamination = base.contamination + poiModifier.contamination;
+finalTechLevel = base.techLevel + poiModifier.techLevel;
 ```
 
-Final values should be clamped to the allowed range, for example `1–10` or `1–5`.
+Values should be clamped to the allowed range (e.g. `0–999` in the flat 0..999 scheme).
 
 ---
 
@@ -149,13 +160,15 @@ Some parameters can slowly influence neighboring cells:
 - `prosperity`.
 
 Examples:
+
 - raiders increase threat around them;
 - mutants increase contamination around them;
 - farms and markets increase prosperity around them.
 
-`supplyTier` should usually not spread like a field.
+`techLevel` should usually not spread like a field.
 
-Supply tier should come from:
+`techLevel` comes from:
+
 - infrastructure;
 - faction presence;
 - city level;
@@ -171,6 +184,7 @@ Supply tier should come from:
 ### threat
 
 Threat affects:
+
 - enemy experience;
 - enemy stats;
 - encounter danger;
@@ -181,9 +195,10 @@ High threat means enemies are more dangerous as fighters.
 
 ---
 
-### supplyTier
+### techLevel
 
-Supply tier affects enemy equipment:
+`techLevel` affects enemy equipment:
+
 - weapons;
 - armor;
 - gadgets;
@@ -194,6 +209,7 @@ Supply tier affects enemy equipment:
 ### contamination
 
 Contamination affects:
+
 - mutants;
 - infected enemies;
 - infected events;
@@ -206,6 +222,7 @@ Contamination affects:
 Prosperity does not need to directly affect enemies.
 
 It can indirectly imply:
+
 - more guards;
 - more valuable targets for raiders;
 - more trade POIs;
@@ -213,13 +230,14 @@ It can indirectly imply:
 
 ---
 
-## Threat + SupplyTier Combinations
+## techLevel + Threat Combinations
 
-### threat 10 + supplyTier 1
+### threat 10 + techLevel 1
 
 Experienced enemies with primitive equipment.
 
 Examples:
+
 - veteran raiders;
 - brutal survivors;
 - old fighters;
@@ -229,11 +247,12 @@ They are dangerous because of experience, stats, and behavior.
 
 ---
 
-### threat 10 + supplyTier 10
+### threat 10 + techLevel 10
 
 Experienced enemies with top-tier equipment.
 
 Examples:
+
 - special forces;
 - corporate troops;
 - elite mercenaries.
@@ -242,11 +261,12 @@ This is a maximum danger scenario.
 
 ---
 
-### threat 1 + supplyTier 10
+### threat 1 + techLevel 10
 
 Inexperienced enemies with advanced equipment.
 
 Examples:
+
 - rich amateurs;
 - poorly trained security;
 - spoiled elites playing war.
@@ -268,6 +288,7 @@ Enemies have moderate experience and moderate equipment.
 High threat should not simply mean many enemies.
 
 Better effects:
+
 - stronger enemies;
 - better enemy stats;
 - worse encounter scenarios;

@@ -26,11 +26,13 @@ export interface GeneralDetails {
 export interface BasePoiNode {
   id: string;
   parentId: string | null; // null = корень (ячейка)
-  childrenIds: string[];
+  isLocalSpot?: boolean;
+  nestedPoiIds: string[];
+  localSpotIds: string[];
   rootCellId: string;
 }
 
 /**
- * Базовый тип для initial POI (без childrenIds, потому что дети строятся автоматически).
+ * Базовый тип для initial POI (дети строятся автоматически).
  */
-export type InitialBasePoiNode = Omit<BasePoiNode, 'childrenIds'>;
+export type InitialBasePoiNode = Omit<BasePoiNode, 'nestedPoiIds' | 'localSpotIds'>;

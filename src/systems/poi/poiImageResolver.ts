@@ -5,7 +5,7 @@
  * under `public/images/poi/`. At runtime, `resolvePoiImage` walks a 6-level
  * priority chain and returns the path of the first match.
  *
- * Folder structure: /images/poi/{poiTemplateId}/{candidate}.{webp|png}
+ * Folder structure: /images/poi/{poiType}/{candidate}.{webp|png}
  *
  * Priority (high → low):
  *  1. {npcId}_{poiId}   — specific NPC in a specific place
@@ -39,17 +39,17 @@ function findImage(basePath: string, name: string): string | null {
 /**
  * Resolve the best available image for a POI scene.
  *
- * @param poiTemplateId — e.g. "tavern_bartender_spot"
+ * @param poiType       — e.g. "tavern_bartender_spot"
  * @param poiId         — unique instance id, e.g. "test_tavern_bartender_spot" (optional)
  * @param npcId         — NPC owner id if present, e.g. "john" (optional)
  * @returns root-relative image path (e.g. "/images/poi/tavern/default.png")
  */
 export function resolvePoiImage(
-  poiTemplateId: string,
+  poiType: string,
   poiId?: string | null,
   npcId?: string | null,
 ): string {
-  const base = `/images/poi/${poiTemplateId}`;
+  const base = `/images/poi/${poiType}`;
 
   for (const key of buildPoiPriorityKeys({ npcId, poiId })) {
     const found = findImage(base, key);

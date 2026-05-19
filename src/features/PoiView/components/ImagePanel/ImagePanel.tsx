@@ -10,10 +10,10 @@ import { SubPoiCard } from './SubPoiCard';
 
 import './ImagePanel.scss';
 
-const getPoiDisplayName = (poiTemplateId: string | null) => {
-  if (!poiTemplateId) return 'Unknown POI';
+const getPoiDisplayName = (poiType: string | null) => {
+  if (!poiType) return 'Unknown POI';
 
-  return textData.poi[poiTemplateId as keyof typeof textData.poi]?.name ?? poiTemplateId;
+  return textData.poi[poiType as keyof typeof textData.poi]?.name ?? poiType;
 };
 
 export const ImagePanel = () => {
@@ -28,9 +28,9 @@ export const ImagePanel = () => {
     useShallow((state) => (poiId ? poiSelectors.selectDiscoveredChildrenOfPoi(poiId)(state) : [])),
   );
 
-  const poiTemplateId = poi && isNonCell(poi) ? poi.details.poiTemplateId : null;
-  const poiName = getPoiDisplayName(poiTemplateId);
-  const poiImageUrl = assetsVersion(resolvePoiImage(poiTemplateId ?? 'unknown', poiId, npcId));
+  const poiType = poi && isNonCell(poi) ? poi.type : null;
+  const poiName = getPoiDisplayName(poiType);
+  const poiImageUrl = assetsVersion(resolvePoiImage(poiType ?? 'unknown', poiId, npcId));
 
   const handleSubPoiClick = (targetPoiId: string) => {
     travelToPoi(targetPoiId);

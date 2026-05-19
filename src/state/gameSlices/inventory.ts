@@ -108,7 +108,7 @@ function removeItemDraft(container: InventoryContainer, item: InventoryItem): vo
 
 // --- SLICE IMPLEMENTATION ---
 
-export const createInventorySlice: GameSlice<InventorySlice> = (set, get) => ({
+export const createInventorySlice: GameSlice<InventorySlice> = (set, _get) => ({
   containers: {
     [PROTAGONIST_ID]: {
       items: [],

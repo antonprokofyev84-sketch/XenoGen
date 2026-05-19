@@ -1,6 +1,7 @@
 import textData from '@/locales/en.json';
 import { poiSelectors, useGameState } from '@/state/useGameState';
 import { useMapInteractionStore } from '@/state/useMapInteractionStore';
+import type { CellPoiNode } from '@/types/poi';
 
 import './ExplorationStatus.scss';
 
@@ -11,7 +12,7 @@ export const ExplorationStatus = () => {
     return null;
   }
 
-  const cellData = selectedCell?.details;
+  const cellData = (selectedCell as unknown as CellPoiNode).details;
 
   const getStatus = () => {
     if (cellData.visitedTimes === 0) {

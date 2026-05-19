@@ -2,14 +2,11 @@ import {
   BASE_CELL_TO_CELL,
   CELL_TO_POI_ENTER,
   DIAGONAL_MULTIPLIER,
-  INNER_POI_MOVE,
-  SETTLEMENT_MOVE,
+  INNER_SCENE_MOVE,
+  LOCAL_SPOT_MOVE,
 } from '@/data/travel.rules';
 import type { StoreState } from '@/state/useGameState';
-import type { CellType } from '@/types/map.types';
 import type { PoiNode } from '@/types/poi';
-import type { MovementMode } from '@/types/travel.types';
-import type { ToD, Weather } from '@/types/world.types';
 
 type Adjacency = {
   isAdjacent: boolean;
@@ -74,13 +71,13 @@ export const TravelManager = {
       return { canTravel: true, ...CELL_TO_POI_ENTER };
     }
 
-    // 3) Если мы “в поселении”, любое перемещение стоит одинаково (и внутрь, и наружу).
-    if (currentPoi.type === 'settlement') {
-      return { canTravel: true, ...SETTLEMENT_MOVE };
+    // 3) Local spots are near-instant transitions inside the same scene.
+    if (currentPoi.isLocalSpot === true || targetPoi.isLocalSpot === true) {
+      return { canTravel: true, ...LOCAL_SPOT_MOVE };
     }
 
-    // 4) Любой другой POI (encounter/facility/dungeon/...) — “переход по комнатам / выход”
-    return { canTravel: true, ...INNER_POI_MOVE };
+    // 4) Any other non-cell to non-cell transition inside a local scene.
+    return { canTravel: true, ...INNER_SCENE_MOVE };
   },
 };
 

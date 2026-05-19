@@ -2,18 +2,14 @@ import { POI_TEMPLATES_DB } from '@/data/poi.templates';
 import type {
   CellDetails,
   CellPoiNode,
-  EncounterDetails,
-  EncounterPoiNode,
-  FacilityDetails,
-  FacilityPoiNode,
-  GenericPoiNode,
   InitialCellDetails,
   InitialPoi,
+  NonCellPoiNode,
   PoiNode,
   PoiTemplate,
-  SpotDetails,
-  SpotPoiNode,
+  UniversalPoiDetails,
 } from '@/types/poi';
+import type { RegionParameters } from '@/types/poi/regionParameters';
 import { makeInstanceId, stripLastUnderscoreSegment } from '@/utils/utils';
 
 /* ======================================
@@ -24,14 +20,19 @@ import { makeInstanceId, stripLastUnderscoreSegment } from '@/utils/utils';
  * Приводит initial cell details к runtime CellDetails
  */
 export function resolveCellDetails(details: InitialCellDetails): CellDetails {
+  const regionParameters = {
+    threat: details.regionParameters?.threat ?? 0,
+    contamination: details.regionParameters?.contamination ?? 0,
+    prosperity: details.regionParameters?.prosperity ?? 0,
+    techLevel: details.regionParameters?.techLevel ?? 0,
+  };
+
   return {
     col: details.col,
     row: details.row,
     terrain: details.terrain,
 
-    threat: details.threat ?? 0,
-    contamination: details.contamination ?? 0,
-    prosperity: details.prosperity ?? 0,
+    regionParameters,
 
     visitedTimes: details.visitedTimes ?? 0,
     explorationLevel: details.explorationLevel ?? 0,
@@ -39,127 +40,76 @@ export function resolveCellDetails(details: InitialCellDetails): CellDetails {
   };
 }
 
+/* ======================================
+   Universal non-cell details resolver
+====================================== */
+
 /**
- * Собирает runtime EncounterDetails из template + overrides
+ * Resolves the effective RegionParameters for a non-cell POI.
+ *
+ * Resolution order (per Phase 3.4):
+ *   1. Base: root cell's regionParameters
+ *   2. Override: poi.details.regionParametersOverride (replaces specific keys)
+ *   3. Modifiers: poi.details.regionParameterModifiers (additive delta per key)
+ *   4. Clamp: all values clamped to minimum 0
  */
-export function resolveEncounterDetails({
-  poiTemplateId,
+export function resolveEffectiveRegionParameters(
+  poiDetails: UniversalPoiDetails,
+  cellRegionParameters: RegionParameters,
+): RegionParameters {
+  const override = poiDetails.regionParametersOverride ?? {};
+  const mods = poiDetails.regionParameterModifiers ?? {};
+
+  const clamp = (v: number) => Math.max(0, v);
+
+  return {
+    threat: clamp((override.threat ?? cellRegionParameters.threat) + (mods.threat ?? 0)),
+    prosperity: clamp(
+      (override.prosperity ?? cellRegionParameters.prosperity) + (mods.prosperity ?? 0),
+    ),
+    contamination: clamp(
+      (override.contamination ?? cellRegionParameters.contamination) + (mods.contamination ?? 0),
+    ),
+    techLevel: clamp(
+      (override.techLevel ?? cellRegionParameters.techLevel) + (mods.techLevel ?? 0),
+    ),
+  };
+}
+
+/**
+ * Produces a UniversalPoiDetails bag from a template + optional overrides.
+ * The node's `type` field becomes the content key (template id).
+ */
+export function resolveUniversalDetails({
+  poiType,
   level,
   detailsOverride = {},
   detailsBase = {},
 }: {
-  poiTemplateId: string;
+  poiType: string;
   level?: number;
-  detailsOverride?: Partial<EncounterDetails>;
-  detailsBase?: Partial<EncounterDetails>;
-}): EncounterDetails {
-  const template = POI_TEMPLATES_DB[poiTemplateId];
-
+  detailsOverride?: Record<string, any>;
+  detailsBase?: Record<string, any>;
+}): UniversalPoiDetails {
+  const template = POI_TEMPLATES_DB[poiType];
   if (!template) {
-    throw new Error(`Encounter template not found: ${poiTemplateId}`);
-  }
-  if (template.type !== 'encounter') {
-    throw new Error(`POI template is not of type 'encounter': ${poiTemplateId}`);
+    throw new Error(`POI template not found: ${poiType}`);
   }
 
-  detailsBase.isDiscovered = detailsBase.isDiscovered ?? false;
-  detailsBase.explorationThreshold = detailsBase.explorationThreshold ?? 0;
+  const isLocalSpotTemplate = template.isLocalSpot === true;
 
-  let resolvedLevel = level;
-  let levelDetails: Partial<EncounterDetails> = {};
-
-  if (template.levels) {
-    if (resolvedLevel === undefined) {
-      resolvedLevel = Math.min(...Object.keys(template.levels).map(Number));
-    }
-
-    const levelSpec = template.levels[resolvedLevel];
-    if (!levelSpec) {
-      throw new Error(`POI template level not found: ${poiTemplateId} level ${resolvedLevel}`);
-    }
-
-    levelDetails = levelSpec.details ?? {};
-  }
-
-  const details = {
-    poiTemplateId,
-    level: resolvedLevel,
-    ...detailsBase,
-    ...template.details,
-    ...levelDetails,
-    ...detailsOverride,
-  } as EncounterDetails;
-
-  if (
-    typeof details.progressMax === 'number' &&
-    details.progressMax > 0 &&
-    details.progress === undefined
-  ) {
-    details.progress = 0;
-  }
-
-  return details;
-}
-
-/**
- * Собирает runtime FacilityDetails из template + overrides
- */
-export function resolveFacilityDetails({
-  poiTemplateId,
-  detailsOverride = {},
-  detailsBase = {},
-}: {
-  poiTemplateId: string;
-  detailsOverride?: Partial<FacilityDetails>;
-  detailsBase?: Partial<FacilityDetails>;
-}): FacilityDetails {
-  const template = POI_TEMPLATES_DB[poiTemplateId];
-
-  if (!template) {
-    throw new Error(`Facility template not found: ${poiTemplateId}`);
-  }
-
-  detailsBase.isDiscovered = detailsBase.isDiscovered ?? false;
-  detailsBase.explorationThreshold = detailsBase.explorationThreshold ?? 0;
+  const defaults: Partial<UniversalPoiDetails> = {
+    isDiscovered: isLocalSpotTemplate ? true : false,
+    explorationThreshold: 0,
+  };
 
   return {
-    poiTemplateId,
+    ...defaults,
     ...detailsBase,
-    ...template.details,
+    ...(template.details ?? {}),
     ...detailsOverride,
-  } as FacilityDetails;
-}
-
-/**
- * Собирает runtime SpotDetails из template + overrides
- */
-export function resolveSpotDetails({
-  poiTemplateId,
-  detailsOverride = {},
-  detailsBase = {},
-}: {
-  poiTemplateId: string;
-  detailsOverride?: Partial<SpotDetails>;
-  detailsBase?: Partial<SpotDetails>;
-}): SpotDetails {
-  const template = POI_TEMPLATES_DB[poiTemplateId];
-
-  if (!template) {
-    throw new Error(`Spot template not found: ${poiTemplateId}`);
-  }
-
-  detailsBase.isDiscovered = detailsBase.isDiscovered ?? true;
-  detailsBase.explorationThreshold = detailsBase.explorationThreshold ?? 0;
-
-  const details = {
-    poiTemplateId,
-    requiresOwner: false,
-    ...detailsBase,
-    ...template.details,
-    ...detailsOverride,
-  } as SpotDetails;
-
-  return details;
+    level: level ?? (detailsBase.level as number | undefined),
+  } as UniversalPoiDetails;
 }
 
 /* ======================================
@@ -168,88 +118,40 @@ export function resolveSpotDetails({
 
 interface CreatePoiFromTemplateParams {
   id?: string;
-  poiTemplateId: string;
+  poiType: string;
   parentId: string | null;
   rootCellId: string;
   level?: number;
-  detailsOverride?: Partial<EncounterDetails> | Record<string, any>;
+  detailsOverride?: Record<string, any>;
 }
 
 export function createPoiFromTemplate({
   id,
-  poiTemplateId,
+  poiType,
   parentId,
   rootCellId,
   level,
   detailsOverride,
-}: CreatePoiFromTemplateParams): PoiNode {
-  const template: PoiTemplate | undefined = POI_TEMPLATES_DB[poiTemplateId];
+}: CreatePoiFromTemplateParams): NonCellPoiNode {
+  const template: PoiTemplate | undefined = POI_TEMPLATES_DB[poiType];
   if (!template) {
-    throw new Error(`POI template not found: ${poiTemplateId}`);
+    throw new Error(`POI template not found: ${poiType}`);
   }
 
-  const finalId =
-    id ?? `${stripLastUnderscoreSegment(rootCellId)}_${poiTemplateId}_${makeInstanceId()}`;
+  const finalId = id ?? `${stripLastUnderscoreSegment(rootCellId)}_${poiType}_${makeInstanceId()}`;
 
-  const base = {
+  const details = resolveUniversalDetails({ poiType, level, detailsOverride });
+
+  return {
     id: finalId,
     parentId,
     rootCellId,
-    childrenIds: [] as string[],
+    nestedPoiIds: [],
+    localSpotIds: [],
+    isLocalSpot: template.isLocalSpot === true ? true : undefined,
+    type: poiType,
+    details,
   };
-
-  switch (template.type) {
-    case 'encounter': {
-      const details = resolveEncounterDetails({
-        poiTemplateId,
-        level,
-        detailsOverride: detailsOverride as Partial<EncounterDetails>,
-      });
-
-      return {
-        ...base,
-        type: 'encounter',
-        details,
-      } satisfies EncounterPoiNode;
-    }
-
-    case 'facility': {
-      const details = resolveFacilityDetails({
-        poiTemplateId,
-        detailsOverride: detailsOverride as Partial<FacilityDetails>,
-      });
-
-      return {
-        ...base,
-        type: 'facility',
-        details,
-      } satisfies FacilityPoiNode;
-    }
-
-    case 'spot': {
-      const details = resolveSpotDetails({
-        poiTemplateId,
-        detailsOverride: detailsOverride as Partial<SpotDetails>,
-      });
-
-      return {
-        ...base,
-        type: 'spot',
-        details,
-      } satisfies SpotPoiNode;
-    }
-
-    default: {
-      return {
-        ...base,
-        type: template.type as GenericPoiNode['type'],
-        details: {
-          ...template.details,
-          ...detailsOverride,
-        },
-      } satisfies GenericPoiNode;
-    }
-  }
 }
 
 /**
@@ -257,29 +159,30 @@ export function createPoiFromTemplate({
  */
 export function createPoiFromDescriptor(entry: InitialPoi): PoiNode {
   if (entry.type === 'cell') {
-    const details = resolveCellDetails(entry.details);
+    const details = resolveCellDetails(entry.details as InitialCellDetails);
 
     return {
       id: entry.id,
       parentId: entry.parentId,
       rootCellId: entry.rootCellId,
-      childrenIds: [],
+      nestedPoiIds: [],
+      localSpotIds: [],
       type: 'cell',
       details,
     } satisfies CellPoiNode;
   }
 
-  const poiTemplateId = entry.details.poiTemplateId;
-  if (!poiTemplateId) {
-    throw new Error(`Non-cell POI must contain details.poiTemplateId. POI id: ${entry.id}`);
+  const poiType = entry.type;
+  if (!poiType) {
+    throw new Error(`Non-cell POI must have a content key in type. POI id: ${entry.id}`);
   }
 
   return createPoiFromTemplate({
     id: entry.id,
-    poiTemplateId,
+    poiType,
     parentId: entry.parentId,
     rootCellId: entry.rootCellId,
-    level: 'level' in entry.details ? entry.details.level : undefined,
-    detailsOverride: entry.details,
+    level: 'level' in entry.details ? (entry.details as any).level : undefined,
+    detailsOverride: entry.details as any,
   });
 }

@@ -1,13 +1,22 @@
 import { DEFAULT_EXPLORATION_DURATION } from '@/constants';
 import type { StoreState } from '@/state/useGameState';
-import {
-  createPoiFromDescriptor,
-  createPoiFromTemplate,
-  resolveEncounterDetails,
-} from '@/systems/poi/poiFactory';
+import { createPoiFromDescriptor, createPoiFromTemplate } from '@/systems/poi/poiFactory';
 import { generatePoiSeedsForCell } from '@/systems/poi/poiSeedGenerator';
 import { poiStrategies } from '@/systems/poi/poiStrategies';
-import type { EffectsMap, InitialPoi, NonCellNode, PoiDetails, PoiNode } from '@/types/poi';
+import {
+  getLocalAreaRootPoiId,
+  getLocalNpcIds,
+  getLocalPoiIds,
+} from '@/systems/poi/poiTreeHelpers';
+import type {
+  CellPoiNode,
+  EffectsMap,
+  InitialPoi,
+  NonCellNode,
+  NonCellPoiNode,
+  PoiDetails,
+  PoiNode,
+} from '@/types/poi';
 
 import type { GameSlice } from '../types';
 
@@ -23,11 +32,12 @@ export interface PoiSlice {
     initializePois: (initial: InitialPoi[]) => void;
     createPoi: (options: {
       id?: string;
-      poiTemplateId: string;
+      poiType: string;
       parentId: string;
       level?: number;
       detailsOverride?: Partial<PoiDetails>;
     }) => void;
+    removePoiWithDependencies: (poiId: string) => void;
     removePoiSubtree: (poiId: string) => void;
     clearAllPois: () => void;
     processDayPass: () => EffectsMap;
@@ -36,14 +46,17 @@ export interface PoiSlice {
     modifyCellThreat: (cellId: string, delta: number) => void;
     modifyCellContamination: (cellId: string, delta: number) => void;
     modifyCellProsperity: (cellId: string, delta: number) => void;
-    modifyPoiProgress: (poiId: string, delta: number) => void;
-    modifyPoiLevel: (poiId: string, delta: number) => void;
+    modifyCellTechLevel: (cellId: string, delta: number) => void;
   };
 }
 
 // Selectors
 
 export const poiSelectors = {
+  selectSelectedPoi: (state: StoreState): PoiNode | null => {
+    const selectedPoiId = state.party.currentPartyPosition;
+    return state.poiSlice.pois[selectedPoiId] ?? null;
+  },
   selectPoiById:
     (poiId: string) =>
     (state: StoreState): PoiNode | null =>
@@ -80,7 +93,25 @@ export const poiSelectors = {
       const node = state.poiSlice.pois[poiId];
       if (!node) return [];
 
-      return node.childrenIds.map((id) => state.poiSlice.pois[id]).filter(Boolean);
+      return getAllChildPoiIds(node)
+        .map((id) => state.poiSlice.pois[id])
+        .filter(Boolean);
+    },
+  selectNestedChildrenOfPoi:
+    (poiId: string) =>
+    (state: StoreState): PoiNode[] => {
+      const node = state.poiSlice.pois[poiId];
+      if (!node) return [];
+
+      return node.nestedPoiIds.map((id) => state.poiSlice.pois[id]).filter(Boolean);
+    },
+  selectLocalSpotChildrenOfPoi:
+    (poiId: string) =>
+    (state: StoreState): PoiNode[] => {
+      const node = state.poiSlice.pois[poiId];
+      if (!node) return [];
+
+      return node.localSpotIds.map((id) => state.poiSlice.pois[id]).filter(Boolean);
     },
   selectDiscoveredChildrenOfPoi:
     (poiId: string) =>
@@ -89,25 +120,61 @@ export const poiSelectors = {
       if (!node) return [];
 
       // may be i should add isDiscovered=true to cell poi details too?
-      return node.childrenIds
+      return getAllChildPoiIds(node)
         .map((id) => state.poiSlice.pois[id] as NonCellNode)
         .filter((poi) => poi && 'isDiscovered' in poi.details && poi.details.isDiscovered);
     },
+  selectLocalAreaRootPoiId:
+    (poiId: string) =>
+    (state: StoreState): string =>
+      getLocalAreaRootPoiId(poiId, state),
+  selectLocalPoiIds:
+    (poiId: string) =>
+    (state: StoreState): string[] =>
+      getLocalPoiIds(poiId, state),
+  selectLocalNpcIds:
+    (poiId: string) =>
+    (state: StoreState): string[] =>
+      getLocalNpcIds(poiId, state),
 };
 
 // Draft changes
 
+const getAllChildPoiIds = (node: PoiNode): string[] => {
+  return [...node.nestedPoiIds, ...node.localSpotIds];
+};
+
+const shouldLinkAsLocalSpot = (node: PoiNode): boolean => {
+  return node.isLocalSpot === true;
+};
+
+const linkChildToParentDraft = (parent: PoiNode, child: PoiNode) => {
+  if (shouldLinkAsLocalSpot(child)) {
+    if (!parent.localSpotIds.includes(child.id)) {
+      parent.localSpotIds.push(child.id);
+    }
+    child.isLocalSpot = true;
+  } else if (!parent.nestedPoiIds.includes(child.id)) {
+    parent.nestedPoiIds.push(child.id);
+  }
+};
+
+const unlinkChildFromParentDraft = (parent: PoiNode, childId: string) => {
+  parent.nestedPoiIds = parent.nestedPoiIds.filter((id) => id !== childId);
+  parent.localSpotIds = parent.localSpotIds.filter((id) => id !== childId);
+};
+
 const createPoiDraft = ({
   state,
   id,
-  poiTemplateId,
+  poiType,
   parentId,
   level,
   detailsOverride,
 }: {
   state: StoreState;
   id?: string;
-  poiTemplateId: string;
+  poiType: string;
   parentId: string;
   level?: number;
   detailsOverride?: Partial<any>;
@@ -122,7 +189,7 @@ const createPoiDraft = ({
   // ВСЯ логика — в фабрике
   const node = createPoiFromTemplate({
     id,
-    poiTemplateId,
+    poiType,
     parentId,
     rootCellId,
     level,
@@ -130,10 +197,55 @@ const createPoiDraft = ({
   });
 
   state.poiSlice.pois[node.id] = node;
-  parent.childrenIds.push(node.id);
+  linkChildToParentDraft(parent, node);
 };
 
 const removePoiSubtreeDraft = (state: StoreState, poiId: string) => {
+  removePoiWithDependenciesDraft(state, poiId);
+};
+
+const collectPoiSubtreeIdsDraft = (state: StoreState, rootPoiId: string): string[] => {
+  const ids: string[] = [];
+  const stack = [rootPoiId];
+
+  while (stack.length > 0) {
+    const currentId = stack.pop()!;
+    const current = state.poiSlice.pois[currentId];
+    if (!current) continue;
+
+    ids.push(currentId);
+    stack.push(...getAllChildPoiIds(current));
+  }
+
+  return ids;
+};
+
+const clearPoiDependenciesDraft = (state: StoreState, poiId: string) => {
+  // Inventory for POI-scoped containers (e.g., generated trader loot)
+  delete state.inventory.containers[poiId];
+
+  // Occupancy cleanup for npcId <-> poiId links
+  const occupantNpcId = state.occupancySlice.poiOccupants[poiId];
+  if (occupantNpcId !== undefined) {
+    delete state.occupancySlice.npcLocations[occupantNpcId];
+  }
+  delete state.occupancySlice.poiOccupants[poiId];
+
+  // TODO: Guard/combat cleanup by poiId should be called here once dedicated slice exists.
+};
+
+const clearInteractionIfPoiRemovedDraft = (state: StoreState, removedPoiIds: Set<string>) => {
+  const current = state.interactionSlice.currentInteraction;
+  if (!current) return;
+
+  if (removedPoiIds.has(current.poiId)) {
+    state.interactionSlice.currentInteraction = null;
+    state.interactionSlice.isTrading = false;
+  }
+};
+
+// probably this should be done from the world slice
+const removePoiWithDependenciesDraft = (state: StoreState, poiId: string) => {
   const { pois } = state.poiSlice;
   const root = pois[poiId];
   if (!root) return;
@@ -142,39 +254,54 @@ const removePoiSubtreeDraft = (state: StoreState, poiId: string) => {
   if (root.parentId) {
     const parent = pois[root.parentId];
     if (parent) {
-      parent.childrenIds = parent.childrenIds.filter((id) => id !== poiId);
+      unlinkChildFromParentDraft(parent, poiId);
     }
   }
 
-  // удаляем всё поддерево
-  const stack = [poiId];
+  const subtreeIds = collectPoiSubtreeIdsDraft(state, poiId);
+  const subtreeSet = new Set(subtreeIds);
 
-  while (stack.length > 0) {
-    const currentId = stack.pop()!;
-    const current = pois[currentId];
-    if (!current) continue;
+  for (const id of subtreeIds) {
+    clearPoiDependenciesDraft(state, id);
+  }
 
-    stack.push(...current.childrenIds);
-    delete pois[currentId];
+  clearInteractionIfPoiRemovedDraft(state, subtreeSet);
+
+  for (const id of subtreeIds) {
+    delete pois[id];
   }
 };
 
 const modifyCellThreatDraft = (state: StoreState, cellId: string, delta: number) => {
   const cell = state.poiSlice.pois[cellId];
   if (!cell || cell.type !== 'cell') throw new Error('Invalid cell POI ID');
-  cell.details.threat = Math.max(0, cell.details.threat + delta);
+  const cellNode = cell as unknown as CellPoiNode;
+  const next = Math.max(0, cellNode.details.regionParameters.threat + delta);
+  cellNode.details.regionParameters.threat = next;
 };
 
 const modifyCellContaminationDraft = (state: StoreState, cellId: string, delta: number) => {
   const cell = state.poiSlice.pois[cellId];
   if (!cell || cell.type !== 'cell') throw new Error('Invalid cell POI ID');
-  cell.details.contamination = Math.max(0, cell.details.contamination + delta);
+  const cellNode = cell as unknown as CellPoiNode;
+  const next = Math.max(0, cellNode.details.regionParameters.contamination + delta);
+  cellNode.details.regionParameters.contamination = next;
 };
 
 const modifyCellProsperityDraft = (state: StoreState, cellId: string, delta: number) => {
   const cell = state.poiSlice.pois[cellId];
   if (!cell || cell.type !== 'cell') throw new Error('Invalid cell POI ID');
-  cell.details.prosperity = Math.max(0, cell.details.prosperity + delta);
+  const cellNode = cell as unknown as CellPoiNode;
+  const next = Math.max(0, cellNode.details.regionParameters.prosperity + delta);
+  cellNode.details.regionParameters.prosperity = next;
+};
+
+const modifyCellTechLevelDraft = (state: StoreState, cellId: string, delta: number) => {
+  const cell = state.poiSlice.pois[cellId];
+  if (!cell || cell.type !== 'cell') throw new Error('Invalid cell POI ID');
+  const cellNode = cell as unknown as CellPoiNode;
+  const next = Math.max(0, cellNode.details.regionParameters.techLevel + delta);
+  cellNode.details.regionParameters.techLevel = next;
 };
 
 const exploreCellDraft = (
@@ -187,61 +314,26 @@ const exploreCellDraft = (
   if (!cell || cell.type !== 'cell') {
     throw new Error('Invalid cell POI ID');
   }
+  const cellNode = cell as unknown as CellPoiNode;
 
-  cell.details.explorationLevel = Math.max(cell.details.explorationLevel ?? 0, explorationLevel);
+  cellNode.details.explorationLevel = Math.max(
+    cellNode.details.explorationLevel ?? 0,
+    explorationLevel,
+  );
 
-  const currentDaysLeft = cell.details.explorationDaysLeft ?? 0;
-  cell.details.explorationDaysLeft = Math.max(currentDaysLeft, explorationDaysLeft);
+  const currentDaysLeft = cellNode.details.explorationDaysLeft ?? 0;
+  cellNode.details.explorationDaysLeft = Math.max(currentDaysLeft, explorationDaysLeft);
 
   // возможно стоит сделать отдельную функцию для исследования POI в ячейке
-  for (const poiId of cell.childrenIds) {
+  for (const poiId of getAllChildPoiIds(cell)) {
     const poi = state.poiSlice.pois[poiId];
     if (!poi || poi.type === 'cell') continue;
+    const nonCellPoi = poi as unknown as NonCellPoiNode;
 
-    if (cell.details.explorationLevel >= poi.details.explorationThreshold) {
-      poi.details.isDiscovered = true;
+    if (cellNode.details.explorationLevel >= nonCellPoi.details.explorationThreshold) {
+      nonCellPoi.details.isDiscovered = true;
     }
   }
-};
-
-const modifyPoiProgressDraft = (state: StoreState, poiId: string, delta: number) => {
-  const poi = state.poiSlice.pois[poiId];
-  if (!poi || poi.type !== 'encounter') {
-    //in future support other types
-    throw new Error('Invalid poi type for progress modification');
-  }
-  if (!poi.details.progressMax) {
-    throw new Error('POI does not have progressMax defined');
-  }
-
-  poi.details.progress = (poi.details.progress ?? 0) + delta;
-
-  if (poi.details.progress < 0) {
-    poi.details.progress = 0;
-    modifyPoiLevelDraft(state, poiId, -1);
-  }
-  if (poi.details.progress > poi.details.progressMax) {
-    poi.details.progress = 0;
-    modifyPoiLevelDraft(state, poiId, 1);
-  }
-};
-
-const modifyPoiLevelDraft = (state: StoreState, poiId: string, delta: number) => {
-  const poi = state.poiSlice.pois[poiId];
-  if (!poi || poi.type !== 'encounter') {
-    //in future support other types
-    throw new Error('Invalid poi type for progress modification');
-  }
-  const poiDetails = poi.details;
-  const newLevel = (poiDetails.level ?? 0) + delta;
-  const newDetails = resolveEncounterDetails({
-    poiTemplateId: poiDetails.poiTemplateId,
-    level: newLevel,
-    detailsOverride: {},
-    detailsBase: poiDetails,
-  });
-
-  poi.details = newDetails;
 };
 
 const processPoiEnterDraft = (
@@ -251,41 +343,43 @@ const processPoiEnterDraft = (
   currentTime: number,
 ) => {
   const poi = state.poiSlice.pois[poiId];
-  const childrenCount = poi.childrenIds.length;
   if (!poi || poi.type !== 'cell') return;
+  const cellNode = poi as unknown as CellPoiNode;
+
+  const childrenCount = getAllChildPoiIds(poi).length;
   if (childrenCount >= MAX_POI_CHILDREN_SOFT_LIMIT) return;
   if (daysPassed <= 0) return;
 
   const totalToGenerate = Math.floor(Math.random() * (BASE_POI_ROLL_MAX + 1));
 
   const seeds = generatePoiSeedsForCell({
-    cellDetails: poi.details,
+    cellDetails: cellNode.details,
     count: totalToGenerate,
   });
 
   for (const seed of seeds.slice(0, totalToGenerate)) {
     createPoiDraft({
       state,
-      poiTemplateId: seed.poiTemplateId,
+      poiType: seed.poiType,
       parentId: poiId,
       level: seed.level,
     });
   }
 
-  poi.details.lastTimeVisited = currentTime;
-  poi.details.visitedTimes += 1;
+  cellNode.details.lastTimeVisited = currentTime;
+  cellNode.details.visitedTimes += 1;
 };
 
 // Expose draft helpers for external systems that operate inside a single `draft` call
 export const poiDraft = {
   createPoi: createPoiDraft,
+  removePoiWithDependencies: removePoiWithDependenciesDraft,
   removePoiSubtree: removePoiSubtreeDraft,
   modifyCellThreat: modifyCellThreatDraft,
   modifyCellContamination: modifyCellContaminationDraft,
   modifyCellProsperity: modifyCellProsperityDraft,
+  modifyCellTechLevel: modifyCellTechLevelDraft,
   exploreCell: exploreCellDraft,
-  modifyPoiProgress: modifyPoiProgressDraft,
-  modifyPoiLevel: modifyPoiLevelDraft,
   processPoiEnter: processPoiEnterDraft,
 };
 
@@ -307,18 +401,20 @@ export const createPoiSlice: GameSlice<PoiSlice> = (set, get) => ({
           if (!entry.parentId) continue;
 
           const parent = state.poiSlice.pois[entry.parentId];
+          const child = state.poiSlice.pois[entry.id];
           if (parent) {
-            parent.childrenIds.push(entry.id);
+            if (!child) continue;
+            linkChildToParentDraft(parent, child);
           }
         }
       }),
 
-    createPoi: ({ id, poiTemplateId, parentId, level, detailsOverride }) => {
+    createPoi: ({ id, poiType, parentId, level, detailsOverride }) => {
       set((state) => {
         createPoiDraft({
           state,
           id,
-          poiTemplateId,
+          poiType,
           parentId,
           level,
           detailsOverride,
@@ -326,9 +422,14 @@ export const createPoiSlice: GameSlice<PoiSlice> = (set, get) => ({
       });
     },
 
+    removePoiWithDependencies: (poiId) =>
+      set((state) => {
+        removePoiWithDependenciesDraft(state, poiId);
+      }),
+
     removePoiSubtree: (poiId) =>
       set((state) => {
-        removePoiSubtreeDraft(state, poiId);
+        removePoiWithDependenciesDraft(state, poiId);
       }),
 
     clearAllPois: () =>
@@ -360,15 +461,9 @@ export const createPoiSlice: GameSlice<PoiSlice> = (set, get) => ({
       });
     },
 
-    modifyPoiProgress: (poiId, delta) => {
+    modifyCellTechLevel: (cellId, delta) => {
       set((state) => {
-        modifyPoiProgressDraft(state, poiId, delta);
-      });
-    },
-
-    modifyPoiLevel: (poiId, delta) => {
-      set((state) => {
-        modifyPoiLevelDraft(state, poiId, delta);
+        modifyCellTechLevelDraft(state, cellId, delta);
       });
     },
 
@@ -389,20 +484,23 @@ export const createPoiSlice: GameSlice<PoiSlice> = (set, get) => ({
         if (!partyCell || partyCell.type !== 'cell') {
           throw new Error('Party location is invalid');
         }
+        const partyCellNode = partyCell as unknown as CellPoiNode;
 
         const { pois } = state.poiSlice;
 
         for (const poi of Object.values(pois)) {
-          const onDayPass = poiStrategies[poi.type]?.onDayPass;
+          const onDayPass = (
+            poiStrategies as Record<string, (typeof poiStrategies)[keyof typeof poiStrategies]>
+          )[poi.type]?.onDayPass;
           if (!onDayPass) continue;
 
           const effects = onDayPass(poi);
           if (effects) allEffects[poi.id] = effects;
         }
 
-        partyCell.details.explorationDaysLeft = Math.max(
+        partyCellNode.details.explorationDaysLeft = Math.max(
           DEFAULT_EXPLORATION_DURATION,
-          (partyCell.details.explorationDaysLeft ?? 0) + 1,
+          (partyCellNode.details.explorationDaysLeft ?? 0) + 1,
         );
       });
 

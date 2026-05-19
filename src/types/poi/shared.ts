@@ -4,12 +4,7 @@
  */
 import type { GeneralDetails } from './common';
 
-/**
- * POI которое имеет template и может быть сгенерировано из blueprint.
- */
-export interface TemplatedDetails extends GeneralDetails {
-  poiTemplateId: string;
-}
+export interface TemplatedDetails extends GeneralDetails {}
 
 /**
  * POI которое может иметь владельца (NPC) или принадлежать фракции.

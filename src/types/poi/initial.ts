@@ -2,17 +2,17 @@
  * Initial POI данные - для seed/инициализации игры.
  */
 import type { InitialCellPoiNode } from './cell';
-import type { InitialEncounterPoiNode } from './encounter';
-import type { InitialFacilityPoiNode } from './facility';
-import type { InitialGenericPoiNode } from './generic';
-import type { InitialSpotPoiNode } from './spot';
+import type { InitialBasePoiNode } from './common';
+import type { UniversalPoiDetails } from './nodes';
+
+export interface InitialNonCellPoiNode extends InitialBasePoiNode {
+  type: string;
+  parentId: string;
+  isLocalSpot?: boolean;
+  details: Partial<UniversalPoiDetails> & Record<string, any>;
+}
 
 /**
  * Союз всех initial POI типов.
  */
-export type InitialPoi =
-  | InitialCellPoiNode
-  | InitialEncounterPoiNode
-  | InitialFacilityPoiNode
-  | InitialSpotPoiNode
-  | InitialGenericPoiNode;
+export type InitialPoi = InitialCellPoiNode | InitialNonCellPoiNode;

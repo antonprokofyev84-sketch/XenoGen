@@ -4,6 +4,7 @@ import { useShallow } from 'zustand/react/shallow';
 
 import { factionsSelectors, poiSelectors, useGameState } from '@/state/useGameState';
 import { useMapInteractionStore } from '@/state/useMapInteractionStore';
+import type { CellPoiNode } from '@/types/poi';
 
 import { resolveCellIcon } from './resolveCellIcon';
 
@@ -20,7 +21,7 @@ export const GridCell = React.memo(function GridCell({ col, row, cellSize }: Gri
   const cellPoi = useGameState(
     useShallow((state) => {
       const poi = state.poiSlice.pois[cellPoiId];
-      return poi && poi.type === 'cell' ? poi : null;
+      return poi && poi.type === 'cell' ? (poi as unknown as CellPoiNode) : null;
     }),
   );
 

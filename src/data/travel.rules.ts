@@ -4,7 +4,7 @@ import type { ToD, Weather } from '@/types/world.types';
 
 export const BASE_CELL_TO_CELL = {
   staminaCost: 12,
-  timeCost: 60, // minutes
+  timeCost: 120, // minutes
 };
 
 export const CELL_TO_POI_ENTER = {
@@ -12,15 +12,19 @@ export const CELL_TO_POI_ENTER = {
   timeCost: 30, // minutes
 };
 
-export const SETTLEMENT_MOVE = {
+export const LOCAL_SPOT_MOVE = {
+  staminaCost: 0,
+  timeCost: 5, // minutes
+};
+
+export const INNER_SCENE_MOVE = {
   staminaCost: 1,
   timeCost: 15, // minutes
 };
 
-export const INNER_POI_MOVE = {
-  staminaCost: 0,
-  timeCost: 5, // minutes
-};
+// Transitional aliases for existing imports.
+export const SETTLEMENT_MOVE = INNER_SCENE_MOVE;
+export const INNER_POI_MOVE = LOCAL_SPOT_MOVE;
 
 export const DIAGONAL_MULTIPLIER = 1.4;
 export const FATIGUE_MULTIPLIER = 1.3;

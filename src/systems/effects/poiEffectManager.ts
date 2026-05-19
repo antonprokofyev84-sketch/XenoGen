@@ -31,12 +31,8 @@ function applyEffectToDraft(draft: StoreState, action: PoiAction, poiId: string)
   const currentCellId = currentPoi.rootCellId;
 
   switch (action.kind) {
-    case 'modifySelfProgress': {
-      poiDraft.modifyPoiProgress(draft, poiId, action.delta);
-      return;
-    }
     case 'removeSelf': {
-      poiDraft.removePoiSubtree(draft, poiId);
+      poiDraft.removePoiWithDependencies(draft, poiId);
       return;
     }
     case 'changeCurrentCellParam': {
@@ -50,6 +46,9 @@ function applyEffectToDraft(draft: StoreState, action: PoiAction, poiId: string)
           break;
         case 'prosperity':
           poiDraft.modifyCellProsperity(draft, currentCellId, action.delta);
+          break;
+        case 'techLevel':
+          poiDraft.modifyCellTechLevel(draft, currentCellId, action.delta);
           break;
         default:
           throw new Error(`Unknown cellParam: ${cellParam}`);

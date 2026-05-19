@@ -1,5 +1,5 @@
 import { POI_TEMPLATES_DB } from '@/data/poi.templates';
-import type { CellPoiNode, EncounterPoiNode, PoiNode, PoiTriggerRule, PoiType } from '@/types/poi';
+import type { CellPoiNode, NonCellPoiNode, PoiNode, PoiTriggerRule, PoiType } from '@/types/poi';
 
 // все стратегии вызываются внутри сеттера состояния, поэтому могут мутировать POI напрямую
 // стратегии мошут менять детали POI но не могут добавлять/удалять POI для этого есть эффекты
@@ -41,7 +41,7 @@ export const cellStrategy: PoiStrategy<CellPoiNode> = {
  * ===== Encounter strategy =====
  * Поведение энкаунтеров.
  */
-export const encounterStrategy: PoiStrategy<EncounterPoiNode> = {
+export const encounterStrategy: PoiStrategy<NonCellPoiNode> = {
   onDayPass(poi) {
     const effects: PoiTriggerRule[] = [];
 
@@ -62,17 +62,9 @@ export const encounterStrategy: PoiStrategy<EncounterPoiNode> = {
     }
 
     // === 3. OnDayPass triggers из шаблона ===
-    const template = POI_TEMPLATES_DB[poi.details.poiTemplateId];
+    const template = POI_TEMPLATES_DB[poi.type];
 
-    const poiLevel = poi.details.level;
-    const levelSettings = typeof poiLevel === 'number' ? template.levels?.[poiLevel] : undefined;
-
-    const levelOnDayPass = levelSettings?.triggers?.onDayPass;
-
-    const onDayPass =
-      levelOnDayPass !== undefined // можем отключить триггер через null
-        ? levelOnDayPass // может быть null или массив
-        : template.triggers?.onDayPass;
+    const onDayPass = template?.triggers?.onDayPass;
 
     if (onDayPass) {
       effects.push(...onDayPass);

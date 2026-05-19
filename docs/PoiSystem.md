@@ -1,8 +1,249 @@
-# POI System Design (v1)
+# POI System Design (v2)
 
 ## Purpose
 
-This document describes the final v1 POI model.
+This document describes the v2 POI model after the Universal POI Migration.
+
+POIs are template-driven runtime nodes attached to map cells. They control:
+
+- hierarchy inside a cell;
+- runtime creation from templates;
+- discovery through exploration;
+- revisit-based encounter spawning;
+- local interaction services;
+- narrative and image lookup context.
+
+Related documents:
+
+- [NpcSpatialSystem](./NpcSpatialSystem.md)
+- [NarrativeSystem](./NarrativeSystem.md)
+- [TradeSystem](./TradeSystem.md)
+- [RegionParameters](./RegionParameters.md)
+
+---
+
+## Core Model
+
+### Node types
+
+The runtime POI tree is built on two node types:
+
+- `CellPoiNode` — root map node, `type === "cell"`.
+- `NonCellPoiNode` — every other node; `type` is a **content key** string matching a `POI_TEMPLATES_DB` entry (e.g. `"scavenger_group"`, `"tavern"`).
+
+```ts
+type PoiNode = CellPoiNode | NonCellPoiNode;
+```
+
+Type guards: `isCell(poi)`, `isNonCell(poi)`.
+
+There are no runtime category strings (`encounter`, `facility`, `spot`, etc.). The content key in `type` drives template lookup, narrative, and image resolution.
+
+### Node hierarchy
+
+Every node shares these base fields:
+
+```ts
+interface BasePoiNode {
+  id: string;
+  parentId: string | null; // null only for cell roots
+  rootCellId: string;
+  isLocalSpot?: boolean; // mirror flag — source of truth is parent arrays
+  nestedPoiIds: string[]; // sub-locations navigated with INNER_SCENE_MOVE (15 min)
+  localSpotIds: string[]; // local spots navigated with LOCAL_SPOT_MOVE (5 min)
+}
+```
+
+Child arrays are mutually exclusive per child:
+
+- A node with `isLocalSpot === true` is linked into `parent.localSpotIds`.
+- All other non-cell nodes are linked into `parent.nestedPoiIds`.
+
+Example hierarchy:
+
+```text
+cell (id = "3-1")
+  nestedPoiIds: ["3-1_tavern_001", "3-1_scavenger_group_002"]
+  localSpotIds: []
+
+3-1_tavern_001  (type = "tavern")
+  nestedPoiIds: []
+  localSpotIds: ["3-1_tavern_bartender_spot_003", "3-1_tavern_free_table_004"]
+
+3-1_scavenger_group_002  (type = "scavenger_group")
+  nestedPoiIds: []
+  localSpotIds: []
+```
+
+---
+
+## Cell Node
+
+```ts
+interface CellDetails {
+  col: number;
+  row: number;
+  terrain: CellTerrain;
+  regionParameters: RegionParameters; // canonical — see RegionParameters.md
+  visitedTimes: number;
+  explorationLevel: number;
+  explorationDaysLeft: number; // 0=outdated, Infinity=permanent, N=days remaining
+}
+```
+
+---
+
+## Non-Cell Node
+
+All non-cell POIs share one universal detail bag:
+
+```ts
+interface UniversalPoiDetails {
+  isDiscovered: boolean;
+  explorationThreshold: number; // score needed to reveal; 0 = always visible
+  ownerId?: string;
+  faction?: string;
+  level?: number;
+  lifetimeDays?: number | null; // null = permanent; 0 triggers removeSelf
+  combatUnits?: CombatUnit[] | null;
+  store?: any | null;
+  requiresOwner?: boolean;
+  lastTimeVisited?: number | null;
+}
+```
+
+`isLocalSpot` nodes are auto-discovered (`isDiscovered: true`) on creation.
+
+---
+
+## Template Database
+
+Templates live in `POI_TEMPLATES_DB: Record<string, PoiTemplate>`. The DB key **is** the content key.
+
+```ts
+type PoiTemplate = {
+  isLocalSpot?: boolean; // true → node gets isLocalSpot=true and goes into parent.localSpotIds
+  details: Partial<UniversalPoiDetails> & Record<string, any>;
+  services?: InteractionService[];
+  triggers?: PoiTemplateTriggers;
+};
+```
+
+No `type` category field, no `levels`, no `poiTemplateId`.
+
+### Detail resolution at creation
+
+```text
+resolvedDetails =
+  defaults { isDiscovered: isLocalSpot ? true : false, explorationThreshold: 0 }
+  + detailsBase
+  + template.details
+  + detailsOverride
+  + { level }
+```
+
+---
+
+## Factory
+
+```ts
+createPoiFromTemplate({ poiType, parentId, rootCellId, id?, level?, detailsOverride? })
+  → NonCellPoiNode
+
+createPoiFromDescriptor(entry: InitialPoi)
+  → PoiNode   // used during game initialisation
+```
+
+All non-cell creation is a single code path — no category dispatch.
+
+---
+
+## Discovery
+
+When a cell is explored:
+
+- `explorationLevel` and `explorationDaysLeft` update on the cell;
+- all direct and indirect non-cell children whose `explorationThreshold ≤ explorationLevel` flip `isDiscovered = true`.
+
+---
+
+## Day-Pass Pipeline
+
+`processDayPass()` in the POI slice:
+
+1. Applies `encounterStrategy.onDayPass` to each non-cell POI.
+2. Decrements `lifetimeDays`; at 0 emits `removeSelf`.
+3. Collects `onDayPass` triggers from the template.
+4. Returns `EffectsMap` processed by `PoiEffectManager`.
+
+Supported trigger actions (see `effects.ts`):
+
+| Action kind              | Effect                                             |
+| ------------------------ | -------------------------------------------------- |
+| `changeCurrentCellParam` | Mutates `regionParameters[cellParam]` on root cell |
+| `removeSelf`             | Routes to `removePoiWithDependencies`              |
+
+---
+
+## Removal Pipeline
+
+All POI removal goes through `removePoiWithDependencies(poiId)`.
+
+Order:
+
+1. Collect all descendant ids (nested + local, recursively).
+2. For each id: clear inventory container, clear occupancy, clear active interaction.
+3. Unlink from parent `nestedPoiIds` / `localSpotIds`.
+4. Delete all nodes from `poiSlice.pois`.
+
+---
+
+## Interaction And Services
+
+`startInteraction` builds `CurrentInteraction`:
+
+```ts
+interface CurrentInteraction {
+  poiId: string;
+  poiType: string; // content key — formerly poiTemplateId
+  npcId?: string;
+  services: InteractionService[];
+  tension: number;
+}
+```
+
+Narrative and image resolvers receive `poiType` directly as the content key.
+
+---
+
+## Travel Semantics
+
+| Transition                         | Time cost |
+| ---------------------------------- | --------- |
+| cell → cell (adjacent, orthogonal) | 120 min   |
+| cell → cell (diagonal)             | ~170 min  |
+| cell → any non-cell                | 30 min    |
+| source or target is local spot     | 5 min     |
+| non-cell ↔ non-cell (other)       | 15 min    |
+
+See `src/data/travel.rules.ts` for exact constants.
+
+---
+
+## v2 Migration Summary
+
+| Invariant                                                    | Status                        |
+| ------------------------------------------------------------ | ----------------------------- |
+| Non-cell nodes are universal (`NonCellPoiNode`)              | ✅                            |
+| `type` is content key string                                 | ✅                            |
+| `poiTemplateId` removed                                      | ✅                            |
+| `childrenIds` replaced by `nestedPoiIds` / `localSpotIds`    | ✅                            |
+| Runtime category strings gone from active code               | ✅                            |
+| `levels` / `progress` / `progressMax` removed from templates | ✅                            |
+| `regionParameters` canonical on cell                         | ✅                            |
+| Removal goes through `removePoiWithDependencies`             | ✅                            |
+| Combat rewrite                                               | ❌ excluded                   |
+| Economy / balance from region params                         | ❌ excluded (structure ready) |
 
 POIs are template-driven runtime nodes attached to map cells. In v1 they control:
 

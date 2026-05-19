@@ -35,7 +35,7 @@ export type NarrativeOutcomeEntry = Partial<Record<NarrativeOutcomeKey, Narrativ
 export interface NarrativeContext {
   npcId?: string;
   poiId?: string;
-  poiTemplateId?: string;
+  poiType?: string;
   hasOwner?: boolean;
   tension: number;
 }
@@ -54,3 +54,5 @@ export type PoiTemplateNarrativeActions = Partial<
   Record<NarrativeActionKey, NarrativeOutcomeEntry>
 >;
 export type PoiTemplateNarrativesMap = Record<string, PoiTemplateNarrativeActions>;
+
+export type NpcNarrativesMap = Record<string, unknown>;

@@ -3,6 +3,7 @@
  * Корневой узел для всех POI в данной локации.
  */
 import type { BasePoiNode, CellTerrain, GeneralDetails, InitialBasePoiNode } from './common';
+import type { RegionParameters } from './regionParameters';
 
 export interface CellDetails extends GeneralDetails {
   // позиция в сетке (для UI и поиска соседей)
@@ -11,11 +12,8 @@ export interface CellDetails extends GeneralDetails {
 
   terrain: CellTerrain;
 
-  // 0..999 или 1000 для 10-го уровня (макс) уровень вычисляется как Math.floor(threat / 100)
-  // для contamination и prosperity аналогично
-  threat: number;
-  contamination: number;
-  prosperity: number;
+  // Canonical grouped region parameters.
+  regionParameters: RegionParameters;
 
   visitedTimes: number; // сколько раз игрок реально заходил в клетку
 

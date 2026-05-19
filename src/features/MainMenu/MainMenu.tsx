@@ -1,5 +1,3 @@
-import { useShallow } from 'zustand/react/shallow';
-
 import { Button } from '@/components/Button/Button';
 import { useGameState } from '@/state/useGameState.ts';
 

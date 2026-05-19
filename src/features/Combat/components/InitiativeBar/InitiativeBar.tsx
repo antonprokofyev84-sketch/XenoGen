@@ -1,5 +1,4 @@
 import { useAutoAnimate } from '@formkit/auto-animate/react';
-import { useShallow } from 'zustand/react/shallow';
 
 import { useCombatState } from '@/state/useCombatState';
 import type { InitiativeItem } from '@/systems/combat/combatInitiativeHelpers';

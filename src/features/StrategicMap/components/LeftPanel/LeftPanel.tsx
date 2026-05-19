@@ -3,6 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 import textData from '@/locales/en.json';
 import { poiSelectors, useGameState } from '@/state/useGameState';
 import { useMapInteractionStore } from '@/state/useMapInteractionStore';
+import type { CellPoiNode } from '@/types/poi';
 
 import { ExplorationStatus } from '../ExplorationStatus/ExplorationStatus';
 import { LeftPanelFooter } from '../LeftPanelFooter/LeftPanelFooter';
@@ -63,40 +64,43 @@ export const LeftPanel = () => {
     );
   }
 
+  const selectedCellNode = selectedCell as unknown as CellPoiNode;
+
   // Определяем, актуальны ли разведданные
   const isCellExplored =
-    selectedCell.details.explorationDaysLeft === null ||
-    (selectedCell.details.explorationDaysLeft && selectedCell.details.explorationDaysLeft > 0);
+    selectedCellNode.details.explorationDaysLeft === null ||
+    (selectedCellNode.details.explorationDaysLeft &&
+      selectedCellNode.details.explorationDaysLeft > 0);
 
   return (
     <aside className="leftPanel">
       <div className="panelHeader">
         <h3>
-          {textData.mapCellTypes[selectedCell.details.terrain]} ({selectedCell.details.col},{' '}
-          {selectedCell.details.row})
+          {textData.mapCellTypes[selectedCellNode.details.terrain]} ({selectedCellNode.details.col},{' '}
+          {selectedCellNode.details.row})
         </h3>
         <ExplorationStatus />
       </div>
       <div className="panelContent">
         {/* Показываем блок статов только если ячейка была посещена */}
-        {selectedCell.details.visitedTimes > 0 ? (
+        {selectedCellNode.details.visitedTimes > 0 ? (
           <div className="statsSection">
             <StatProgressBar
               label="Threat"
-              level={Math.floor(selectedCell.details.threat / 100)}
-              progress={selectedCell.details.threat % 100}
+              level={Math.floor(selectedCellNode.details.regionParameters.threat / 100)}
+              progress={selectedCellNode.details.regionParameters.threat % 100}
               isIntelOutdated={!isCellExplored}
             />
             <StatProgressBar
               label="Prosperity"
-              level={Math.floor(selectedCell.details.prosperity / 100)}
-              progress={selectedCell.details.prosperity % 100}
+              level={Math.floor(selectedCellNode.details.regionParameters.prosperity / 100)}
+              progress={selectedCellNode.details.regionParameters.prosperity % 100}
               isIntelOutdated={!isCellExplored}
             />
             <StatProgressBar
               label="Contamination"
-              level={Math.floor(selectedCell.details.contamination / 100)}
-              progress={selectedCell.details.contamination % 100}
+              level={Math.floor(selectedCellNode.details.regionParameters.contamination / 100)}
+              progress={selectedCellNode.details.regionParameters.contamination % 100}
               isIntelOutdated={!isCellExplored}
             />
           </div>
@@ -120,8 +124,8 @@ export const LeftPanel = () => {
                   }}
                   disabled={partyPosition !== selectedCellId}
                 >
-                  {textData.poi[poi.details.poiTemplateId as keyof typeof textData.poi]?.name ||
-                    poi.details.poiTemplateId ||
+                  {textData.poi[poi.type as keyof typeof textData.poi]?.name ||
+                    poi.type ||
                     'Unknown POI'}
                 </button>
               ))

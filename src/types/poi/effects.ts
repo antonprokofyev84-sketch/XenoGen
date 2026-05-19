@@ -3,7 +3,7 @@
  * Определяют что происходит с POI когда день проходит, когда пе ходит уровень, и т.д.
  */
 
-export type CellParam = 'threat' | 'prosperity' | 'contamination';
+export type CellParam = 'threat' | 'prosperity' | 'contamination' | 'techLevel';
 
 type ActionHelper = { chance?: number };
 
@@ -11,7 +11,6 @@ type ActionHelper = { chance?: number };
  * Действие которое может произойти.
  */
 type ActionCore =
-  | { kind: 'modifySelfProgress'; delta: number }
   | { kind: 'changeCurrentCellParam'; cellParam: CellParam; delta: number }
   | { kind: 'removeSelf' };
 

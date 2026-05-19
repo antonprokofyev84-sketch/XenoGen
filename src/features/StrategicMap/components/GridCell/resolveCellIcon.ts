@@ -1,6 +1,6 @@
-import type { NonCellNode, PoiType } from '@/types/poi';
+import type { NonCellNode } from '@/types/poi';
 
-const POI_ICON_PRIORITY: Partial<Record<PoiType, number>> = {
+const POI_ICON_PRIORITY: Record<string, number> = {
   boss: 100,
   quest: 90,
   settlement: 80,

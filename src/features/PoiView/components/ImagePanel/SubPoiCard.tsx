@@ -4,10 +4,10 @@ import { resolvePoiImage } from '@/systems/poi/poiImageResolver';
 import { isNonCell } from '@/types/poi';
 import { assetsVersion } from '@/utils/assetsVersion';
 
-const getPoiDisplayName = (poiTemplateId: string | null) => {
-  if (!poiTemplateId) return 'Unknown POI';
+const getPoiDisplayName = (poiType: string | null) => {
+  if (!poiType) return 'Unknown POI';
 
-  return textData.poi[poiTemplateId as keyof typeof textData.poi]?.name ?? poiTemplateId;
+  return textData.poi[poiType as keyof typeof textData.poi]?.name ?? poiType;
 };
 
 interface SubPoiCardProps {
@@ -22,9 +22,9 @@ export const SubPoiCard = ({ poiId, onSelect }: SubPoiCardProps) => {
     return null;
   }
 
-  const poiTemplateId = poi.details.poiTemplateId;
-  const label = getPoiDisplayName(poiTemplateId);
-  const imageUrl = assetsVersion(resolvePoiImage(poiTemplateId, poi.id));
+  const poiType = poi.type;
+  const label = getPoiDisplayName(poiType);
+  const imageUrl = assetsVersion(resolvePoiImage(poiType, poi.id));
 
   return (
     <button type="button" className="subPoiCard" onClick={() => onSelect(poiId)}>

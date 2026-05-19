@@ -1,26 +1,52 @@
 /**
  * POI Node типы: union всех типов и type-guards.
  */
+import type { CombatUnit } from '../combat.types';
 import type { CellPoiNode } from './cell';
-import type { EncounterPoiNode } from './encounter';
-import type { FacilityPoiNode } from './facility';
-import type { GenericPoiNode } from './generic';
-import type { SpotPoiNode } from './spot';
+import type { BasePoiNode, GeneralDetails } from './common';
+import type { RegionParameters } from './regionParameters';
+
+// ============================================================
+// UNIVERSAL NON-CELL NODE
+// ============================================================
+
+/**
+ * Unified details bag for all non-cell POI nodes.
+ * `type` on the node itself is the content key (template id).
+ */
+export interface UniversalPoiDetails extends GeneralDetails {
+  isDiscovered: boolean;
+  explorationThreshold: number;
+  ownerId?: string;
+  faction?: string;
+  level?: number;
+  lifetimeDays?: number | null;
+  combatUnits?: CombatUnit[] | null;
+  store?: any | null;
+  requiresOwner?: boolean;
+  /** Overrides specific region parameters for this POI, relative to the root cell. */
+  regionParametersOverride?: Partial<RegionParameters>;
+  /** Additive modifiers applied on top of the resolved override. Clamped to 0 minimum. */
+  regionParameterModifiers?: Partial<RegionParameters>;
+}
+
+/**
+ * Universal non-cell POI node. `type` is the template/content key (e.g. "scavenger_group").
+ */
+export interface NonCellPoiNode extends BasePoiNode {
+  type: string;
+  details: UniversalPoiDetails;
+}
 
 /**
  * Полный союз всех POI node типов.
  */
-export type PoiNode =
-  | CellPoiNode
-  | EncounterPoiNode
-  | FacilityPoiNode
-  | SpotPoiNode
-  | GenericPoiNode;
+export type PoiNode = CellPoiNode | NonCellPoiNode;
 
 /**
  * Всё кроме cell — для sub-POI операций.
  */
-export type NonCellNode = Exclude<PoiNode, CellPoiNode>;
+export type NonCellNode = NonCellPoiNode;
 
 /**
  * Union для details. Автоматически обновляется при добавлении новых типов в PoiNode.
@@ -35,29 +61,6 @@ export function isCell(poi: PoiNode): poi is CellPoiNode {
   return poi.type === 'cell';
 }
 
-export function isEncounter(poi: PoiNode): poi is EncounterPoiNode {
-  return poi.type === 'encounter';
-}
-
-export function isFacility(poi: PoiNode): poi is FacilityPoiNode {
-  return poi.type === 'facility';
-}
-
-export function isSpot(poi: PoiNode): poi is SpotPoiNode {
-  return poi.type === 'spot';
-}
-
-export function isGeneric(poi: PoiNode): poi is GenericPoiNode {
-  return (
-    poi.type === 'loot' ||
-    poi.type === 'dungeon' ||
-    poi.type === 'settlement' ||
-    poi.type === 'base' ||
-    poi.type === 'boss' ||
-    poi.type === 'quest'
-  );
-}
-
-export function isNonCell(poi: PoiNode): poi is NonCellNode {
+export function isNonCell(poi: PoiNode): poi is NonCellPoiNode {
   return poi.type !== 'cell';
 }

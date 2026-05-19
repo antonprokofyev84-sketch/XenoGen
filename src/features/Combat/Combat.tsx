@@ -6,14 +6,19 @@ import { useCombatState } from '@/state/useCombatState';
 import { poiSelectors, useGameState } from '@/state/useGameState';
 import { makeActivePartyCombatUnitsSnapshot } from '@/systems/combat/playerGroupGenerator';
 import type { CombatUnit } from '@/types/combat.types';
+import type { NonCellPoiNode } from '@/types/poi';
 
 import { CombatResultView } from './components/CombatResultsView/CombatResultsView';
 import { CombatView } from './components/CombatView/CombatView';
 
 export const Combat = () => {
   const selectedPoi = useGameState(useShallow(poiSelectors.selectSelectedPoi));
+  const selectedNonCellPoi =
+    selectedPoi && selectedPoi.type !== 'cell' ? (selectedPoi as unknown as NonCellPoiNode) : null;
   const enemyGroup =
-    selectedPoi && selectedPoi.type === 'encounter' ? selectedPoi.details.combatUnits || [] : [];
+    selectedNonCellPoi && selectedNonCellPoi.details.combatUnits
+      ? selectedNonCellPoi.details.combatUnits
+      : [];
   const initializeCombat = useCombatState((state) => state.actions.initializeCombat);
 
   const combatStatus = useCombatState((state) => state.combatResult.combatStatus);

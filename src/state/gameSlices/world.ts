@@ -150,25 +150,30 @@ export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
           scoutCellDraft(state, targetPoiId);
         }
 
-        if (poi.type === 'encounter') {
-          const encounterLevel = Math.max(1, poi.details.level ?? 1);
-          const hasCombatUnits =
-            Array.isArray(poi.details.combatUnits) && poi.details.combatUnits.length > 0;
+        if (poi.type !== 'cell') {
+          const nonCellPoi = poi as unknown as import('@/types/poi').NonCellPoiNode;
+          if (nonCellPoi.details.combatUnits !== undefined) {
+            const encounterLevel = Math.max(1, nonCellPoi.details.level ?? 1);
+            const hasCombatUnits =
+              Array.isArray(nonCellPoi.details.combatUnits) &&
+              nonCellPoi.details.combatUnits.length > 0;
 
-          if (!hasCombatUnits) {
-            poi.details.combatUnits = generateEncounterEnemyGroup({
-              level: encounterLevel,
-              faction: poi.details.faction,
-            });
-          }
+            if (!hasCombatUnits) {
+              nonCellPoi.details.combatUnits = generateEncounterEnemyGroup({
+                level: encounterLevel,
+                faction: nonCellPoi.details.faction,
+              });
+            }
 
-          const hasGeneratedUnits =
-            Array.isArray(poi.details.combatUnits) && poi.details.combatUnits.length > 0;
-          const combatUnits = hasGeneratedUnits ? poi.details.combatUnits : null;
-          const traderContainer = state.inventory.containers[targetPoiId];
+            const hasGeneratedUnits =
+              Array.isArray(nonCellPoi.details.combatUnits) &&
+              nonCellPoi.details.combatUnits.length > 0;
+            const combatUnits = hasGeneratedUnits ? nonCellPoi.details.combatUnits : null;
+            const traderContainer = state.inventory.containers[targetPoiId];
 
-          if (combatUnits && !traderContainer) {
-            state.inventory.containers[targetPoiId] = generatetUnitsInventory(combatUnits);
+            if (combatUnits && !traderContainer) {
+              state.inventory.containers[targetPoiId] = generatetUnitsInventory(combatUnits);
+            }
           }
         }
 

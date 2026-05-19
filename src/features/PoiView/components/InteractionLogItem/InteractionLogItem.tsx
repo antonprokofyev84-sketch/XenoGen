@@ -18,7 +18,7 @@ export const InteractionLogItem = ({ log }: InteractionLogItemProps) => {
   const narrativeBlocks = resolveNarrativeBlocks(log, {
     npcId: currentInteraction?.npcId,
     poiId: currentInteraction?.poiId,
-    poiTemplateId: currentInteraction?.poiTemplateId,
+    poiType: currentInteraction?.poiType,
     hasOwner: currentInteraction?.hasOwner,
     tension: log.tension,
   });

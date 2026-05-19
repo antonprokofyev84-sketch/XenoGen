@@ -137,7 +137,7 @@ export const partyDraft = {
 
 // Slice
 
-export const createPartySlice: GameSlice<PartySlice> = (set, get) => ({
+export const createPartySlice: GameSlice<PartySlice> = (set, _get) => ({
   activeIds: ['protagonist'], // Начинаем только с протагониста
   leaderId: 'protagonist',
   reserveIds: [],

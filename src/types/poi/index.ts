@@ -11,14 +11,7 @@ export type {
   InitialBasePoiNode,
 } from './common';
 
-// Shared detail fragments
-export type {
-  TemplatedDetails,
-  OwnableDetails,
-  DiscoverableDetails,
-  CommonNonCellDetails,
-  InitialOf,
-} from './shared';
+export type { RegionParameters } from './regionParameters';
 
 // Effects & triggers
 export type {
@@ -32,34 +25,18 @@ export type {
 // Cell
 export type { CellDetails, CellPoiNode, InitialCellDetails, InitialCellPoiNode } from './cell';
 
-// Encounter
-export type { EncounterDetails, EncounterPoiNode } from './encounter';
-export type { InitialEncounterDetails, InitialEncounterPoiNode } from './encounter';
-
-// Facility
-export type { FacilityDetails, FacilityPoiNode } from './facility';
-export type { InitialFacilityDetails, InitialFacilityPoiNode } from './facility';
-
-// Spot
-export type { SpotDetails, SpotPoiNode } from './spot';
-export type { InitialSpotDetails, InitialSpotPoiNode } from './spot';
-
-// Generic
-export type { GenericPoiNode } from './generic';
-export type { InitialGenericPoiNode } from './generic';
-
 // Nodes
-export type { PoiNode, NonCellNode, PoiDetails } from './nodes';
-export { isCell, isEncounter, isFacility, isSpot, isGeneric, isNonCell } from './nodes';
+export type {
+  PoiNode,
+  NonCellNode,
+  NonCellPoiNode,
+  UniversalPoiDetails,
+  PoiDetails,
+} from './nodes';
+export { isCell, isNonCell } from './nodes';
 
 // Templates
-export type {
-  TemplatePoiType,
-  PoiTemplateLevel,
-  PoiTemplate,
-  TemplateDetailsFor,
-  AnyPoiTemplate,
-} from './templates';
+export type { PoiTemplate } from './templates';
 
 // Initial
 export type { InitialPoi } from './initial';

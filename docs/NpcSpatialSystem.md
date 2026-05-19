@@ -1,4 +1,4 @@
-# NPC + Spatial System Design (v1)
+# NPC + Spatial System Design (v2)
 
 ## Purpose
 
@@ -87,102 +87,54 @@ Spatial is the only source of truth for current placement.
 
 ## POI Contracts For NPC Support
 
-The POI system stays in place, but POIs no longer store runtime owner or occupant state for scene population.
+POIs are static authored scene configuration using the universal v2 model.
+There are no runtime category types (`facility`, `spot`, etc.) — the template DB key is the content key.
 
-### Facility details
+NPC-related placement hints (`managerIds`, `allowedNpcIds`, `spotPurpose`) are **not** part of `UniversalPoiDetails` in the current codebase. They are planned extensions to be authored in template `details` when the NPC spatial distribution system is implemented.
 
-Facilities add a simple open-state field:
-
-```ts
-interface FacilityDetails {
-  poiTemplateId: string;
-  managerIds?: string[];
-}
-```
-
-`managerIds` are used only to answer a gameplay question:
-
-```text
-Is this facility open in the current slot?
-```
-
-In v1 a facility is considered open if at least one manager is currently scheduled to `work`.
-
-Example:
+### Planned template shape for facility
 
 ```ts
+// Content key: "tavern"
+// Template entry:
 tavern: {
-  type: 'facility',
   details: {
-    poiTemplateId: 'tavern',
-    managerIds: ['npc_bob', 'npc_ann'],
+    // future NPC hint fields:
+    // managerIds?: string[];
   },
   services: ['rest', 'leave'],
 }
 ```
 
-### Spot details
+A facility node is considered open if at least one `managerId` is currently scheduled to `work` in the current time slot.
 
-Spots add a small universal contract for NPC distribution:
-
-```ts
-interface SpotDetails {
-  poiTemplateId: string;
-  spotPurpose: 'work' | 'free_time';
-  allowedNpcIds: string[];
-}
-```
-
-#### `spotPurpose`
-
-Defines what kind of activity this spot serves.
-
-Current v1 purposes:
-
-- `work`
-- `free_time`
-
-#### `allowedNpcIds`
-
-Explicit list of NPCs that may occupy this spot.
-
-This list is hand-authored in v1.
-Scene membership is defined directly by POI data rather than by a separate home-cell mapping.
-
-Example:
+### Planned template shape for local spot
 
 ```ts
+// Content key: "tavern_bartender_spot"
+// Template entry:
 tavern_bartender_spot: {
-  type: 'spot',
+  isLocalSpot: true,   // node goes into parent.localSpotIds
   details: {
-    poiTemplateId: 'tavern_bartender_spot',
-    spotPurpose: 'work',
-    allowedNpcIds: ['npc_bob', 'npc_ann'],
+    // future NPC hint fields:
+    // spotPurpose?: 'work' | 'free_time';
+    // allowedNpcIds?: string[];
   },
   services: ['trade', 'leave'],
 }
 ```
 
-```ts
-tavern_free_table: {
-  type: 'spot',
-  details: {
-    poiTemplateId: 'tavern_free_table',
-    spotPurpose: 'free_time',
-    allowedNpcIds: ['npc_carl', 'npc_dave', 'npc_bob'],
-  },
-  services: ['leave', 'wait'],
-}
-```
+`isLocalSpot: true` means the node is created with `isLocalSpot = true` and linked into `parent.localSpotIds`,
+enabling the 5-minute LOCAL_SPOT_MOVE transition cost.
 
-### Resulting POI role in v1
+### Resulting POI role in v2
 
-After these changes, POIs are responsible for:
+POIs are responsible for:
 
 - authored scene structure;
 - local services;
-- narrative and image lookup context;
-- static placement rules for NPC distribution.
+- narrative and image lookup context (`poiType` content key);
+- `isLocalSpot` flag routing child nodes to `localSpotIds`.
 
 POIs are not responsible for:
 
@@ -197,7 +149,7 @@ POIs are not responsible for:
 NPCs are stored as actor definitions and social state.
 
 They do not need `homeCellId` in v1.
-For the current active cell, candidate NPCs are derived from authored POI data through `allowedNpcIds` and `managerIds`.
+For the current active cell, candidate NPCs are derived from template `details` fields (`managerIds`, `allowedNpcIds`) once those are authored.
 
 ### Base NPC shape
 

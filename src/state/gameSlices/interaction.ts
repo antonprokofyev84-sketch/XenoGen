@@ -26,7 +26,7 @@ const FORCE_EXIT_TENSION_THRESHOLD = 80;
 
 export interface CurrentInteraction {
   poiId: string; // poiId
-  poiTemplateId?: string;
+  poiType?: string;
   npcId?: string;
   factionId?: string;
   hasOwner?: boolean;
@@ -132,7 +132,7 @@ const startInteractionDraft = (
   const poi = state.poiSlice.pois[poiId] as NonCellNode | undefined;
 
   const npcId = poi?.details?.ownerId;
-  const poiTemplateId = poi?.details?.poiTemplateId;
+  const poiType = poi?.type !== 'cell' ? poi?.type : undefined;
   const hasOwner = Boolean(npcId);
 
   let effectiveRelation = providedRelation;
@@ -167,14 +167,14 @@ const startInteractionDraft = (
 
   const key = npcId ?? poiId;
   const memory = state.interactionSlice.interactionMemoryById[key];
-  const template = poiTemplateId ? POI_TEMPLATES_DB[poiTemplateId] : undefined;
+  const template = poiType ? POI_TEMPLATES_DB[poiType] : undefined;
   const baseServices = [...(template?.services ?? [])];
 
   // Restore subject-scoped state, but rebuild current location context and services.
   if (memory) {
     state.interactionSlice.currentInteraction = {
       poiId,
-      poiTemplateId,
+      poiType,
       npcId,
       factionId,
       hasOwner,
@@ -204,7 +204,7 @@ const startInteractionDraft = (
 
   state.interactionSlice.currentInteraction = {
     poiId,
-    poiTemplateId,
+    poiType,
     npcId,
     factionId,
     hasOwner,

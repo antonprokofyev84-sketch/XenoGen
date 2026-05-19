@@ -12,11 +12,11 @@ export const DialogPanel = () => {
 
   const poiId = currentInteraction?.poiId ?? null;
   const poi = useGameState((state) => (poiId ? poiSelectors.selectPoiById(poiId)(state) : null));
-  const poiTemplateId = poi && isNonCell(poi) ? poi.details.poiTemplateId : null;
+  const poiType = poi && isNonCell(poi) ? poi.type : null;
 
   return (
     <div className="dialogPanel">
-      <h3 className="dialogTitle">{poiTemplateId ?? 'Unknown'}</h3>
+      <h3 className="dialogTitle">{poiType ?? 'Unknown'}</h3>
 
       <div className="dialogContainer">
         <div className="scrollableContent">

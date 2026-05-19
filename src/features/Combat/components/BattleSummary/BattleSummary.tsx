@@ -1,6 +1,4 @@
-import { useShallow } from 'zustand/react/shallow';
-
-import { combatSelectors, useCombatState } from '@/state/useCombatState';
+import { useCombatState } from '@/state/useCombatState';
 import { useGameState } from '@/state/useGameState';
 import type { EffectLog } from '@/types/logs.types';
 
@@ -69,32 +67,9 @@ export const BattleSummary = () => {
   // --- Данные из Сторов ---
   const combatStatus = useCombatState((state) => state.combatResult.combatStatus);
   const characterUpdates = useCombatState((state) => state.characterUpdates);
-
-  const selectedCellId = useGameState((state) => state.map.selectedCellId);
-  const selectedPoiId = useGameState((state) => state.map.selectedPoiId);
-  const clearSelectedPoiId = useGameState((state) => state.map.actions.clearSelectedPoiId);
-  const removePoiFromCell = useGameState((state) => state.pois.actions.removePoiFromCell);
-  const changePoiDetails = useGameState((state) => state.pois.actions.changePoiDetails);
-  const addLoot = useGameState((state) => state.inventory.actions.addLoot);
-  const aliveEnemies = useCombatState(
-    useShallow((state) => combatSelectors.selectAliveEnemies(state)),
-  );
   const goToScreen = useGameState((state) => state.ui.goToScreen);
 
   const handleBackToMap = () => {
-    if (combatStatus === 'victory') {
-      clearSelectedPoiId();
-      removePoiFromCell(selectedCellId!, selectedPoiId!);
-      if (useCombatState.getState().loot) {
-        addLoot(useCombatState.getState().loot!);
-      }
-    }
-
-    if (combatStatus === 'defeat' || combatStatus === 'retreat') {
-      clearSelectedPoiId();
-      changePoiDetails(selectedCellId!, selectedPoiId!, { enemyGroup: aliveEnemies });
-    }
-
     goToScreen('strategicMap');
   };
 

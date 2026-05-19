@@ -116,7 +116,7 @@ function resolveTemplateNarrativeBlocks(
 /**
  * Public narrative resolver used by the interaction log.
  *
- * It resolves POI_NARRATIVES by `poiTemplateId`, action, outcome, narrative key,
+ * It resolves POI_NARRATIVES by `poiType`, action, outcome, narrative key,
  * optional mood, and random variant selection. Missing content falls back to a
  * minimal action/outcome string so the UI remains readable during authoring.
  */
@@ -131,11 +131,11 @@ export function resolveNarrativeBlocks(
   // success === undefined → treat as success (enter, passive events)
   const outcomeKey: 'success' | 'fail' = success === false ? 'fail' : 'success';
 
-  const poiTemplateId = context.poiTemplateId;
+  const poiType = context.poiType;
 
-  // The canonical resolver path is POI_NARRATIVES[poiTemplateId][action][outcome].
-  if (poiTemplateId) {
-    const templateActions = POI_NARRATIVES[poiTemplateId];
+  // The canonical resolver path is POI_NARRATIVES[poiType][action][outcome].
+  if (poiType) {
+    const templateActions = POI_NARRATIVES[poiType];
     if (templateActions) {
       const blocks = resolveTemplateNarrativeBlocks(
         templateActions,

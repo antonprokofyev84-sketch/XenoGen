@@ -4,7 +4,7 @@ import type { PoiTemplateNarrativesMap } from '@/types/narrative.types';
  * New canonical POI-template-based narratives.
  *
  * Structure:
- *   POI_NARRATIVES[poiTemplateId][action][outcome][narrativeKey] = NarrativeVariants
+ *   POI_NARRATIVES[poiType][action][outcome][narrativeKey] = NarrativeVariants
  */
 export const POI_NARRATIVES: PoiTemplateNarrativesMap = {
   scavenger_group: {
