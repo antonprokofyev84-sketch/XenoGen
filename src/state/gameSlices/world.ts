@@ -4,10 +4,8 @@ import {
   STAMINA_RECOVERY_PER_HOUR,
   START_DATE,
 } from '@/constants';
-import { generateEncounterEnemyGroup } from '@/systems/combat/enemyGroupGenerator';
 import { PoiEffectManager } from '@/systems/effects/poiEffectManager';
 import { TraitEffectManager } from '@/systems/effects/traitEffectManager';
-import { generatetUnitsInventory } from '@/systems/inventory/unitsInventoryGenerator';
 import { TravelManager } from '@/systems/travel/travelManager';
 import type { CombatResult } from '@/types/combat.types';
 import type { EffectLog } from '@/types/logs.types';
@@ -151,30 +149,7 @@ export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
         }
 
         if (poi.type !== 'cell') {
-          const nonCellPoi = poi as unknown as import('@/types/poi').NonCellPoiNode;
-          if (nonCellPoi.details.combatUnits !== undefined) {
-            const encounterLevel = Math.max(1, nonCellPoi.details.level ?? 1);
-            const hasCombatUnits =
-              Array.isArray(nonCellPoi.details.combatUnits) &&
-              nonCellPoi.details.combatUnits.length > 0;
-
-            if (!hasCombatUnits) {
-              nonCellPoi.details.combatUnits = generateEncounterEnemyGroup({
-                level: encounterLevel,
-                faction: nonCellPoi.details.faction,
-              });
-            }
-
-            const hasGeneratedUnits =
-              Array.isArray(nonCellPoi.details.combatUnits) &&
-              nonCellPoi.details.combatUnits.length > 0;
-            const combatUnits = hasGeneratedUnits ? nonCellPoi.details.combatUnits : null;
-            const traderContainer = state.inventory.containers[targetPoiId];
-
-            if (combatUnits && !traderContainer) {
-              state.inventory.containers[targetPoiId] = generatetUnitsInventory(combatUnits);
-            }
-          }
+          // TODO: тут должна быть генерация/инициализация охраны для non-cell POI.
         }
 
         partyDraft.moveToPoi(state, targetPoiId, travel.staminaCost);

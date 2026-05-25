@@ -10,7 +10,6 @@ export interface TemplatedDetails extends GeneralDetails {}
  * POI которое может иметь владельца (NPC) или принадлежать фракции.
  */
 export interface OwnableDetails extends GeneralDetails {
-  ownerId?: string;
   faction?: string;
 }
 

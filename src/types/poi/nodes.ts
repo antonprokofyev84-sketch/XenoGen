@@ -1,7 +1,6 @@
 /**
  * POI Node типы: union всех типов и type-guards.
  */
-import type { CombatUnit } from '../combat.types';
 import type { CellPoiNode } from './cell';
 import type { BasePoiNode, GeneralDetails } from './common';
 import type { RegionParameters } from './regionParameters';
@@ -17,15 +16,10 @@ import type { RegionParameters } from './regionParameters';
 export interface UniversalPoiDetails extends GeneralDetails {
   isDiscovered: boolean;
   explorationThreshold: number;
-  ownerId?: string;
   faction?: string;
-  level?: number;
   lifetimeDays?: number | null;
-  combatUnits?: CombatUnit[] | null;
-  store?: any | null;
-  requiresOwner?: boolean;
   /** Overrides specific region parameters for this POI, relative to the root cell. */
-  regionParametersOverride?: Partial<RegionParameters>;
+  regionParameters?: Partial<RegionParameters>;
   /** Additive modifiers applied on top of the resolved override. Clamped to 0 minimum. */
   regionParameterModifiers?: Partial<RegionParameters>;
 }

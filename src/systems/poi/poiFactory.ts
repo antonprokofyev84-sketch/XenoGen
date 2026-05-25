@@ -49,7 +49,7 @@ export function resolveCellDetails(details: InitialCellDetails): CellDetails {
  *
  * Resolution order (per Phase 3.4):
  *   1. Base: root cell's regionParameters
- *   2. Override: poi.details.regionParametersOverride (replaces specific keys)
+ *   2. Override: poi.details.regionParameters (replaces specific keys)
  *   3. Modifiers: poi.details.regionParameterModifiers (additive delta per key)
  *   4. Clamp: all values clamped to minimum 0
  */
@@ -57,7 +57,7 @@ export function resolveEffectiveRegionParameters(
   poiDetails: UniversalPoiDetails,
   cellRegionParameters: RegionParameters,
 ): RegionParameters {
-  const override = poiDetails.regionParametersOverride ?? {};
+  const override = poiDetails.regionParameters ?? {};
   const mods = poiDetails.regionParameterModifiers ?? {};
 
   const clamp = (v: number) => Math.max(0, v);
@@ -82,12 +82,10 @@ export function resolveEffectiveRegionParameters(
  */
 export function resolveUniversalDetails({
   poiType,
-  level,
   detailsOverride = {},
   detailsBase = {},
 }: {
   poiType: string;
-  level?: number;
   detailsOverride?: Record<string, any>;
   detailsBase?: Record<string, any>;
 }): UniversalPoiDetails {
@@ -108,7 +106,6 @@ export function resolveUniversalDetails({
     ...detailsBase,
     ...(template.details ?? {}),
     ...detailsOverride,
-    level: level ?? (detailsBase.level as number | undefined),
   } as UniversalPoiDetails;
 }
 
@@ -121,7 +118,6 @@ interface CreatePoiFromTemplateParams {
   poiType: string;
   parentId: string | null;
   rootCellId: string;
-  level?: number;
   detailsOverride?: Record<string, any>;
 }
 
@@ -130,7 +126,6 @@ export function createPoiFromTemplate({
   poiType,
   parentId,
   rootCellId,
-  level,
   detailsOverride,
 }: CreatePoiFromTemplateParams): NonCellPoiNode {
   const template: PoiTemplate | undefined = POI_TEMPLATES_DB[poiType];
@@ -140,7 +135,7 @@ export function createPoiFromTemplate({
 
   const finalId = id ?? `${stripLastUnderscoreSegment(rootCellId)}_${poiType}_${makeInstanceId()}`;
 
-  const details = resolveUniversalDetails({ poiType, level, detailsOverride });
+  const details = resolveUniversalDetails({ poiType, detailsOverride });
 
   return {
     id: finalId,
@@ -182,7 +177,6 @@ export function createPoiFromDescriptor(entry: InitialPoi): PoiNode {
     poiType,
     parentId: entry.parentId,
     rootCellId: entry.rootCellId,
-    level: 'level' in entry.details ? (entry.details as any).level : undefined,
     detailsOverride: entry.details as any,
   });
 }

@@ -128,7 +128,6 @@ export const INITIAL_POI: InitialPoi[] = [
     rootCellId: '3-0',
     details: {
       faction: 'scavengers',
-      level: 1,
       isDiscovered: true,
       lifetimeDays: Infinity,
     },
@@ -153,7 +152,6 @@ export const INITIAL_POI: InitialPoi[] = [
     isLocalSpot: true,
     details: {
       isDiscovered: true,
-      requiresOwner: false,
     },
   },
   {
@@ -164,7 +162,6 @@ export const INITIAL_POI: InitialPoi[] = [
     isLocalSpot: true,
     details: {
       isDiscovered: true,
-      requiresOwner: false,
     },
   },
   {
@@ -175,8 +172,6 @@ export const INITIAL_POI: InitialPoi[] = [
     isLocalSpot: true,
     details: {
       isDiscovered: true,
-      requiresOwner: true,
     },
   },
 ];
-

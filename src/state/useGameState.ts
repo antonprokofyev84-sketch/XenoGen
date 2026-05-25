@@ -10,6 +10,8 @@ import { createEquipmentSlice, equipmentSelectors } from './gameSlices/equipment
 import type { EquipmentSlice } from './gameSlices/equipment';
 import { createFactionsSlice, factionsSelectors } from './gameSlices/factions';
 import type { FactionsSlice } from './gameSlices/factions';
+import { createGuardSlice, guardSelectors } from './gameSlices/guard';
+import type { GuardSlice } from './gameSlices/guard';
 import { createInteractionSlice, interactionSelectors } from './gameSlices/interaction';
 import type { InteractionSlice } from './gameSlices/interaction';
 import { createInventorySlice, inventorySelectors } from './gameSlices/inventory';
@@ -43,6 +45,7 @@ export type StoreState = {
   inventory: InventorySlice;
   npcSlice: NpcSlice;
   occupancySlice: OccupancySlice;
+  guardSlice: GuardSlice;
   interactionSlice: InteractionSlice;
 };
 
@@ -59,6 +62,7 @@ export const useGameState = create<StoreState>()(
     factions: createFactionsSlice(set, get, api),
     npcSlice: createNpcSlice(set, get, api),
     occupancySlice: createOccupancySlice(set, get, api),
+    guardSlice: createGuardSlice(set, get, api),
     interactionSlice: createInteractionSlice(set, get, api),
     inventory: createInventorySlice(set, get, api),
   })),
@@ -74,6 +78,7 @@ export {
   factionsSelectors,
   npcSelectors,
   occupancySelectors,
+  guardSelectors,
   interactionSelectors,
   worldSelectors,
   inventorySelectors,

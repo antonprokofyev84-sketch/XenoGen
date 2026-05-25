@@ -3,7 +3,6 @@ import { useShallow } from 'zustand/react/shallow';
 import textData from '@/locales/en.json';
 import { poiSelectors, useGameState } from '@/state/useGameState';
 import { useMapInteractionStore } from '@/state/useMapInteractionStore';
-import type { CellPoiNode } from '@/types/poi';
 
 import { ExplorationStatus } from '../ExplorationStatus/ExplorationStatus';
 import { LeftPanelFooter } from '../LeftPanelFooter/LeftPanelFooter';
@@ -44,14 +43,14 @@ export const LeftPanel = () => {
   const partyPosition = useGameState((state) => state.party.currentPartyPosition);
   const focusedCellId = useMapInteractionStore((state) => state.focusedPoiId);
   const selectedCellId = focusedCellId ?? partyPosition;
-  const selectedCell = useGameState(poiSelectors.selectPoiById(selectedCellId));
+  const selectedCell = useGameState(poiSelectors.selectCellById(selectedCellId));
   const travelToPoi = useGameState((state) => state.world.actions.travelToPoi);
 
   const poisToDisplay = useGameState(
     useShallow(poiSelectors.selectDiscoveredChildrenOfPoi(selectedCellId)),
   );
 
-  if (!selectedCell || selectedCell.type !== 'cell') {
+  if (!selectedCell) {
     return (
       <aside className="leftPanel">
         <div className="panelHeader">
@@ -64,7 +63,7 @@ export const LeftPanel = () => {
     );
   }
 
-  const selectedCellNode = selectedCell as unknown as CellPoiNode;
+  const selectedCellNode = selectedCell;
 
   // Определяем, актуальны ли разведданные
   const isCellExplored =

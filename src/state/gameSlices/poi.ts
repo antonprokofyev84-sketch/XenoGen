@@ -8,12 +8,12 @@ import {
   getLocalNpcIds,
   getLocalPoiIds,
 } from '@/systems/poi/poiTreeHelpers';
+import { isCell, isNonCell } from '@/types/poi';
 import type {
   CellPoiNode,
   EffectsMap,
   InitialPoi,
   NonCellNode,
-  NonCellPoiNode,
   PoiDetails,
   PoiNode,
 } from '@/types/poi';
@@ -34,7 +34,6 @@ export interface PoiSlice {
       id?: string;
       poiType: string;
       parentId: string;
-      level?: number;
       detailsOverride?: Partial<PoiDetails>;
     }) => void;
     removePoiWithDependencies: (poiId: string) => void;
@@ -58,9 +57,23 @@ export const poiSelectors = {
     return state.poiSlice.pois[selectedPoiId] ?? null;
   },
   selectPoiById:
-    (poiId: string) =>
+    (poiId: string | null | undefined) =>
     (state: StoreState): PoiNode | null =>
-      state.poiSlice.pois[poiId] ?? null,
+      (poiId ? state.poiSlice.pois[poiId] : null) ?? null,
+
+  selectCellById:
+    (poiId: string | null | undefined) =>
+    (state: StoreState): CellPoiNode | null => {
+      const poi = (poiId ? state.poiSlice.pois[poiId] : null) ?? null;
+      return poi && isCell(poi) ? poi : null;
+    },
+
+  selectNonCellById:
+    (poiId: string | null | undefined) =>
+    (state: StoreState): NonCellNode | null => {
+      const poi = (poiId ? state.poiSlice.pois[poiId] : null) ?? null;
+      return poi && isNonCell(poi) ? poi : null;
+    },
 
   selectParentPoi:
     (poiId: string) =>
@@ -119,10 +132,9 @@ export const poiSelectors = {
       const node = state.poiSlice.pois[poiId];
       if (!node) return [];
 
-      // may be i should add isDiscovered=true to cell poi details too?
       return getAllChildPoiIds(node)
-        .map((id) => state.poiSlice.pois[id] as NonCellNode)
-        .filter((poi) => poi && 'isDiscovered' in poi.details && poi.details.isDiscovered);
+        .map((id) => state.poiSlice.pois[id])
+        .filter((poi): poi is NonCellNode => !!poi && isNonCell(poi) && poi.details.isDiscovered);
     },
   selectLocalAreaRootPoiId:
     (poiId: string) =>
@@ -142,6 +154,16 @@ export const poiSelectors = {
 
 const getAllChildPoiIds = (node: PoiNode): string[] => {
   return [...node.nestedPoiIds, ...node.localSpotIds];
+};
+
+const requireCell = (
+  poi: PoiNode | null | undefined,
+  errorMessage = 'Invalid cell POI ID',
+): CellPoiNode => {
+  if (!poi || !isCell(poi)) {
+    throw new Error(errorMessage);
+  }
+  return poi;
 };
 
 const shouldLinkAsLocalSpot = (node: PoiNode): boolean => {
@@ -169,14 +191,12 @@ const createPoiDraft = ({
   id,
   poiType,
   parentId,
-  level,
   detailsOverride,
 }: {
   state: StoreState;
   id?: string;
   poiType: string;
   parentId: string;
-  level?: number;
   detailsOverride?: Partial<any>;
 }) => {
   const parent = state.poiSlice.pois[parentId];
@@ -192,7 +212,6 @@ const createPoiDraft = ({
     poiType,
     parentId,
     rootCellId,
-    level,
     detailsOverride,
   });
 
@@ -220,6 +239,8 @@ const collectPoiSubtreeIdsDraft = (state: StoreState, rootPoiId: string): string
   return ids;
 };
 
+// this should be potentially called from world slice
+// i dont like idea to modify multiple slices from the slice differet then world
 const clearPoiDependenciesDraft = (state: StoreState, poiId: string) => {
   // Inventory for POI-scoped containers (e.g., generated trader loot)
   delete state.inventory.containers[poiId];
@@ -231,7 +252,8 @@ const clearPoiDependenciesDraft = (state: StoreState, poiId: string) => {
   }
   delete state.occupancySlice.poiOccupants[poiId];
 
-  // TODO: Guard/combat cleanup by poiId should be called here once dedicated slice exists.
+  // Guard/combat cleanup by POI id.
+  delete state.guardSlice.guardsByPoiId[poiId];
 };
 
 const clearInteractionIfPoiRemovedDraft = (state: StoreState, removedPoiIds: Set<string>) => {
@@ -273,33 +295,25 @@ const removePoiWithDependenciesDraft = (state: StoreState, poiId: string) => {
 };
 
 const modifyCellThreatDraft = (state: StoreState, cellId: string, delta: number) => {
-  const cell = state.poiSlice.pois[cellId];
-  if (!cell || cell.type !== 'cell') throw new Error('Invalid cell POI ID');
-  const cellNode = cell as unknown as CellPoiNode;
+  const cellNode = requireCell(state.poiSlice.pois[cellId]);
   const next = Math.max(0, cellNode.details.regionParameters.threat + delta);
   cellNode.details.regionParameters.threat = next;
 };
 
 const modifyCellContaminationDraft = (state: StoreState, cellId: string, delta: number) => {
-  const cell = state.poiSlice.pois[cellId];
-  if (!cell || cell.type !== 'cell') throw new Error('Invalid cell POI ID');
-  const cellNode = cell as unknown as CellPoiNode;
+  const cellNode = requireCell(state.poiSlice.pois[cellId]);
   const next = Math.max(0, cellNode.details.regionParameters.contamination + delta);
   cellNode.details.regionParameters.contamination = next;
 };
 
 const modifyCellProsperityDraft = (state: StoreState, cellId: string, delta: number) => {
-  const cell = state.poiSlice.pois[cellId];
-  if (!cell || cell.type !== 'cell') throw new Error('Invalid cell POI ID');
-  const cellNode = cell as unknown as CellPoiNode;
+  const cellNode = requireCell(state.poiSlice.pois[cellId]);
   const next = Math.max(0, cellNode.details.regionParameters.prosperity + delta);
   cellNode.details.regionParameters.prosperity = next;
 };
 
 const modifyCellTechLevelDraft = (state: StoreState, cellId: string, delta: number) => {
-  const cell = state.poiSlice.pois[cellId];
-  if (!cell || cell.type !== 'cell') throw new Error('Invalid cell POI ID');
-  const cellNode = cell as unknown as CellPoiNode;
+  const cellNode = requireCell(state.poiSlice.pois[cellId]);
   const next = Math.max(0, cellNode.details.regionParameters.techLevel + delta);
   cellNode.details.regionParameters.techLevel = next;
 };
@@ -310,11 +324,7 @@ const exploreCellDraft = (
   explorationLevel: number,
   explorationDaysLeft: number,
 ) => {
-  const cell = state.poiSlice.pois[cellId];
-  if (!cell || cell.type !== 'cell') {
-    throw new Error('Invalid cell POI ID');
-  }
-  const cellNode = cell as unknown as CellPoiNode;
+  const cellNode = requireCell(state.poiSlice.pois[cellId]);
 
   cellNode.details.explorationLevel = Math.max(
     cellNode.details.explorationLevel ?? 0,
@@ -325,10 +335,10 @@ const exploreCellDraft = (
   cellNode.details.explorationDaysLeft = Math.max(currentDaysLeft, explorationDaysLeft);
 
   // возможно стоит сделать отдельную функцию для исследования POI в ячейке
-  for (const poiId of getAllChildPoiIds(cell)) {
+  for (const poiId of getAllChildPoiIds(cellNode)) {
     const poi = state.poiSlice.pois[poiId];
-    if (!poi || poi.type === 'cell') continue;
-    const nonCellPoi = poi as unknown as NonCellPoiNode;
+    if (!poi || !isNonCell(poi)) continue;
+    const nonCellPoi = poi;
 
     if (cellNode.details.explorationLevel >= nonCellPoi.details.explorationThreshold) {
       nonCellPoi.details.isDiscovered = true;
@@ -343,8 +353,8 @@ const processPoiEnterDraft = (
   currentTime: number,
 ) => {
   const poi = state.poiSlice.pois[poiId];
-  if (!poi || poi.type !== 'cell') return;
-  const cellNode = poi as unknown as CellPoiNode;
+  if (!poi || !isCell(poi)) return;
+  const cellNode = poi;
 
   const childrenCount = getAllChildPoiIds(poi).length;
   if (childrenCount >= MAX_POI_CHILDREN_SOFT_LIMIT) return;
@@ -352,17 +362,13 @@ const processPoiEnterDraft = (
 
   const totalToGenerate = Math.floor(Math.random() * (BASE_POI_ROLL_MAX + 1));
 
-  const seeds = generatePoiSeedsForCell({
-    cellDetails: cellNode.details,
-    count: totalToGenerate,
-  });
+  const seeds = generatePoiSeedsForCell({ count: totalToGenerate });
 
   for (const seed of seeds.slice(0, totalToGenerate)) {
     createPoiDraft({
       state,
       poiType: seed.poiType,
       parentId: poiId,
-      level: seed.level,
     });
   }
 
@@ -409,14 +415,13 @@ export const createPoiSlice: GameSlice<PoiSlice> = (set, get) => ({
         }
       }),
 
-    createPoi: ({ id, poiType, parentId, level, detailsOverride }) => {
+    createPoi: ({ id, poiType, parentId, detailsOverride }) => {
       set((state) => {
         createPoiDraft({
           state,
           id,
           poiType,
           parentId,
-          level,
           detailsOverride,
         });
       });
@@ -481,10 +486,7 @@ export const createPoiSlice: GameSlice<PoiSlice> = (set, get) => ({
         const partyPoiId = state.party.currentPartyPosition;
         const partyCellId = state.poiSlice.pois[partyPoiId]?.rootCellId;
         const partyCell = state.poiSlice.pois[partyCellId];
-        if (!partyCell || partyCell.type !== 'cell') {
-          throw new Error('Party location is invalid');
-        }
-        const partyCellNode = partyCell as unknown as CellPoiNode;
+        const partyCellNode = requireCell(partyCell, 'Party location is invalid');
 
         const { pois } = state.poiSlice;
 

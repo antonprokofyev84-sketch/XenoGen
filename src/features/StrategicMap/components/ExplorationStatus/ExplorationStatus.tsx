@@ -1,18 +1,17 @@
 import textData from '@/locales/en.json';
 import { poiSelectors, useGameState } from '@/state/useGameState';
 import { useMapInteractionStore } from '@/state/useMapInteractionStore';
-import type { CellPoiNode } from '@/types/poi';
 
 import './ExplorationStatus.scss';
 
 export const ExplorationStatus = () => {
   const selectedCellId = useMapInteractionStore((state) => state.focusedPoiId);
-  const selectedCell = useGameState(poiSelectors.selectPoiById(selectedCellId!));
-  if (selectedCell?.type !== 'cell') {
+  const selectedCell = useGameState(poiSelectors.selectCellById(selectedCellId));
+  if (!selectedCell) {
     return null;
   }
 
-  const cellData = (selectedCell as unknown as CellPoiNode).details;
+  const cellData = selectedCell.details;
 
   const getStatus = () => {
     if (cellData.visitedTimes === 0) {

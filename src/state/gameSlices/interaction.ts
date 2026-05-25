@@ -131,7 +131,7 @@ const startInteractionDraft = (
   const { poiId, effectiveRelation: providedRelation, initialTension: providedTension } = params;
   const poi = state.poiSlice.pois[poiId] as NonCellNode | undefined;
 
-  const npcId = poi?.details?.ownerId;
+  const npcId = state.occupancySlice.poiOccupants[poiId];
   const poiType = poi?.type !== 'cell' ? poi?.type : undefined;
   const hasOwner = Boolean(npcId);
 

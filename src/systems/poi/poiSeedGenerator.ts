@@ -1,21 +1,12 @@
-import type { CellDetails } from '@/types/poi';
-
-type GeneratedPoiSeed = { poiType: string; level?: number };
-type GenerationContext = { cellDetails: CellDetails; count: number };
+type GeneratedPoiSeed = { poiType: string };
+type GenerationContext = { count: number };
 
 export function generatePoiSeedsForCell(ctx: GenerationContext): GeneratedPoiSeed[] {
-  const { cellDetails, count } = ctx;
-
-  const threatValue = cellDetails.regionParameters.threat;
-  const threatLevel = Math.floor(threatValue / 100);
+  const { count } = ctx;
 
   const seeds: GeneratedPoiSeed[] = [];
   for (let index = 0; index < count; index++) {
-    // диапазон: threatLevel-1 .. threatLevel+1
-    const randomOffset = Math.floor(Math.random() * 3) - 1;
-    const poiLevel = Math.max(0, threatLevel + randomOffset);
-
-    seeds.push({ poiType: 'scavenger_patrol', level: poiLevel });
+    seeds.push({ poiType: 'scavenger_patrol' });
   }
 
   return seeds;

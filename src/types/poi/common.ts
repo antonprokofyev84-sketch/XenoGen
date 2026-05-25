@@ -4,17 +4,7 @@
 
 export type CellTerrain = 'forest' | 'mountain' | 'plain' | 'desert' | 'water' | 'ruins';
 
-export type PoiType =
-  | 'cell'
-  | 'encounter'
-  | 'facility'
-  | 'spot'
-  | 'loot'
-  | 'dungeon'
-  | 'settlement'
-  | 'base'
-  | 'boss'
-  | 'quest';
+export type PoiType = 'cell' | string;
 
 /**
  * Базовые поля всех POI details (независимо от типа).
