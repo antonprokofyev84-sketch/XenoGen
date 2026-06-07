@@ -1,5 +1,5 @@
 import { interactionSelectors, poiSelectors, useGameState } from '@/state/useGameState';
-import { isNonCell } from '@/types/poi/nodes';
+import { isNonCell } from '@/types/poi.types';
 
 import { DialogOptions } from '../DialogOptions/DialogOptions';
 import { InteractionLogItem } from '../InteractionLogItem/InteractionLogItem';
@@ -36,3 +36,4 @@ export const DialogPanel = () => {
     </div>
   );
 };
+

@@ -7,9 +7,9 @@ import type {
   NonCellPoiNode,
   PoiNode,
   PoiTemplate,
+  RegionParameters,
   UniversalPoiDetails,
-} from '@/types/poi';
-import type { RegionParameters } from '@/types/poi/regionParameters';
+} from '@/types/poi.types';
 import { makeInstanceId, stripLastUnderscoreSegment } from '@/utils/utils';
 
 /* ======================================
@@ -180,3 +180,4 @@ export function createPoiFromDescriptor(entry: InitialPoi): PoiNode {
     detailsOverride: entry.details as any,
   });
 }
+

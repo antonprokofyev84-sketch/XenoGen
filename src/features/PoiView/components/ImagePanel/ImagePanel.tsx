@@ -3,7 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 import textData from '@/locales/en.json';
 import { interactionSelectors, poiSelectors, useGameState } from '@/state/useGameState';
 import { resolvePoiImage } from '@/systems/poi/poiImageResolver';
-import { isNonCell } from '@/types/poi';
+import { isNonCell } from '@/types/poi.types';
 import { assetsVersion } from '@/utils/assetsVersion';
 
 import { SubPoiCard } from './SubPoiCard';
@@ -66,3 +66,4 @@ export const ImagePanel = () => {
     </div>
   );
 };
+

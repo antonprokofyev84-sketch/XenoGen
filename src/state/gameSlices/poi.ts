@@ -8,7 +8,7 @@ import {
   getLocalNpcIds,
   getLocalPoiIds,
 } from '@/systems/poi/poiTreeHelpers';
-import { isCell, isNonCell } from '@/types/poi';
+import { isCell, isNonCell } from '@/types/poi.types';
 import type {
   CellPoiNode,
   EffectsMap,
@@ -16,7 +16,7 @@ import type {
   NonCellNode,
   PoiDetails,
   PoiNode,
-} from '@/types/poi';
+} from '@/types/poi.types';
 
 import type { GameSlice } from '../types';
 
@@ -510,3 +510,4 @@ export const createPoiSlice: GameSlice<PoiSlice> = (set, get) => ({
     },
   },
 });
+

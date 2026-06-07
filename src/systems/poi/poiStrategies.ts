@@ -1,5 +1,5 @@
 import { POI_TEMPLATES_DB } from '@/data/poi.templates';
-import type { CellPoiNode, NonCellPoiNode, PoiNode, PoiTriggerRule, PoiType } from '@/types/poi';
+import type { CellPoiNode, NonCellPoiNode, PoiNode, PoiTriggerRule, PoiType } from '@/types/poi.types';
 
 // все стратегии вызываются внутри сеттера состояния, поэтому могут мутировать POI напрямую
 // стратегии мошут менять детали POI но не могут добавлять/удалять POI для этого есть эффекты
@@ -94,3 +94,4 @@ export const poiStrategies: Partial<Record<PoiType, PoiStrategy<PoiNode>>> = {
   cell: cellStrategy,
   encounter: encounterStrategy,
 };
+

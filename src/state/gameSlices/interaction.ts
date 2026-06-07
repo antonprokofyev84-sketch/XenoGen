@@ -17,7 +17,7 @@ import type {
   InteractionServiceState,
   ServiceOutcome,
 } from '@/types/interaction.types';
-import type { NonCellNode } from '@/types/poi';
+import type { NonCellNode } from '@/types/poi.types';
 
 import type { GameSlice } from '../types';
 import type { StoreState } from '../useGameState';
@@ -523,3 +523,4 @@ export const interactionSelectors = {
   selectEffectiveRelation: (state: StoreState) =>
     state.interactionSlice.currentInteraction?.effectiveRelation ?? null,
 };
+

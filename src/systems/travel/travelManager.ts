@@ -6,7 +6,7 @@ import {
   LOCAL_SPOT_MOVE,
 } from '@/data/travel.rules';
 import type { StoreState } from '@/state/useGameState';
-import type { PoiNode } from '@/types/poi';
+import type { PoiNode } from '@/types/poi.types';
 
 type Adjacency = {
   isAdjacent: boolean;
@@ -139,3 +139,4 @@ export const TravelManager = {
 //     return { passable: true as const, stamina, minutes };
 //   },
 // };
+

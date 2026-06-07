@@ -1,7 +1,7 @@
 // import { GRID_COLS, GRID_ROWS } from '@/constants';
 import { poiDraft } from '@/state/gameSlices/poi';
 import type { StoreState } from '@/state/useGameState';
-import type { EffectsMap, PoiAction } from '@/types/poi';
+import type { EffectsMap, PoiAction } from '@/types/poi.types';
 
 type EffectContext = { state: StoreState };
 
@@ -59,3 +59,4 @@ function applyEffectToDraft(draft: StoreState, action: PoiAction, poiId: string)
       throw new Error(`Unknown PoiAction kind: ${(action as any).kind}`);
   }
 }
+

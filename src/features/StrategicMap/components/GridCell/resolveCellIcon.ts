@@ -1,4 +1,4 @@
-import type { NonCellNode } from '@/types/poi';
+import type { NonCellNode } from '@/types/poi.types';
 
 const POI_ICON_PRIORITY: Record<string, number> = {
   boss: 100,
@@ -24,3 +24,4 @@ export function resolveCellIcon(pois: NonCellNode[]) {
 
   return best;
 }
+

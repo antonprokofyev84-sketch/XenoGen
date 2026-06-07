@@ -1,4 +1,4 @@
-import type { PoiTemplate } from '@/types/poi';
+import type { PoiTemplate } from '@/types/poi.types';
 
 export const POI_TEMPLATES_DB: Record<string, PoiTemplate> = {
   scavenger_group: {
@@ -114,3 +114,4 @@ export const POI_TEMPLATES_DB: Record<string, PoiTemplate> = {
     },
   },
 };
+

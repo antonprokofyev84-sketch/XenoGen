@@ -1,5 +1,5 @@
 import type { StoreState } from '@/state/useGameState';
-import type { BasePoiNode } from '@/types/poi';
+import type { BasePoiNode } from '@/types/poi.types';
 
 export function getNestedPoiIds(poiId: string, state: StoreState): string[] {
   const poi = state.poiSlice.pois[poiId];
@@ -54,3 +54,4 @@ export function getLocalNpcIds(poiId: string, state: StoreState): string[] {
 
   return npcIds;
 }
+

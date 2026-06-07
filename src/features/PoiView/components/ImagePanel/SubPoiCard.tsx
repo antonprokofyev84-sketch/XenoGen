@@ -1,7 +1,7 @@
 import textData from '@/locales/en.json';
 import { poiSelectors, useGameState } from '@/state/useGameState';
 import { resolvePoiImage } from '@/systems/poi/poiImageResolver';
-import { isNonCell } from '@/types/poi';
+import { isNonCell } from '@/types/poi.types';
 import { assetsVersion } from '@/utils/assetsVersion';
 
 const getPoiDisplayName = (poiType: string | null) => {
@@ -44,3 +44,4 @@ export const SubPoiCard = ({ poiId, onSelect }: SubPoiCardProps) => {
     </button>
   );
 };
+
