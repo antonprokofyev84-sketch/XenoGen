@@ -51,6 +51,11 @@ export const POI_TEMPLATES_DB: Record<string, PoiTemplate> = {
 
   tavern_bartender_spot: {
     isLocalSpot: true,
+    npcPlacement: {
+      purpose: 'work',
+      allowedNpcIds: ['test_bartender'],
+      requiresOccupant: true,
+    },
     details: {
       explorationThreshold: 0,
     },
@@ -59,6 +64,11 @@ export const POI_TEMPLATES_DB: Record<string, PoiTemplate> = {
 
   tavern_waitress_spot: {
     isLocalSpot: true,
+    npcPlacement: {
+      purpose: 'work',
+      allowedNpcIds: ['test_waitress'],
+      requiresOccupant: true,
+    },
     details: {
       explorationThreshold: 0,
     },
@@ -67,6 +77,10 @@ export const POI_TEMPLATES_DB: Record<string, PoiTemplate> = {
 
   tavern_free_table: {
     isLocalSpot: true,
+    npcPlacement: {
+      purpose: 'free_time',
+      allowedNpcIds: ['test_drunkard'],
+    },
     details: {
       explorationThreshold: 0,
     },
@@ -114,4 +128,3 @@ export const POI_TEMPLATES_DB: Record<string, PoiTemplate> = {
     },
   },
 };
-

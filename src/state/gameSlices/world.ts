@@ -6,17 +6,20 @@ import {
 } from '@/constants';
 import { PoiEffectManager } from '@/systems/effects/poiEffectManager';
 import { TraitEffectManager } from '@/systems/effects/traitEffectManager';
+import { getLocalAreaRootPoiId } from '@/systems/poi/poiTreeHelpers';
 import { TravelManager } from '@/systems/travel/travelManager';
 import type { CombatResult } from '@/types/combat.types';
 import type { EffectLog } from '@/types/logs.types';
 import type { ToD, Weather } from '@/types/world.types';
 import { diffCalendarDays } from '@/utils/diffCalendarDays';
 import { getNextTimeOfDayStart, resolveTimeOfDay } from '@/utils/timeOfDay';
+import { resolveTimeSlotIndex } from '@/utils/timeOfDay';
 
 import type { GameSlice } from '../types';
 import { partySelectors } from '../useGameState';
 import type { StoreState } from '../useGameState';
 import { interactionDraft } from './interaction';
+import { occupancyDraft } from './occupancy';
 import { partyDraft } from './party';
 import { poiDraft } from './poi';
 
@@ -99,9 +102,21 @@ export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
       const oldDay = new Date(oldTime).getDate();
       const newDay = new Date(newTime).getDate();
       const daysPassed = newDay - oldDay;
+      const oldTimeSlotIndex = resolveTimeSlotIndex(oldTime);
+      const newTimeSlotIndex = resolveTimeSlotIndex(newTime);
 
       set((state) => {
         state.world.currentTime = newTime;
+
+        if (oldTimeSlotIndex !== newTimeSlotIndex) {
+          occupancyDraft.clearAllOccupancy(state);
+
+          const currentPoiId = state.party.currentPartyPosition;
+          const currentPoi = state.poiSlice.pois[currentPoiId];
+          if (currentPoi && currentPoi.type !== 'cell') {
+            occupancyDraft.populatePoiOccupancy(state, currentPoiId);
+          }
+        }
       });
 
       if (daysPassed > 0) {
@@ -124,9 +139,9 @@ export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
       const targetPoi = beforeState.poiSlice.pois[targetPoiId];
       if (!targetPoi) throw new Error(`Target POI ${targetPoiId} does not exist`);
 
-      const currentTime = beforeState.world.currentTime;
-      const lastVisitTime = targetPoi.details.lastTimeVisited ?? DEFAULT_VISIT_DATE;
-      const daysPassed = diffCalendarDays(lastVisitTime, currentTime);
+      const currentLocalAreaPoiId = getLocalAreaRootPoiId(currentPoiId, beforeState);
+      const targetLocalAreaPoiId = getLocalAreaRootPoiId(targetPoiId, beforeState);
+      const isSameLocalArea = currentLocalAreaPoiId === targetLocalAreaPoiId;
 
       const travel = TravelManager.computeTravel(currentPoiId, targetPoiId, beforeState);
 
@@ -134,6 +149,11 @@ export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
         console.warn(`cant travel from ${currentPoiId} to ${targetPoiId}`);
         return;
       }
+
+      const currentTime = beforeState.world.currentTime;
+      const lastVisitTime = targetPoi.details.lastTimeVisited ?? DEFAULT_VISIT_DATE;
+      const arrivalTime = currentTime + travel.timeCost * 60 * 1000;
+      const daysPassed = diffCalendarDays(lastVisitTime, arrivalTime);
 
       beforeState.world.actions.changeTime(travel.timeCost);
 
@@ -148,8 +168,8 @@ export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
           scoutCellDraft(state, targetPoiId);
         }
 
-        if (poi.type !== 'cell') {
-          // TODO: тут должна быть генерация/инициализация охраны для non-cell POI.
+        if (poi.type !== 'cell' && !isSameLocalArea) {
+          occupancyDraft.populatePoiOccupancy(state, targetPoiId);
         }
 
         partyDraft.moveToPoi(state, targetPoiId, travel.staminaCost);

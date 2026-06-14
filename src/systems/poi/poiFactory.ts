@@ -3,9 +3,11 @@ import type {
   CellDetails,
   CellPoiNode,
   InitialCellDetails,
+  InitialNonCellPoiNode,
   InitialPoi,
   NonCellPoiNode,
   PoiNode,
+  PoiNpcPlacement,
   PoiTemplate,
   RegionParameters,
   UniversalPoiDetails,
@@ -119,6 +121,7 @@ interface CreatePoiFromTemplateParams {
   parentId: string | null;
   rootCellId: string;
   detailsOverride?: Record<string, any>;
+  npcPlacement?: PoiNpcPlacement;
 }
 
 export function createPoiFromTemplate({
@@ -127,6 +130,7 @@ export function createPoiFromTemplate({
   parentId,
   rootCellId,
   detailsOverride,
+  npcPlacement,
 }: CreatePoiFromTemplateParams): NonCellPoiNode {
   const template: PoiTemplate | undefined = POI_TEMPLATES_DB[poiType];
   if (!template) {
@@ -146,6 +150,7 @@ export function createPoiFromTemplate({
     isLocalSpot: template.isLocalSpot === true ? true : undefined,
     type: poiType,
     details,
+    npcPlacement: npcPlacement ?? template.npcPlacement,
   };
 }
 
@@ -172,12 +177,14 @@ export function createPoiFromDescriptor(entry: InitialPoi): PoiNode {
     throw new Error(`Non-cell POI must have a content key in type. POI id: ${entry.id}`);
   }
 
+  const nonCellEntry = entry as InitialNonCellPoiNode;
+
   return createPoiFromTemplate({
     id: entry.id,
     poiType,
     parentId: entry.parentId,
     rootCellId: entry.rootCellId,
     detailsOverride: entry.details as any,
+    npcPlacement: nonCellEntry.npcPlacement,
   });
 }
-

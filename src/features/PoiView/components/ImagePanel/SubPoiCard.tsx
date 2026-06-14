@@ -12,10 +12,11 @@ const getPoiDisplayName = (poiType: string | null) => {
 
 interface SubPoiCardProps {
   poiId: string;
+  disabled?: boolean;
   onSelect: (poiId: string) => void;
 }
 
-export const SubPoiCard = ({ poiId, onSelect }: SubPoiCardProps) => {
+export const SubPoiCard = ({ poiId, disabled = false, onSelect }: SubPoiCardProps) => {
   const poi = useGameState((state) => poiSelectors.selectPoiById(poiId)(state));
 
   if (!poi || !isNonCell(poi)) {
@@ -27,7 +28,16 @@ export const SubPoiCard = ({ poiId, onSelect }: SubPoiCardProps) => {
   const imageUrl = assetsVersion(resolvePoiImage(poiType, poi.id));
 
   return (
-    <button type="button" className="subPoiCard" onClick={() => onSelect(poiId)}>
+    <button
+      type="button"
+      className="subPoiCard"
+      onClick={() => {
+        if (disabled) return;
+        onSelect(poiId);
+      }}
+      disabled={disabled}
+      aria-disabled={disabled}
+    >
       <div className="subPoiPreview">
         <img
           src={imageUrl}
@@ -44,4 +54,3 @@ export const SubPoiCard = ({ poiId, onSelect }: SubPoiCardProps) => {
     </button>
   );
 };
-

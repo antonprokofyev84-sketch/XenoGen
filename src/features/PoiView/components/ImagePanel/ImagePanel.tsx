@@ -19,6 +19,7 @@ const getPoiDisplayName = (poiType: string | null) => {
 export const ImagePanel = () => {
   const currentInteraction = useGameState(interactionSelectors.selectCurrentInteraction);
   const travelToPoi = useGameState((state) => state.world.actions.travelToPoi);
+  const poiOccupants = useGameState((state) => state.occupancySlice.poiOccupants);
 
   const poiId = currentInteraction?.poiId ?? null;
   const npcId = currentInteraction?.npcId ?? null;
@@ -58,7 +59,14 @@ export const ImagePanel = () => {
         {discoveredChildren.length > 0 && (
           <div className="subPoiStrip">
             {discoveredChildren.map((childPoi) => (
-              <SubPoiCard key={childPoi.id} poiId={childPoi.id} onSelect={handleSubPoiClick} />
+              <SubPoiCard
+                key={childPoi.id}
+                poiId={childPoi.id}
+                disabled={
+                  childPoi.npcPlacement?.requiresOccupant === true && !poiOccupants[childPoi.id]
+                }
+                onSelect={handleSubPoiClick}
+              />
             ))}
           </div>
         )}
@@ -66,4 +74,3 @@ export const ImagePanel = () => {
     </div>
   );
 };
-

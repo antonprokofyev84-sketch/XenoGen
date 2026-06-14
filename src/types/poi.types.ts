@@ -82,10 +82,17 @@ export interface UniversalPoiDetails extends GeneralDetails {
   regionParameterModifiers?: Partial<RegionParameters>;
 }
 
+export interface PoiNpcPlacement {
+  purpose: 'work' | 'free_time';
+  allowedNpcIds: string[];
+  requiresOccupant?: boolean;
+}
+
 /** `type` is the template/content key (e.g. "scavenger_group"). */
 export interface NonCellPoiNode extends BasePoiNode {
   type: string;
   details: UniversalPoiDetails;
+  npcPlacement?: PoiNpcPlacement;
 }
 
 // ============================================================
@@ -97,6 +104,7 @@ export interface InitialNonCellPoiNode extends InitialBasePoiNode {
   parentId: string;
   isLocalSpot?: boolean;
   details: Partial<UniversalPoiDetails> & Record<string, any>;
+  npcPlacement?: PoiNpcPlacement;
 }
 
 export type InitialPoi = InitialCellPoiNode | InitialNonCellPoiNode;
@@ -155,6 +163,7 @@ export type PoiTemplate = {
   /** If true, the created node will be auto-marked isLocalSpot=true. */
   isLocalSpot?: boolean;
   details: Partial<UniversalPoiDetails> & Record<string, any>;
+  npcPlacement?: PoiNpcPlacement;
   services?: InteractionService[];
   triggers?: PoiTemplateTriggers;
 };
