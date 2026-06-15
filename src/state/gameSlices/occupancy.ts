@@ -80,6 +80,9 @@ const replaceOccupancyStateDraft = (state: StoreState, occupancyState: Occupancy
 };
 
 const populatePoiOccupancyDraft = (state: StoreState, anchorPoiId: string) => {
+  const anchorPoi = state.poiSlice.pois[anchorPoiId];
+  if (!anchorPoi || !isNonCell(anchorPoi)) return;
+
   const localPoiIds = getLocalPoiIds(anchorPoiId, state);
   const scheduleSlot = resolveTimeSlotIndex(state.world.currentTime);
 
@@ -122,6 +125,11 @@ export const occupancyDraft = {
   clearPoiOccupancy: clearPoiOccupancyDraft,
   replaceOccupancyState: replaceOccupancyStateDraft,
   populatePoiOccupancy: populatePoiOccupancyDraft,
+  refreshOccupancy: (state: StoreState) => {
+    clearAllOccupancyDraft(state);
+    const currentPoiId = state.party.currentPartyPosition;
+    populatePoiOccupancyDraft(state, currentPoiId);
+  },
 };
 
 export const createOccupancySlice: GameSlice<OccupancySlice> = (set) => ({

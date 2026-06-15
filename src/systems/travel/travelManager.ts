@@ -6,19 +6,17 @@ import {
   LOCAL_SPOT_MOVE,
 } from '@/data/travel.rules';
 import type { StoreState } from '@/state/useGameState';
-import type { PoiNode } from '@/types/poi.types';
+import { isCell, isNonCell } from '@/types/poi.types';
+import type { CellPoiNode, PoiNode } from '@/types/poi.types';
 
 type Adjacency = {
   isAdjacent: boolean;
   isDiagonal: boolean;
 };
 
-function getAdjacency(firstCellId: string, secondCellId: string): Adjacency {
-  const [firstColumn, firstRow] = firstCellId.split('-').map(Number);
-  const [secondColumn, secondRow] = secondCellId.split('-').map(Number);
-
-  const deltaX = Math.abs(firstColumn - secondColumn);
-  const deltaY = Math.abs(firstRow - secondRow);
+function getCellAdjacency(firstCell: CellPoiNode, secondCell: CellPoiNode): Adjacency {
+  const deltaX = Math.abs(firstCell.details.col - secondCell.details.col);
+  const deltaY = Math.abs(firstCell.details.row - secondCell.details.row);
 
   if (deltaX === 0 && deltaY === 0) {
     return { isAdjacent: false, isDiagonal: false };
@@ -40,6 +38,53 @@ function getPoiById(state: StoreState, poiId: string): PoiNode | null {
   return state.poiSlice.pois[poiId] ?? null;
 }
 
+function computeCellToCellTravel(currentPoi: CellPoiNode, targetPoi: CellPoiNode): TravelResult {
+  const adjacency = getCellAdjacency(currentPoi, targetPoi);
+
+  if (!adjacency.isAdjacent) {
+    return { canTravel: false, staminaCost: Infinity, timeCost: Infinity };
+  }
+
+  const multiplier = adjacency.isDiagonal ? DIAGONAL_MULTIPLIER : 1;
+
+  return {
+    canTravel: true,
+    staminaCost: Math.ceil(BASE_CELL_TO_CELL.staminaCost * multiplier),
+    timeCost: Math.ceil(BASE_CELL_TO_CELL.timeCost * multiplier),
+  };
+}
+
+function isMovingToDirectChild(currentPoi: PoiNode, targetPoi: PoiNode): boolean {
+  return targetPoi.parentId === currentPoi.id;
+}
+
+function isMovingToDirectParent(currentPoi: PoiNode, targetPoi: PoiNode): boolean {
+  return currentPoi.parentId === targetPoi.id;
+}
+
+function getTreeEdgeTravelResult(currentPoi: PoiNode, targetPoi: PoiNode): TravelResult {
+  const movingToDirectChild = isMovingToDirectChild(currentPoi, targetPoi);
+  const movingToDirectParent = isMovingToDirectParent(currentPoi, targetPoi);
+
+  if (!movingToDirectChild && !movingToDirectParent) {
+    return { canTravel: false, staminaCost: Infinity, timeCost: Infinity };
+  }
+
+  if (movingToDirectChild && isNonCell(targetPoi) && !targetPoi.details.isDiscovered) {
+    return { canTravel: false, staminaCost: Infinity, timeCost: Infinity };
+  }
+
+  if (isCell(currentPoi) || isCell(targetPoi)) {
+    return { canTravel: true, ...CELL_TO_POI_ENTER };
+  }
+
+  if (currentPoi.isLocalSpot === true || targetPoi.isLocalSpot === true) {
+    return { canTravel: true, ...LOCAL_SPOT_MOVE };
+  }
+
+  return { canTravel: true, ...INNER_SCENE_MOVE };
+}
+
 export const TravelManager = {
   computeTravel(currentPoiId: string, targetPoiId: string, state: StoreState): TravelResult {
     const currentPoi = getPoiById(state, currentPoiId);
@@ -49,35 +94,11 @@ export const TravelManager = {
       return { canTravel: false, staminaCost: Infinity, timeCost: Infinity };
     }
 
-    // 1) cell -> cell (глобальная карта). Оставляем только диагональ.
-    if (currentPoi.type === 'cell' && targetPoi.type === 'cell') {
-      const { isAdjacent, isDiagonal } = getAdjacency(currentPoi.id, targetPoi.id);
-
-      if (!isAdjacent) {
-        return { canTravel: false, staminaCost: Infinity, timeCost: Infinity };
-      }
-
-      const multiplier = isDiagonal ? DIAGONAL_MULTIPLIER : 1;
-
-      return {
-        canTravel: true,
-        staminaCost: Math.ceil(BASE_CELL_TO_CELL.staminaCost * multiplier),
-        timeCost: Math.ceil(BASE_CELL_TO_CELL.timeCost * multiplier),
-      };
+    if (isCell(currentPoi) && isCell(targetPoi)) {
+      return computeCellToCellTravel(currentPoi, targetPoi);
     }
 
-    // 2) cell -> любой POI (вход “с карты в точку”)
-    if (currentPoi.type === 'cell' && targetPoi.type !== 'cell') {
-      return { canTravel: true, ...CELL_TO_POI_ENTER };
-    }
-
-    // 3) Local spots are near-instant transitions inside the same scene.
-    if (currentPoi.isLocalSpot === true || targetPoi.isLocalSpot === true) {
-      return { canTravel: true, ...LOCAL_SPOT_MOVE };
-    }
-
-    // 4) Any other non-cell to non-cell transition inside a local scene.
-    return { canTravel: true, ...INNER_SCENE_MOVE };
+    return getTreeEdgeTravelResult(currentPoi, targetPoi);
   },
 };
 
@@ -139,4 +160,3 @@ export const TravelManager = {
 //     return { passable: true as const, stamina, minutes };
 //   },
 // };
-

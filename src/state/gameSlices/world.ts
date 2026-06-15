@@ -1,19 +1,13 @@
-import {
-  DEFAULT_EXPLORATION_DURATION,
-  DEFAULT_VISIT_DATE,
-  STAMINA_RECOVERY_PER_HOUR,
-  START_DATE,
-} from '@/constants';
+import { DEFAULT_EXPLORATION_DURATION, STAMINA_RECOVERY_PER_HOUR, START_DATE } from '@/constants';
 import { PoiEffectManager } from '@/systems/effects/poiEffectManager';
 import { TraitEffectManager } from '@/systems/effects/traitEffectManager';
-import { getLocalAreaRootPoiId } from '@/systems/poi/poiTreeHelpers';
 import { TravelManager } from '@/systems/travel/travelManager';
+import { resolveScoutExplorationLevel } from '@/systems/world/scouting';
+import { advanceWorldTime } from '@/systems/world/timeProgression';
 import type { CombatResult } from '@/types/combat.types';
 import type { EffectLog } from '@/types/logs.types';
 import type { ToD, Weather } from '@/types/world.types';
-import { diffCalendarDays } from '@/utils/diffCalendarDays';
 import { getNextTimeOfDayStart, resolveTimeOfDay } from '@/utils/timeOfDay';
-import { resolveTimeSlotIndex } from '@/utils/timeOfDay';
 
 import type { GameSlice } from '../types';
 import { partySelectors } from '../useGameState';
@@ -21,7 +15,7 @@ import type { StoreState } from '../useGameState';
 import { interactionDraft } from './interaction';
 import { occupancyDraft } from './occupancy';
 import { partyDraft } from './party';
-import { poiDraft } from './poi';
+import { getDaysSinceLastVisit, poiDraft } from './poi';
 
 export interface WorldSlice {
   currentTime: number;
@@ -30,7 +24,7 @@ export interface WorldSlice {
     endBattle: (combatResult: CombatResult) => Record<string, EffectLog[]>;
     endDay: () => void;
     changeTime: (minutes: number) => void;
-    scoutCell: (cellId: string, maxRollValue: number, bonus: number, duration: number) => void;
+    scoutCell: (cellId: string, maxRollValue?: number, bonus?: number, duration?: number) => void;
     travelToPoi: (targetPoiId: string) => void;
     restUntilMorning: () => void;
     restForMinutes: (minutes: number) => void;
@@ -42,13 +36,20 @@ export const worldSelectors = {
   selectTimeOfDay: (state: StoreState): ToD => resolveTimeOfDay(state.world.currentTime),
 };
 
-function scoutCellDraft(state: StoreState, cellId: string) {
+function scoutCellDraft(
+  state: StoreState,
+  cellId: string,
+  maxRollValue?: number,
+  bonus = 0,
+  duration = DEFAULT_EXPLORATION_DURATION,
+) {
   const perception = partySelectors.selectHighestEffectiveMainStat('per')(state);
+  const explorationLevel = resolveScoutExplorationLevel({
+    maxRollValue: maxRollValue ?? perception,
+    bonus,
+  });
 
-  // возможно нужно вять минимальное значение восприятия среди всех членов отряда как минимум
-  const explorationLevel = Math.floor(Math.random() * (perception + 1));
-
-  poiDraft.exploreCell(state, cellId, explorationLevel, DEFAULT_EXPLORATION_DURATION);
+  poiDraft.exploreCell(state, cellId, explorationLevel, duration);
 }
 
 export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
@@ -82,8 +83,6 @@ export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
       return mergedLogs;
     },
     endDay: () => {
-      // This logic remains the same
-      console.log(`--- A new day has begun ---`);
       const stateSnapshot = get();
 
       const traitEffects = get().traits.actions.processDayEnd();
@@ -96,26 +95,17 @@ export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
     },
 
     changeTime: (minutes: number) => {
-      // This logic remains the same
       const oldTime = get().world.currentTime;
-      const newTime = oldTime + minutes * 60 * 1000;
-      const oldDay = new Date(oldTime).getDate();
-      const newDay = new Date(newTime).getDate();
-      const daysPassed = newDay - oldDay;
-      const oldTimeSlotIndex = resolveTimeSlotIndex(oldTime);
-      const newTimeSlotIndex = resolveTimeSlotIndex(newTime);
+      const { newTime, daysPassed, oldTimeSlotIndex, newTimeSlotIndex } = advanceWorldTime(
+        oldTime,
+        minutes,
+      );
 
       set((state) => {
         state.world.currentTime = newTime;
 
-        if (oldTimeSlotIndex !== newTimeSlotIndex) {
-          occupancyDraft.clearAllOccupancy(state);
-
-          const currentPoiId = state.party.currentPartyPosition;
-          const currentPoi = state.poiSlice.pois[currentPoiId];
-          if (currentPoi && currentPoi.type !== 'cell') {
-            occupancyDraft.populatePoiOccupancy(state, currentPoiId);
-          }
+        if (oldTimeSlotIndex !== newTimeSlotIndex || daysPassed > 0) {
+          occupancyDraft.refreshOccupancy(state);
         }
       });
 
@@ -126,9 +116,9 @@ export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
       }
     },
 
-    scoutCell: (cellId) => {
+    scoutCell: (cellId, maxRollValue, bonus, duration) => {
       set((state) => {
-        scoutCellDraft(state, cellId);
+        scoutCellDraft(state, cellId, maxRollValue, bonus, duration);
       });
     },
 
@@ -139,9 +129,7 @@ export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
       const targetPoi = beforeState.poiSlice.pois[targetPoiId];
       if (!targetPoi) throw new Error(`Target POI ${targetPoiId} does not exist`);
 
-      const currentLocalAreaPoiId = getLocalAreaRootPoiId(currentPoiId, beforeState);
-      const targetLocalAreaPoiId = getLocalAreaRootPoiId(targetPoiId, beforeState);
-      const isSameLocalArea = currentLocalAreaPoiId === targetLocalAreaPoiId;
+      const fallbackCellId = targetPoi.type !== 'cell' ? targetPoi.rootCellId : null;
 
       const travel = TravelManager.computeTravel(currentPoiId, targetPoiId, beforeState);
 
@@ -150,37 +138,51 @@ export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
         return;
       }
 
-      const currentTime = beforeState.world.currentTime;
-      const lastVisitTime = targetPoi.details.lastTimeVisited ?? DEFAULT_VISIT_DATE;
-      const arrivalTime = currentTime + travel.timeCost * 60 * 1000;
-      const daysPassed = diffCalendarDays(lastVisitTime, arrivalTime);
-
-      beforeState.world.actions.changeTime(travel.timeCost);
-
       set((state) => {
         interactionDraft.endInteraction(state);
 
-        const poi = state.poiSlice.pois[targetPoiId];
-        if (!poi) return;
+        poiDraft.processPoiExit(state, currentPoiId, targetPoiId);
 
-        poiDraft.processPoiEnter(state, targetPoiId, daysPassed, state.world.currentTime);
-        if (poi.type === 'cell' && daysPassed > 0) {
+        // Party position must move before time advances, because refreshOccupancy
+        // uses the current party position as its anchor.
+        partyDraft.moveToPoi(state, targetPoiId, travel.staminaCost);
+      });
+
+      get().world.actions.changeTime(travel.timeCost);
+
+      set((state) => {
+        // here we are getting the target POI again because it might have been removed during changeTime effects
+        const targetPoi = state.poiSlice.pois[targetPoiId];
+
+        if (!targetPoi) {
+          if (fallbackCellId && state.poiSlice.pois[fallbackCellId]) {
+            state.party.currentPartyPosition = fallbackCellId;
+          }
+
+          console.error(`Travel target POI was removed during travel: ${targetPoiId}`);
+          state.ui.currentScreen = 'strategicMap';
+          return;
+        }
+
+        const daysPassed = getDaysSinceLastVisit(state, targetPoiId);
+        poiDraft.processPoiEnter(state, targetPoiId, daysPassed);
+
+        //TODO potentially we should scout any poi.
+        if (targetPoi.type === 'cell' && daysPassed > 0) {
           scoutCellDraft(state, targetPoiId);
         }
 
-        if (poi.type !== 'cell' && !isSameLocalArea) {
-          occupancyDraft.populatePoiOccupancy(state, targetPoiId);
+        occupancyDraft.populatePoiOccupancy(state, targetPoiId);
+
+        if (targetPoi.type !== 'cell') {
+          interactionDraft.startInteraction(state, { poiId: targetPoiId });
         }
 
-        partyDraft.moveToPoi(state, targetPoiId, travel.staminaCost);
-
-        interactionDraft.startInteraction(state, { poiId: targetPoiId });
-        state.ui.currentScreen = poi.type === 'cell' ? 'strategicMap' : 'poiView';
+        state.ui.currentScreen = targetPoi.type === 'cell' ? 'strategicMap' : 'poiView';
       });
     },
 
     restForMinutes: (minutes) => {
-      console.log('Resting for minutes:', minutes);
       get().world.actions.changeTime(minutes);
 
       const staminaRestored = Math.floor((minutes / 60) * STAMINA_RECOVERY_PER_HOUR);

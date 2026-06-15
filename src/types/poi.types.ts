@@ -11,6 +11,7 @@ export type PoiType = 'cell' | string;
 
 export interface GeneralDetails {
   lastTimeVisited?: number | null;
+  visitedTimes?: number;
 }
 
 export interface BasePoiNode {

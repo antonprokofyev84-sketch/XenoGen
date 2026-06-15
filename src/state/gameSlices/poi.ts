@@ -1,4 +1,4 @@
-import { DEFAULT_EXPLORATION_DURATION } from '@/constants';
+import { DEFAULT_EXPLORATION_DURATION, DEFAULT_VISIT_DATE } from '@/constants';
 import type { StoreState } from '@/state/useGameState';
 import { createPoiFromDescriptor, createPoiFromTemplate } from '@/systems/poi/poiFactory';
 import { generatePoiSeedsForCell } from '@/systems/poi/poiSeedGenerator';
@@ -17,6 +17,7 @@ import type {
   PoiDetails,
   PoiNode,
 } from '@/types/poi.types';
+import { diffCalendarDays } from '@/utils/diffCalendarDays';
 
 import type { GameSlice } from '../types';
 
@@ -40,7 +41,7 @@ export interface PoiSlice {
     removePoiSubtree: (poiId: string) => void;
     clearAllPois: () => void;
     processDayPass: () => EffectsMap;
-    processPoiEnter: (poiId: string, daysPassed: number) => void;
+    processPoiEnter: (poiId: string) => void;
     exploreCell: (cellId: string, explorationLevel: number, explorationDaysLeft: number) => void;
     modifyCellThreat: (cellId: string, delta: number) => void;
     modifyCellContamination: (cellId: string, delta: number) => void;
@@ -346,34 +347,56 @@ const exploreCellDraft = (
   }
 };
 
-const processPoiEnterDraft = (
-  state: StoreState,
-  poiId: string,
-  daysPassed: number,
-  currentTime: number,
-) => {
-  const poi = state.poiSlice.pois[poiId];
-  if (!poi || !isCell(poi)) return;
-  const cellNode = poi;
+const generateCellPoisOnEnterDraft = (state: StoreState, cellId: string, daysPassed: number) => {
+  const cell = state.poiSlice.pois[cellId];
+  if (!cell || !isCell(cell)) return;
 
-  const childrenCount = getAllChildPoiIds(poi).length;
+  const childrenCount = getAllChildPoiIds(cell).length;
   if (childrenCount >= MAX_POI_CHILDREN_SOFT_LIMIT) return;
   if (daysPassed <= 0) return;
 
   const totalToGenerate = Math.floor(Math.random() * (BASE_POI_ROLL_MAX + 1));
-
   const seeds = generatePoiSeedsForCell({ count: totalToGenerate });
 
   for (const seed of seeds.slice(0, totalToGenerate)) {
     createPoiDraft({
       state,
       poiType: seed.poiType,
-      parentId: poiId,
+      parentId: cellId,
     });
   }
+};
 
-  cellNode.details.lastTimeVisited = currentTime;
-  cellNode.details.visitedTimes += 1;
+export const getDaysSinceLastVisit = (state: StoreState, poiId: string): number => {
+  const poi = state.poiSlice.pois[poiId];
+  if (!poi) return 0;
+
+  const previousVisitTime = poi.details.lastTimeVisited ?? DEFAULT_VISIT_DATE;
+  return diffCalendarDays(previousVisitTime, state.world.currentTime);
+};
+
+const processPoiExitDraft = (state: StoreState, currentPoiId: string, targetPoiId: string) => {
+  const currentPoi = state.poiSlice.pois[currentPoiId];
+  if (!currentPoi) return;
+
+  const targetPoi = state.poiSlice.pois[targetPoiId];
+  const movedIntoOwnLocalSpot =
+    targetPoi?.isLocalSpot === true && targetPoi.parentId === currentPoiId;
+
+  currentPoi.details.lastTimeVisited = state.world.currentTime;
+
+  if (!movedIntoOwnLocalSpot) {
+    currentPoi.details.visitedTimes = (currentPoi.details.visitedTimes ?? 0) + 1;
+  }
+};
+
+const processPoiEnterDraft = (state: StoreState, poiId: string, daysPassed: number) => {
+  const poi = state.poiSlice.pois[poiId];
+  if (!poi) return;
+
+  if (isCell(poi)) {
+    generateCellPoisOnEnterDraft(state, poiId, daysPassed);
+  }
 };
 
 // Expose draft helpers for external systems that operate inside a single `draft` call
@@ -387,11 +410,12 @@ export const poiDraft = {
   modifyCellTechLevel: modifyCellTechLevelDraft,
   exploreCell: exploreCellDraft,
   processPoiEnter: processPoiEnterDraft,
+  processPoiExit: processPoiExitDraft,
 };
 
 // Slice
 
-export const createPoiSlice: GameSlice<PoiSlice> = (set, get) => ({
+export const createPoiSlice: GameSlice<PoiSlice> = (set) => ({
   pois: {},
 
   actions: {
@@ -472,10 +496,10 @@ export const createPoiSlice: GameSlice<PoiSlice> = (set, get) => ({
       });
     },
 
-    processPoiEnter: (poiId: string, daysPassed: number) => {
-      const currentTime = get().world.currentTime;
+    processPoiEnter: (poiId: string) => {
       set((state) => {
-        processPoiEnterDraft(state, poiId, daysPassed, currentTime);
+        const daysPassed = getDaysSinceLastVisit(state, poiId);
+        processPoiEnterDraft(state, poiId, daysPassed);
       });
     },
 
@@ -510,4 +534,3 @@ export const createPoiSlice: GameSlice<PoiSlice> = (set, get) => ({
     },
   },
 });
-
