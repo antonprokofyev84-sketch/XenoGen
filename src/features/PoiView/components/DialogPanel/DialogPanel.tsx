@@ -21,12 +21,10 @@ export const DialogPanel = () => {
       <div className="dialogContainer">
         <div className="scrollableContent">
           {interactionLog.length > 0 && (
-            <div className="dialogLogSection">
-              <div className="interactionLogList">
-                {interactionLog.map((logItem, index) => (
-                  <InteractionLogItem key={`${logItem.action}-${index}`} log={logItem} />
-                ))}
-              </div>
+            <div className="interactionLogList">
+              {interactionLog.map((logItem, index) => (
+                <InteractionLogItem key={`${logItem.action}-${index}`} log={logItem} />
+              ))}
             </div>
           )}
         </div>
@@ -36,4 +34,3 @@ export const DialogPanel = () => {
     </div>
   );
 };
-

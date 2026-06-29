@@ -2,11 +2,15 @@ import { PROTAGONIST_ID } from '@/constants';
 import { SERVICE_RULES, getForcePresetServices, getServicesState } from '@/data/poi.services';
 import { POI_TEMPLATES_DB } from '@/data/poi.templates';
 import { EffectManager } from '@/systems/effects/effectManager';
+import { resolveEffectSummaryItems } from '@/systems/effects/effectSummaryResolver';
 import {
   computeInitialTension,
   resolveEffectiveRelation,
+  resolveEntryNarrativeAction,
   resolveInteractionEffects,
+  shouldAppendLocalSpotIntro,
 } from '@/systems/interaction/interactionRules';
+import { resolveNarrativeBlocks } from '@/systems/narrative/narrativeResolver';
 import { rollStatCheck } from '@/systems/rolls/statRollService';
 import type { ResolvedTriggerRules } from '@/types/effects.types';
 import type {
@@ -17,6 +21,7 @@ import type {
   InteractionServiceState,
   ServiceOutcome,
 } from '@/types/interaction.types';
+import { isNonCell } from '@/types/poi.types';
 import type { NonCellNode } from '@/types/poi.types';
 
 import type { GameSlice } from '../types';
@@ -120,6 +125,77 @@ const mergeServicesHistory = (
   return Array.from(merged.values());
 };
 
+const createInteractionLogEvent = (
+  state: StoreState,
+  event: Omit<InteractionLogEvent, 'narrativeBlocks' | 'effectSummaryItems'> & {
+    narrativePoiId: string;
+  },
+): InteractionLogEvent => {
+  const logEvent: InteractionLogEvent = event;
+
+  return {
+    ...logEvent,
+    narrativeBlocks: resolveNarrativeBlocks(state, logEvent),
+    effectSummaryItems: resolveEffectSummaryItems(state, logEvent.effects),
+  };
+};
+
+const buildEntryInteractionLog = (
+  state: StoreState,
+  poiId: string,
+  poi: NonCellNode | undefined,
+  tension: number,
+): InteractionLogEvent[] => {
+  const action = resolveEntryNarrativeAction({
+    poi,
+    previousPartyPosition: state.party.previousPartyPosition,
+  });
+
+  const interactionLog: InteractionLogEvent[] = [
+    createInteractionLogEvent(state, {
+      action,
+      success: true,
+      tension,
+      narrativePoiId: poiId,
+    }),
+  ];
+
+  if (!poi) {
+    return interactionLog;
+  }
+
+  const shouldShowIntro = shouldAppendLocalSpotIntro({
+    lastTimeVisited: poi.details.lastTimeVisited,
+    currentTime: state.world.currentTime,
+  });
+
+  if (!shouldShowIntro) {
+    return interactionLog;
+  }
+
+  for (const localSpotId of poi.localSpotIds) {
+    const localSpot = state.poiSlice.pois[localSpotId];
+    if (!localSpot || !isNonCell(localSpot)) {
+      continue;
+    }
+
+    if (!localSpot.details.isDiscovered) {
+      continue;
+    }
+
+    interactionLog.push(
+      createInteractionLogEvent(state, {
+        action: 'intro',
+        success: true,
+        tension,
+        narrativePoiId: localSpotId,
+      }),
+    );
+  }
+
+  return interactionLog;
+};
+
 const startInteractionDraft = (
   state: StoreState,
   params: {
@@ -183,7 +259,7 @@ const startInteractionDraft = (
       tension: memory.tension,
       tradeAttempts: memory.tradeAttempts,
       services: restoreServicesFromMemory(baseServices, memory.services),
-      interactionLog: [{ action: 'enter', success: true, tension: memory.tension }],
+      interactionLog: buildEntryInteractionLog(state, poiId, poi, memory.tension),
     };
     applyForceTensionReactionDraft(state);
     return;
@@ -194,13 +270,7 @@ const startInteractionDraft = (
   }
 
   const services: InteractionServiceState[] = getServicesState(baseServices);
-  const interactionLog: InteractionLogEvent[] = [
-    {
-      action: 'enter',
-      success: true,
-      tension: initialTension,
-    },
-  ];
+  const interactionLog = buildEntryInteractionLog(state, poiId, poi, initialTension);
 
   state.interactionSlice.currentInteraction = {
     poiId,
@@ -254,10 +324,13 @@ const applyForceExitServicesDraft = (state: StoreState) => {
     currentInteraction.services = getServicesState(newServices);
 
     if (forceAction) {
-      currentInteraction.interactionLog.push({
-        action: forceAction,
-        tension: currentInteraction.tension,
-      });
+      currentInteraction.interactionLog.push(
+        createInteractionLogEvent(state, {
+          action: forceAction,
+          tension: currentInteraction.tension,
+          narrativePoiId: currentInteraction.poiId,
+        }),
+      );
     }
 
     // Close trade modal if force-exit triggers while trading
@@ -468,13 +541,16 @@ export const createInteractionSlice: GameSlice<InteractionSlice> = (set, get) =>
         }
 
         // Always log the interaction, even without effects
-        currentInteraction.interactionLog.push({
-          action: serviceId,
-          success: outcome.success,
-          tension: currentInteraction.tension,
-          roll: outcome.rollLog,
-          effects: effectLogs,
-        });
+        currentInteraction.interactionLog.push(
+          createInteractionLogEvent(draftState, {
+            action: serviceId,
+            success: outcome.success,
+            tension: currentInteraction.tension,
+            roll: outcome.rollLog,
+            effects: effectLogs,
+            narrativePoiId: currentInteraction.poiId,
+          }),
+        );
 
         // Open trade modal on successful trade service
         if (serviceId === 'trade' && outcome.success) {
@@ -523,4 +599,3 @@ export const interactionSelectors = {
   selectEffectiveRelation: (state: StoreState) =>
     state.interactionSlice.currentInteraction?.effectiveRelation ?? null,
 };
-

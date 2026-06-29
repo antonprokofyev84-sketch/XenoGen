@@ -17,12 +17,12 @@
  */
 import { buildPoiPriorityKeys } from './poiPriorityKeys.ts';
 
-const EXTENSIONS = ['.webp', '.png'] as const;
+const EXTENSIONS = ['.webp', '.png', '.jpeg'] as const;
 const FALLBACK_IMAGE = '/images/poi/default.png';
 
 // Build-time glob: keys are paths like "/images/poi/tavern/default.png"
 // We only need the keys to know which files exist — never call the loaders.
-const globResult = import.meta.glob<unknown>('/public/images/poi/**/*.{webp,png}');
+const globResult = import.meta.glob<unknown>('/public/images/poi/**/*.{webp,png,jpeg}');
 
 const availableImages: Set<string> = new Set(
   Object.keys(globResult).map((key) => key.replace(/^\/public/, '')),

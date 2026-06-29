@@ -1,9 +1,9 @@
 import { POI_NARRATIVES } from '@/data/narrative/poiNarratives';
-import { buildPoiPriorityKeys } from '@/systems/poi/poiPriorityKeys.ts';
+import type { StoreState } from '@/state/useGameState';
+import { buildPoiPriorityKeys } from '@/systems/poi/poiPriorityKeys';
 import type { InteractionLogEvent } from '@/types/interaction.types';
 import type {
   NarrativeBlock,
-  NarrativeContext,
   NarrativeKeyValue,
   NarrativeMood,
   NarrativeVariant,
@@ -87,7 +87,7 @@ function resolveTemplateNarrativeBlocks(
   poiActions: PoiTemplateNarrativeActions,
   action: string,
   outcomeKey: 'success' | 'fail',
-  context: NarrativeContext,
+  priorityKeys: string[],
   mood: NarrativeMood,
 ): NarrativeBlock[] | undefined {
   const actionEntry = poiActions[action as keyof PoiTemplateNarrativeActions];
@@ -95,14 +95,6 @@ function resolveTemplateNarrativeBlocks(
 
   const outcomeEntry = actionEntry[outcomeKey];
   if (!outcomeEntry) return undefined;
-
-  // Narrative and image resolution share the same POI-specific fallback order,
-  // so text and visuals can specialize at the same granularity.
-  const priorityKeys = buildPoiPriorityKeys({
-    npcId: context.npcId,
-    poiId: context.poiId,
-    hasOwner: context.hasOwner,
-  });
 
   for (const key of priorityKeys) {
     const variant = pickRandomVariant(resolveTemplateMoodVariants(outcomeEntry[key], mood));
@@ -113,6 +105,26 @@ function resolveTemplateNarrativeBlocks(
   return undefined;
 }
 
+function shouldUseGenericFallback(action: string): boolean {
+  return !['intro', 'return_local', 'return_nested'].includes(action);
+}
+
+function resolveMissingNarrative(action: string, success?: boolean): NarrativeBlock[] {
+  if (!shouldUseGenericFallback(action)) {
+    return [];
+  }
+
+  return genericBlockFallback(action, success);
+}
+
+function getNarrativePriorityKeys(state: StoreState, narrativePoiId: string): string[] {
+  const npcId = state.occupancySlice.poiOccupants[narrativePoiId];
+  return buildPoiPriorityKeys({
+    npcId: npcId ?? null,
+    poiId: narrativePoiId,
+  });
+}
+
 /**
  * Public narrative resolver used by the interaction log.
  *
@@ -121,8 +133,8 @@ function resolveTemplateNarrativeBlocks(
  * minimal action/outcome string so the UI remains readable during authoring.
  */
 export function resolveNarrativeBlocks(
+  state: StoreState,
   logEvent: InteractionLogEvent,
-  context: NarrativeContext,
 ): NarrativeBlock[] {
   const { action, success, tension } = logEvent;
   const mood = getMoodFromTension(tension);
@@ -130,24 +142,32 @@ export function resolveNarrativeBlocks(
   // IMPORTANT:
   // success === undefined → treat as success (enter, passive events)
   const outcomeKey: 'success' | 'fail' = success === false ? 'fail' : 'success';
+  const narrativePoiId = logEvent.narrativePoiId;
 
-  const poiType = context.poiType;
-
-  // The canonical resolver path is POI_NARRATIVES[poiType][action][outcome].
-  if (poiType) {
-    const templateActions = POI_NARRATIVES[poiType];
-    if (templateActions) {
-      const blocks = resolveTemplateNarrativeBlocks(
-        templateActions,
-        action,
-        outcomeKey,
-        context,
-        mood,
-      );
-      if (blocks) return blocks;
-    }
+  if (!narrativePoiId) {
+    return resolveMissingNarrative(action, success);
   }
 
-  // Cheap text fallback keeps the interaction log readable while content is incomplete.
-  return genericBlockFallback(action, success);
+  const narrativePoi = state.poiSlice.pois[narrativePoiId];
+  if (!narrativePoi || narrativePoi.type === 'cell') {
+    return resolveMissingNarrative(action, success);
+  }
+
+  const templateActions = POI_NARRATIVES[narrativePoi.type];
+  if (!templateActions) {
+    return resolveMissingNarrative(action, success);
+  }
+
+  const priorityKeys = getNarrativePriorityKeys(state, narrativePoiId);
+
+  const blocks = resolveTemplateNarrativeBlocks(
+    templateActions,
+    action,
+    outcomeKey,
+    priorityKeys,
+    mood,
+  );
+  if (blocks) return blocks;
+
+  return resolveMissingNarrative(action, success);
 }

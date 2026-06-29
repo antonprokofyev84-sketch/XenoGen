@@ -1,5 +1,6 @@
 import type { MainStatKey, SkillKey } from './character.types';
 import type { EffectLogs } from './effects.types';
+import type { NarrativeBlock } from './narrative.types';
 
 export type ForceBehavior = 'forceLeave' | 'forceAttack' | 'forceRetreat';
 export type InteractionService =
@@ -85,4 +86,13 @@ export interface InteractionLogEvent {
 
   /** Эффекты, которые реально произошли */
   effects?: EffectLogs;
+
+  /** POI id used to resolve narrative for this event */
+  narrativePoiId?: string;
+
+  /** Snapshot of resolved narrative blocks rendered by UI */
+  narrativeBlocks?: NarrativeBlock[];
+
+  /** Snapshot of resolved effect summary items rendered by UI */
+  effectSummaryItems?: string[];
 }

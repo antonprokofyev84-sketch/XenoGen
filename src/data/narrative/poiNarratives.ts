@@ -174,6 +174,14 @@ export const POI_NARRATIVES: PoiTemplateNarrativesMap = {
   tavern: {
     enter: {
       success: {
+        occupied: [
+          'The tavern is alive with working hands and watchful eyes. Someone tends the room, and the place feels held together by routine rather than luck.',
+          'You step into a tavern that is clearly staffed and running. The hearth is fed, the tables are watched, and the room carries the order of people doing their jobs.',
+        ],
+        empty: [
+          'The tavern stands open, but something is missing. The hearth still burns and the benches still wait, yet no one seems to be keeping the place together.',
+          'You enter a tavern that should feel busy, but instead it feels unattended. The room has warmth, smoke, and noise in its walls, but no visible hand guiding any of it.',
+        ],
         default: [
           'The tavern breathes heat, smoke, and the sour comfort of spilled ale. Conversations stay low and guarded, but the room still feels more welcoming than the road outside.',
           'Warm lamplight settles over scarred tables and patched coats as you step inside. Nobody offers a greeting, yet the hearth and the noise make it clear that strangers are expected here.',
@@ -205,8 +213,34 @@ export const POI_NARRATIVES: PoiTemplateNarrativesMap = {
   },
 
   tavern_bartender_spot: {
+    intro: {
+      success: {
+        occupied: [
+          'Behind the counter, a bartender keeps the bottles, coins, and rumors in motion with practiced economy.',
+          'The bar is manned. Glass catches the lamplight while the bartender watches the room without seeming to move much at all.',
+        ],
+        empty: [
+          'The bar stands unattended, littered with bottles, damp rings, and the residue of a shift that ended without ceremony.',
+          'No one is at the counter. The place where the bartender should be is empty, leaving the bar looking strangely exposed.',
+        ],
+      },
+    },
     enter: {
       success: {
+        occupied: [
+          [
+            'You make your way to the counter and find the bartender already studying you over the rim of a half-cleaned glass.',
+            {
+              speaker: 'bartender',
+              text: 'If you came for a drink, speak. If you came for trouble, make it quick.',
+            },
+          ],
+          'You step up to a working bar. The bartender closes a ledger, sizes you up, and waits for you to justify the interruption.',
+        ],
+        empty: [
+          'You approach the bar, but there is no bartender waiting there. Only abandoned bottles, a stained rag, and the smell of old ale answer you.',
+          'The counter is empty when you reach it. Whatever business is usually done here will have to wait for someone to return.',
+        ],
         default: [
           [
             'You make your way to the counter through a press of tired patrons and overturned stories. The bartender looks up from a half-polished glass with a stare that weighs more than the bottle in their hand.',
@@ -253,8 +287,34 @@ export const POI_NARRATIVES: PoiTemplateNarrativesMap = {
   },
 
   tavern_waitress_spot: {
+    intro: {
+      success: {
+        // occupied: [
+        //   'A waitress cuts through the room with the speed of someone balancing too many orders and not enough patience.',
+        //   'The floor is being worked by a tired waitress who knows every obstacle in the room before it moves.',
+        // ],
+        // empty: [
+        //   'No serving hand passes through this part of the tavern right now. The tables wait with dirty mugs and no one to clear them.',
+        //   'The space where a waitress should be moving stays oddly still, leaving a small gap in the rhythm of the room.',
+        // ],
+      },
+    },
     enter: {
       success: {
+        occupied: [
+          [
+            'You catch the waitress between two tables as she shifts a tray onto one hip and gives you a brief, exhausted look.',
+            {
+              speaker: 'waitress',
+              text: 'Say it quickly. The room is thirsty and I only have two hands.',
+            },
+          ],
+          'You stop the waitress in the middle of her route. She grants you a sliver of attention, the sort reserved for customers who might still be worth the delay.',
+        ],
+        empty: [
+          'You look for the waitress here, but no one comes. The path between the tables is open, unclaimed, and briefly quieter for it.',
+          'There is no waitress nearby to stop. The work continues elsewhere, leaving this corner without service for the moment.',
+        ],
         default: [
           [
             'You catch the waitress at the edge of the room as she slips between chairs with a tray balanced on one hand. She slows just enough to hear you, though her eyes are already on the next table that needs her.',
@@ -278,8 +338,28 @@ export const POI_NARRATIVES: PoiTemplateNarrativesMap = {
   },
 
   tavern_free_table: {
+    intro: {
+      success: {
+        occupied: [
+          'The table is not free after all. Someone has claimed it with a posture that suggests they noticed you noticing.',
+          "A patron sits at the table now, turning what should be a quiet corner into someone else's territory.",
+        ],
+        empty: [
+          'A free table waits near the wall, marked by old cuts in the wood and the pale rings of long-emptied cups.',
+          "One table remains open, a small island of space inside the tavern's low noise and slow heat.",
+        ],
+      },
+    },
     enter: {
       success: {
+        occupied: [
+          'You drift toward the table, only to find it already taken. Whoever sits there makes it clear with a glance that the seat is not yours.',
+          'The corner table has an occupant now, and your approach earns the sort of brief territorial stare common in places like this.',
+        ],
+        empty: [
+          'The table is free when you reach it, scarred by years of mugs, knives, and quiet waiting. It offers privacy without comfort.',
+          'You take in the empty chair and open tabletop. For a tavern corner, it is almost inviting.',
+        ],
         default: [
           'The free table sits a little apart from the louder drinkers, its surface etched with initials, knife marks, and the pale circles of old mugs. It feels like the sort of place meant for watching first and speaking later.',
           'An empty chair waits beside a scarred table near the wall. From here you can watch the room without being forced into its noise, which is its own kind of comfort.',

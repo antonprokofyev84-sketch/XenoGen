@@ -1,3 +1,5 @@
+import { useShallow } from 'zustand/react/shallow';
+
 import { Button } from '@/components/Button/Button';
 import { DEFAULT_EXPLORATION_DURATION } from '@/constants';
 import textData from '@/locales/en.json';
@@ -9,13 +11,14 @@ import './LeftPanelFooter.scss';
 
 const SCOUT_BONUS_DURATION = 2;
 const SCOUT_BONUS_SCORE = 20;
+const BLOCKED_TRAVEL_COST = { canTravel: false, staminaCost: Infinity, timeCost: Infinity };
 
 export const LeftPanelFooter = () => {
   const focusedPoiId = useMapInteractionStore((state) => state.focusedPoiId);
   const currentPartyPosition = useGameState((state) => state.party.currentPartyPosition);
   const selectedCellId = focusedPoiId ?? currentPartyPosition;
 
-  const selectedCell = useGameState(poiSelectors.selectPoiById(selectedCellId));
+  const selectedCell = useGameState(useShallow(poiSelectors.selectPoiById(selectedCellId)));
   const partyPerception = useGameState((state) =>
     partySelectors.selectHighestEffectiveMainStat('per')(state),
   );
@@ -24,13 +27,15 @@ export const LeftPanelFooter = () => {
   const travelToPoi = useGameState((state) => state.world.actions.travelToPoi);
   const scoutCell = useGameState((state) => state.world.actions.scoutCell);
 
-  const travelCost = useGameState((state) => {
-    if (!selectedCellId || !selectedCell || selectedCell.type !== 'cell') {
-      return { canTravel: false, staminaCost: Infinity, timeCost: Infinity };
-    }
+  const travelCost = useGameState(
+    useShallow((state) => {
+      if (!selectedCellId || !selectedCell || selectedCell.type !== 'cell') {
+        return BLOCKED_TRAVEL_COST;
+      }
 
-    return TravelManager.computeTravel(currentPartyPosition, selectedCellId, state);
-  });
+      return TravelManager.computeTravel(currentPartyPosition, selectedCellId, state);
+    }),
+  );
 
   if (!selectedCell || selectedCell.type !== 'cell') {
     return null;

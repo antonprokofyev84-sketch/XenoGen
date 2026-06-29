@@ -8,6 +8,10 @@ import type {
   WorldTriggerRule,
 } from '@/types/effects.types';
 import type { InteractionEffectDescriptor } from '@/types/interaction.types';
+import type { NarrativeActionKey } from '@/types/narrative.types';
+import type { NonCellNode } from '@/types/poi.types';
+import { diffCalendarDays } from '@/utils/diffCalendarDays';
+import { resolveTimeSlotIndex } from '@/utils/timeOfDay';
 
 export function resolveEffectiveRelation(params: {
   factionId: string;
@@ -20,6 +24,46 @@ export function resolveEffectiveRelation(params: {
   const effective = personalAffection * personalWeight + factionReputation * factionWeight;
 
   return effective;
+}
+
+export function resolveEntryNarrativeAction(params: {
+  poi: NonCellNode | undefined;
+  previousPartyPosition: string | null | undefined;
+}): NarrativeActionKey {
+  const { poi, previousPartyPosition } = params;
+
+  if (!poi || !previousPartyPosition) {
+    return 'enter';
+  }
+
+  if (poi.localSpotIds.includes(previousPartyPosition)) {
+    return 'return_local';
+  }
+
+  if (poi.nestedPoiIds.includes(previousPartyPosition)) {
+    return 'return_nested';
+  }
+
+  return 'enter';
+}
+
+export function shouldAppendLocalSpotIntro(params: {
+  lastTimeVisited: number | null | undefined;
+  currentTime: number;
+}): boolean {
+  const { lastTimeVisited, currentTime } = params;
+
+  if (lastTimeVisited == null) {
+    return true;
+  }
+
+  const calendarDaysPassed = diffCalendarDays(lastTimeVisited, currentTime);
+
+  if (calendarDaysPassed > 0) {
+    return true;
+  }
+
+  return resolveTimeSlotIndex(lastTimeVisited) !== resolveTimeSlotIndex(currentTime);
 }
 
 export function computeInitialTension(

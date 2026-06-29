@@ -1,0 +1,24 @@
+.interactionLogHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: #e0e0e0;
+  font-size: 0.95rem;
+  flex-wrap: wrap;
+}
+
+.interactionLogSummary {
+  color: #e0e0e0;
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+}
+
+.interactionLogResult {
+  &.success {
+    color: $btn-color-green;
+  }
+
+  &.fail {
+    color: $btn-color-red;
+  }
+}

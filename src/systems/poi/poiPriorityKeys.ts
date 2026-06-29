@@ -1,46 +1,29 @@
+export const POI_OCCUPIED_LABEL = 'occupied';
+export const POI_EMPTY_LABEL = 'empty';
+
 export interface PoiPriorityKeyParams {
   npcId?: string | null;
   poiId?: string | null;
-  hasOwner?: boolean;
 }
 
 /**
  * Canonical POI resolver priority shared by image and narrative resolution.
  *
- * Priority:
- * 1. {npcId}_{poiId}
- * 2. {npcId}
- * 3. defaultOwner_{poiId}
- * 4. defaultOwner
- * 5. {poiId}
- * 6. default
+ * occupied (npcId present): {npcId}_{poiId}, {npcId}, occupied_{poiId}, occupied, default
+ * empty   (no npcId):       empty_{poiId}, empty, default
  */
-export function buildPoiPriorityKeys(params: PoiPriorityKeyParams): string[] {
-  const { npcId, poiId, hasOwner } = params;
-  const effectiveHasOwner = hasOwner ?? Boolean(npcId);
-  const keys: string[] = [];
-
-  if (npcId && poiId) {
-    keys.push(`${npcId}_${poiId}`);
-  }
-
+export function buildPoiPriorityKeys({ npcId, poiId }: PoiPriorityKeyParams): string[] {
   if (npcId) {
-    keys.push(npcId);
+    return [
+      poiId && `${npcId}_${poiId}`,
+      npcId,
+      poiId && `${POI_OCCUPIED_LABEL}_${poiId}`,
+      POI_OCCUPIED_LABEL,
+      'default',
+    ].filter(Boolean) as string[];
   }
 
-  if (effectiveHasOwner && poiId) {
-    keys.push(`defaultOwner_${poiId}`);
-  }
-
-  if (effectiveHasOwner) {
-    keys.push('defaultOwner');
-  }
-
-  if (poiId) {
-    keys.push(poiId);
-  }
-
-  keys.push('default');
-
-  return keys;
+  return [poiId && `${POI_EMPTY_LABEL}_${poiId}`, POI_EMPTY_LABEL, 'default'].filter(
+    Boolean,
+  ) as string[];
 }
