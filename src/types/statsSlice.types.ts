@@ -1,5 +1,5 @@
 export interface StatsSliceState {
-  combatStats: {
-    defeatedByEnemyType: Record<string, number>;
+  combat: {
+    defeated: Record<string, number>;
   };
 }
