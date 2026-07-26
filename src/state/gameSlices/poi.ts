@@ -207,7 +207,7 @@ const createPoiDraft = ({
 
   const rootCellId = parent.rootCellId;
 
-  // ВСЯ логика — в фабрике
+  // вся логика — в фабрике
   const node = createPoiFromTemplate({
     id,
     poiType,
@@ -399,6 +399,34 @@ const processPoiEnterDraft = (state: StoreState, poiId: string, daysPassed: numb
   }
 };
 
+const collectDayPassEffectsDraft = (state: StoreState): EffectsMap => {
+  const allEffects: EffectsMap = {};
+
+  const partyPoiId = state.party.currentPartyPosition;
+  const partyCellId = state.poiSlice.pois[partyPoiId]?.rootCellId;
+  const partyCell = state.poiSlice.pois[partyCellId];
+  const partyCellNode = requireCell(partyCell, 'Party location is invalid');
+
+  const { pois } = state.poiSlice;
+
+  for (const poi of Object.values(pois)) {
+    const onDayPass = (
+      poiStrategies as Record<string, (typeof poiStrategies)[keyof typeof poiStrategies]>
+    )[poi.type]?.onDayPass;
+    if (!onDayPass) continue;
+
+    const effects = onDayPass(poi);
+    if (effects) allEffects[poi.id] = effects;
+  }
+
+  partyCellNode.details.explorationDaysLeft = Math.max(
+    DEFAULT_EXPLORATION_DURATION,
+    (partyCellNode.details.explorationDaysLeft ?? 0) + 1,
+  );
+
+  return allEffects;
+};
+
 // Expose draft helpers for external systems that operate inside a single `draft` call
 export const poiDraft = {
   createPoi: createPoiDraft,
@@ -411,6 +439,7 @@ export const poiDraft = {
   exploreCell: exploreCellDraft,
   processPoiEnter: processPoiEnterDraft,
   processPoiExit: processPoiExitDraft,
+  collectDayPassEffects: collectDayPassEffectsDraft,
 };
 
 // Slice
@@ -504,30 +533,10 @@ export const createPoiSlice: GameSlice<PoiSlice> = (set) => ({
     },
 
     processDayPass: () => {
-      const allEffects: EffectsMap = {};
+      let allEffects: EffectsMap = {};
 
       set((state) => {
-        const partyPoiId = state.party.currentPartyPosition;
-        const partyCellId = state.poiSlice.pois[partyPoiId]?.rootCellId;
-        const partyCell = state.poiSlice.pois[partyCellId];
-        const partyCellNode = requireCell(partyCell, 'Party location is invalid');
-
-        const { pois } = state.poiSlice;
-
-        for (const poi of Object.values(pois)) {
-          const onDayPass = (
-            poiStrategies as Record<string, (typeof poiStrategies)[keyof typeof poiStrategies]>
-          )[poi.type]?.onDayPass;
-          if (!onDayPass) continue;
-
-          const effects = onDayPass(poi);
-          if (effects) allEffects[poi.id] = effects;
-        }
-
-        partyCellNode.details.explorationDaysLeft = Math.max(
-          DEFAULT_EXPLORATION_DURATION,
-          (partyCellNode.details.explorationDaysLeft ?? 0) + 1,
-        );
+        allEffects = collectDayPassEffectsDraft(state);
       });
 
       return allEffects;

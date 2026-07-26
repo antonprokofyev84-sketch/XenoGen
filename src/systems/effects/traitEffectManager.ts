@@ -1,3 +1,5 @@
+import { characterDraft } from '@/state/gameSlices/characters';
+import { traitsDraft } from '@/state/gameSlices/traits';
 import type { StoreState } from '@/state/useGameState';
 import type { MainStatKey, SkillKey } from '@/types/character.types';
 import type { EffectLog } from '@/types/logs.types';
@@ -5,6 +7,8 @@ import type { Action, Condition, TriggerRule } from '@/types/traits.types';
 
 import { traitsRegistry } from '../traits/traitsRegistry';
 
+// `state` is an Immer draft here: all mutations are applied in place via draft
+// helpers so the whole effect pass commits as a single transaction.
 type EffectContext = { state: StoreState };
 
 type ActionOutcome = {
@@ -105,7 +109,7 @@ function applyTraitAction(
       let next = current + action.delta;
       if (next < 0) next = 0;
 
-      state.traits.actions.modifyTrait(characterId, inst.id, { progress: next });
+      traitsDraft.modifyTrait(state, characterId, inst.id, { progress: next });
 
       let followUps: TriggerRule[] | undefined;
       if (max !== undefined && next >= max) {
@@ -128,7 +132,7 @@ function applyTraitAction(
       if (!inst) return;
 
       const next = Math.max(0, action.value);
-      state.traits.actions.modifyTrait(characterId, inst.id, { progress: next });
+      traitsDraft.modifyTrait(state, characterId, inst.id, { progress: next });
 
       const lvlCfg = traitsRegistry.resolveLevel(inst.id, inst.level);
       const max = inst.progressMax ?? lvlCfg?.progressMax ?? undefined;
@@ -152,7 +156,7 @@ function applyTraitAction(
       const exists = state.traits.traitsByCharacterId[characterId]?.some((t) => t.id === action.id);
       if (!exists) return;
 
-      state.traits.actions.modifyTrait(characterId, action.id, { duration: action.value });
+      traitsDraft.modifyTrait(state, characterId, action.id, { duration: action.value });
 
       return {
         log: {
@@ -168,7 +172,7 @@ function applyTraitAction(
       const statKey = action.stat as MainStatKey;
       const before = state.characters.byId[characterId]?.mainStats?.[statKey] ?? 0;
 
-      state.characters.actions.changeMainStat(characterId, statKey, action.delta);
+      characterDraft.changeMainStat(state, characterId, statKey, action.delta);
 
       const after =
         state.characters.byId[characterId]?.mainStats?.[statKey] ?? before + action.delta;
@@ -185,7 +189,7 @@ function applyTraitAction(
 
     case 'setMainStat': {
       const statKey = action.stat as MainStatKey;
-      state.characters.actions.setMainStat(characterId, statKey, action.value);
+      characterDraft.setMainStat(state, characterId, statKey, action.value);
 
       const after = state.characters.byId[characterId]?.mainStats?.[statKey] ?? action.value;
 
@@ -202,7 +206,7 @@ function applyTraitAction(
       const skillKey = action.skill as SkillKey;
       const before = state.characters.byId[characterId]?.skills?.[skillKey] ?? 0;
 
-      state.characters.actions.changeSkill(characterId, skillKey, action.delta);
+      characterDraft.changeSkill(state, characterId, skillKey, action.delta);
 
       const after = state.characters.byId[characterId]?.skills?.[skillKey] ?? before + action.delta;
 
@@ -218,7 +222,7 @@ function applyTraitAction(
 
     case 'setSkill': {
       const skillKey = action.skill as SkillKey;
-      state.characters.actions.setSkill(characterId, skillKey, action.value);
+      characterDraft.setSkill(state, characterId, skillKey, action.value);
 
       const after = state.characters.byId[characterId]?.skills?.[skillKey] ?? action.value;
 
@@ -233,13 +237,13 @@ function applyTraitAction(
 
     // --- ТРЕЙТЫ ---
     case 'addTrait': {
-      const ok = state.traits.actions.addTraitToCharacter(characterId, action.id, {
+      const ok = traitsDraft.addTraitToCharacter(state, characterId, action.id, {
         level: action.params?.level,
       });
       if (!ok) return;
 
       if (action.params?.duration !== undefined || action.params?.progress !== undefined) {
-        state.traits.actions.modifyTrait(characterId, action.id, {
+        traitsDraft.modifyTrait(state, characterId, action.id, {
           duration:
             typeof action.params.duration === 'number'
               ? action.params.duration
@@ -260,7 +264,7 @@ function applyTraitAction(
     }
 
     case 'removeTrait': {
-      state.traits.actions.removeTraitFromCharacter(characterId, action.id);
+      traitsDraft.removeTraitFromCharacter(state, characterId, action.id);
 
       return {
         log: {
@@ -274,8 +278,8 @@ function applyTraitAction(
       const exists = state.traits.traitsByCharacterId[characterId]?.some((t) => t.id === action.id);
       if (!exists) return;
 
-      state.traits.actions.removeTraitFromCharacter(characterId, action.id);
-      state.traits.actions.addTraitToCharacter(characterId, action.toId);
+      traitsDraft.removeTraitFromCharacter(state, characterId, action.id);
+      traitsDraft.addTraitToCharacter(state, characterId, action.toId);
 
       return {
         log: {
@@ -297,7 +301,7 @@ function applyTraitAction(
       const to = Math.min(inst.level + 1, maxIdx);
       if (to === from) return;
 
-      state.traits.actions.modifyTrait(characterId, inst.id, { level: to });
+      traitsDraft.modifyTrait(state, characterId, inst.id, { level: to });
 
       return {
         log: {
@@ -317,7 +321,7 @@ function applyTraitAction(
       const to = Math.max(inst.level - 1, 0);
       if (to === from) return;
 
-      state.traits.actions.modifyTrait(characterId, inst.id, { level: to });
+      traitsDraft.modifyTrait(state, characterId, inst.id, { level: to });
 
       return {
         log: {
@@ -337,7 +341,7 @@ function applyTraitAction(
       const clamped = Math.max(0, Math.min(action.level, maxIdx));
       if (clamped === inst.level) return;
 
-      state.traits.actions.modifyTrait(characterId, inst.id, { level: clamped });
+      traitsDraft.modifyTrait(state, characterId, inst.id, { level: clamped });
 
       return {
         log: {

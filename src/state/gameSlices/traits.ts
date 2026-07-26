@@ -65,7 +65,7 @@ export const traitsSelectors = {
     (state: StoreState): ActiveTrait[] =>
       state.traits.traitsByCharacterId[characterId] ?? [],
 
-  // Селектор для Основных характеристик (STR, DEX...)
+  // Селектор для основных характеристик (STR, DEX...)
   selectMainStatMods:
     (characterId: string) =>
     (state: StoreState): Partial<MainStats> => {
@@ -73,7 +73,7 @@ export const traitsSelectors = {
       return aggregateStats<MainStats>(active, 'mainStats');
     },
 
-  // Селектор для Навыков (Melee, Crafting...)
+  // Селектор для навыков (Melee, Crafting...)
   selectSkillMods:
     (characterId: string) =>
     (state: StoreState): Partial<Skills> => {
@@ -81,7 +81,7 @@ export const traitsSelectors = {
       return aggregateStats<Skills>(active, 'skills');
     },
 
-  // Селектор для Вторичных статов (HP, Armor...)
+  // Селектор для вторичных статов (HP, Armor...)
   selectSecondaryStatMods:
     (characterId: string) =>
     (state: StoreState): Partial<SecondaryStats> => {
@@ -90,31 +90,113 @@ export const traitsSelectors = {
     },
 };
 
-export const createTraitsSlice: GameSlice<TraitsSlice> = (set, get) => ({
+// --- Draft helpers (operate directly on an Immer draft, no nested set()) ---
+
+const addTraitToCharacterDraft = (
+  state: StoreState,
+  characterId: string,
+  traitId: TraitId,
+  params?: { level?: number },
+): boolean => {
+  const currentTraits = state.traits.traitsByCharacterId[characterId] ?? [];
+
+  if (!traitsManager.canAddTrait(traitId, currentTraits)) return false;
+
+  const level = params?.level ?? 0;
+  const newTrait = traitsRegistry.createActiveTrait(traitId, level);
+
+  if (newTrait) {
+    currentTraits.push(newTrait);
+    state.traits.traitsByCharacterId[characterId] = currentTraits;
+  }
+  return true;
+};
+
+const removeTraitFromCharacterDraft = (
+  state: StoreState,
+  characterId: string,
+  traitId: TraitId,
+) => {
+  const list = state.traits.traitsByCharacterId[characterId] ?? [];
+  state.traits.traitsByCharacterId[characterId] = list.filter((t) => t.id !== traitId);
+};
+
+const modifyTraitDraft = (
+  state: StoreState,
+  characterId: string,
+  traitId: TraitId,
+  props: Partial<ActiveTrait>,
+) => {
+  const list = state.traits.traitsByCharacterId[characterId] ?? [];
+  const trait = list.find((t) => t.id === traitId);
+  if (!trait) return;
+
+  if (props.level !== undefined && props.level !== trait.level) {
+    const lvl = traitsRegistry.resolveLevel(trait.id, props.level);
+    if (lvl) {
+      trait.level = props.level;
+      trait.duration = props.duration ?? lvl.duration;
+      trait.progress = props.progress ?? lvl.progress;
+      trait.progressMax = props.progressMax ?? lvl.progressMax ?? null;
+    }
+  }
+
+  Object.assign(trait, props);
+};
+
+const collectDayPassEffectsDraft = (state: StoreState): Record<string, TriggerRule[]> => {
+  const charIds = Object.keys(state.traits.traitsByCharacterId);
+  const allEffects: Record<string, TriggerRule[]> = {};
+
+  for (const id of charIds) {
+    const currentTraits = state.traits.traitsByCharacterId[id] ?? [];
+    const { updatedTraits, effects } = traitsManager.computeOnDayPassForCharacter(currentTraits);
+    state.traits.traitsByCharacterId[id] = updatedTraits;
+    allEffects[id] = effects;
+  }
+
+  return allEffects;
+};
+
+const collectBattleEndEffectsDraft = (
+  state: StoreState,
+  combatStatus: CombatStatus,
+): Record<string, TriggerRule[]> => {
+  const activeIds = state.party.activeIds;
+  const allEffects: Record<string, TriggerRule[]> = {};
+
+  for (const id of activeIds) {
+    const currentTraits = state.traits.traitsByCharacterId[id] ?? [];
+    const { effects } = traitsManager.computeOnBattleEndForCharacter(currentTraits, combatStatus);
+    allEffects[id] = effects;
+  }
+
+  return allEffects;
+};
+
+// Expose draft helpers for external systems that operate inside a single `draft` call
+export const traitsDraft = {
+  addTraitToCharacter: addTraitToCharacterDraft,
+  removeTraitFromCharacter: removeTraitFromCharacterDraft,
+  modifyTrait: modifyTraitDraft,
+  collectDayPassEffects: collectDayPassEffectsDraft,
+  collectBattleEndEffects: collectBattleEndEffectsDraft,
+};
+
+export const createTraitsSlice: GameSlice<TraitsSlice> = (set) => ({
   traitsByCharacterId: {},
 
   actions: {
     addTraitToCharacter: (characterId, traitId, params) => {
       set((state) => {
-        const currentTraits = state.traits.traitsByCharacterId[characterId] ?? [];
-
-        if (!traitsManager.canAddTrait(traitId, currentTraits)) return;
-
-        const level = params?.level ?? 0;
-        const newTrait = traitsRegistry.createActiveTrait(traitId, level);
-
-        if (newTrait) {
-          currentTraits.push(newTrait);
-          state.traits.traitsByCharacterId[characterId] = currentTraits;
-        }
+        addTraitToCharacterDraft(state, characterId, traitId, params);
       });
       return true;
     },
 
     removeTraitFromCharacter: (characterId, traitId) => {
       set((state) => {
-        const list = state.traits.traitsByCharacterId[characterId] ?? [];
-        state.traits.traitsByCharacterId[characterId] = list.filter((t) => t.id !== traitId);
+        removeTraitFromCharacterDraft(state, characterId, traitId);
       });
     },
 
@@ -126,57 +208,23 @@ export const createTraitsSlice: GameSlice<TraitsSlice> = (set, get) => ({
 
     modifyTrait: (characterId, traitId, props) => {
       set((state) => {
-        const list = state.traits.traitsByCharacterId[characterId] ?? [];
-        const trait = list.find((t) => t.id === traitId);
-        if (!trait) return;
-
-        if (props.level !== undefined && props.level !== trait.level) {
-          const lvl = traitsRegistry.resolveLevel(trait.id, props.level);
-          if (lvl) {
-            trait.level = props.level;
-            trait.duration = props.duration ?? lvl.duration;
-            trait.progress = props.progress ?? lvl.progress;
-            trait.progressMax = props.progressMax ?? lvl.progressMax ?? null;
-          }
-        }
-
-        Object.assign(trait, props);
+        modifyTraitDraft(state, characterId, traitId, props);
       });
     },
 
     processDayEnd: (): Record<string, TriggerRule[]> => {
-      const { traitsByCharacterId } = get().traits;
-      const charIds = Object.keys(traitsByCharacterId);
-      const allEffects: Record<string, TriggerRule[]> = {};
-
+      let allEffects: Record<string, TriggerRule[]> = {};
       set((state) => {
-        for (const id of charIds) {
-          const currentTraits = state.traits.traitsByCharacterId[id] ?? [];
-          const { updatedTraits, effects } =
-            traitsManager.computeOnDayPassForCharacter(currentTraits);
-          state.traits.traitsByCharacterId[id] = updatedTraits;
-          allEffects[id] = effects;
-        }
+        allEffects = collectDayPassEffectsDraft(state);
       });
-
       return allEffects;
     },
 
     processBattleEnd: (combatStatus) => {
-      const activeIds = get().party.activeIds;
-      const allEffects: Record<string, TriggerRule[]> = {};
-
+      let allEffects: Record<string, TriggerRule[]> = {};
       set((state) => {
-        for (const id of activeIds) {
-          const currentTraits = state.traits.traitsByCharacterId[id] ?? [];
-          const { effects } = traitsManager.computeOnBattleEndForCharacter(
-            currentTraits,
-            combatStatus,
-          );
-          allEffects[id] = effects;
-        }
+        allEffects = collectBattleEndEffectsDraft(state, combatStatus);
       });
-
       return allEffects;
     },
   },

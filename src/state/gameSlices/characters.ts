@@ -64,21 +64,27 @@ const applyMods = <T extends Record<string, number>>(
 export const calculateMaxHp = (mainStats: MainStats, baseStats: BaseStats): number => {
   return baseStats.baseHp + Math.floor(mainStats.con / 1.5) + Math.floor(mainStats.str / 5);
 };
+
 const calculateMaxStamina = (mainStats: MainStats, baseStats: BaseStats): number => {
   return baseStats.baseStamina + mainStats.con + Math.floor(mainStats.will / 2);
 };
+
 const calculateInitiative = (mainStats: MainStats, baseStats: BaseStats): number => {
   return baseStats.baseInitiative + Math.floor(mainStats.dex / 20) + Math.floor(mainStats.int / 50);
 };
+
 const calculateArmor = (mainStats: MainStats, baseStats: BaseStats): number => {
   return baseStats.baseArmor + Math.floor(mainStats.con / 30);
 };
+
 const calculateCritChance = (mainStats: MainStats, baseStats: BaseStats): number => {
   return baseStats.baseCritChance + Math.floor(mainStats.per / 20) + Math.floor(mainStats.int / 50);
 };
+
 const calculateMeleeAttackPower = (mainStats: MainStats, baseStats: BaseStats): number => {
   return baseStats.baseMeleeDamage + Math.floor(mainStats.str / 10);
 };
+
 const calculateEvasion = (mainStats: MainStats): number => {
   return Math.floor(mainStats.dex / 2) + Math.floor(mainStats.per / 10);
 };
@@ -126,6 +132,7 @@ export const characterSelectors = {
           critChance: 0,
           initiative: 0,
         };
+
       const { mainStats, baseStats } = character;
       return {
         maxHp: calculateMaxHp(mainStats, baseStats),
@@ -277,6 +284,30 @@ const resetProtagonistDraft = (state: StoreState) => {
   }
 };
 
+const processBattleEndDraft = (
+  state: StoreState,
+  combatResult: CombatResult,
+): Record<string, EffectLog[]> => {
+  const { combatStatus, characterMetrics } = combatResult;
+  const logs: Record<string, EffectLog[]> = {};
+
+  for (const [characterId, metrics] of Object.entries(characterMetrics)) {
+    const character = state.characters.byId[characterId];
+    if (!character) continue;
+
+    logs[characterId] ??= [];
+
+    updateBattleStatistics(character, combatStatus, metrics);
+
+    const growthLogs = processBattleGrowth(state, characterId, metrics);
+    if (growthLogs.length) {
+      logs[characterId].push(...growthLogs);
+    }
+  }
+
+  return logs;
+};
+
 // Expose draft helpers for external systems that operate inside a single `draft` call
 export const characterDraft = {
   setName: setNameDraft,
@@ -288,6 +319,7 @@ export const characterDraft = {
   changeStamina: changeStaminaDraft,
   resetStaminaToMax: resetStaminaToMaxDraft,
   resetProtagonist: resetProtagonistDraft,
+  processBattleEnd: processBattleEndDraft,
 };
 
 // --- Slice Creator Function ---
@@ -322,25 +354,25 @@ export const createCharactersSlice: GameSlice<CharactersSlice> = (set, get) => (
         setSkillDraft(state, characterId, skill, value);
       }),
 
-    finalizeCharacterCreation: (characterId: string) =>
+    finalizeCharacterCreation: (characterId: string) => {
       //for now just finalize skills
-      {
-        set((state) => {
-          const char = state.characters.byId[characterId];
-          const baseSkills = characterSelectors.selectBaseSkills(characterId)(state);
-          const finalSkills: Skills = { ...char.skills };
 
-          skillKeys.forEach((skill) => {
-            finalSkills[skill] = (char.skills[skill] || 0) + (baseSkills[skill] || 0);
-          });
+      set((state) => {
+        const char = state.characters.byId[characterId];
+        const baseSkills = characterSelectors.selectBaseSkills(characterId)(state);
+        const finalSkills: Skills = { ...char.skills };
 
-          char.skills = finalSkills;
+        skillKeys.forEach((skill) => {
+          finalSkills[skill] = (char.skills[skill] || 0) + (baseSkills[skill] || 0);
         });
 
-        get().characters.actions.resetHpToMax(characterId);
-        get().characters.actions.resetStaminaToMax(characterId);
-        get().equipment.actions.resetCharacterEquipment(characterId);
-      },
+        char.skills = finalSkills;
+      });
+
+      get().characters.actions.resetHpToMax(characterId);
+      get().characters.actions.resetStaminaToMax(characterId);
+      get().equipment.actions.resetCharacterEquipment(characterId);
+    },
 
     resetProtagonist: () =>
       set((state) => {
@@ -365,23 +397,10 @@ export const createCharactersSlice: GameSlice<CharactersSlice> = (set, get) => (
     },
 
     processBattleEnd: (combatResult: CombatResult): Record<string, EffectLog[]> => {
-      const { combatStatus, characterMetrics } = combatResult;
-      const logs: Record<string, EffectLog[]> = {};
+      let logs: Record<string, EffectLog[]> = {};
 
       set((state) => {
-        for (const [characterId, metrics] of Object.entries(characterMetrics)) {
-          const character = state.characters.byId[characterId];
-          if (!character) continue;
-
-          logs[characterId] ??= [];
-
-          updateBattleStatistics(character, combatStatus, metrics);
-
-          const growthLogs = processBattleGrowth(state, characterId, metrics);
-          if (growthLogs.length) {
-            logs[characterId].push(...growthLogs);
-          }
-        }
+        logs = processBattleEndDraft(state, combatResult);
       });
 
       return logs;

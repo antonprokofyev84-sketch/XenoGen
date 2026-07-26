@@ -12,10 +12,12 @@ import { getNextTimeOfDayStart, resolveTimeOfDay } from '@/utils/timeOfDay';
 import type { GameSlice } from '../types';
 import { partySelectors } from '../useGameState';
 import type { StoreState } from '../useGameState';
+import { characterDraft } from './characters';
 import { interactionDraft } from './interaction';
 import { occupancyDraft } from './occupancy';
 import { partyDraft } from './party';
 import { getDaysSinceLastVisit, poiDraft } from './poi';
+import { traitsDraft } from './traits';
 
 export interface WorldSlice {
   currentTime: number;
@@ -52,68 +54,80 @@ function scoutCellDraft(
   poiDraft.exploreCell(state, cellId, explorationLevel, duration);
 }
 
+/**
+ * Runs a single "day passed" tick on the draft: collects trait + POI day-pass
+ * effects and applies them in place. No nested set() — safe to compose inside a
+ * larger transaction (e.g. time advance during travel).
+ */
+function runDayTickDraft(state: StoreState) {
+  const traitEffects = traitsDraft.collectDayPassEffects(state);
+  const poiEffects = poiDraft.collectDayPassEffects(state);
+
+  TraitEffectManager.processTraitEffects(traitEffects, { state });
+  PoiEffectManager.processPoiEffects(poiEffects, { state });
+}
+
+/**
+ * Advances world time on the draft, refreshing occupancy on timeslot/day change
+ * and running one day tick per crossed day boundary. Fully atomic.
+ */
+function advanceTimeDraft(state: StoreState, minutes: number) {
+  const { newTime, daysPassed, oldTimeSlotIndex, newTimeSlotIndex } = advanceWorldTime(
+    state.world.currentTime,
+    minutes,
+  );
+
+  state.world.currentTime = newTime;
+
+  if (oldTimeSlotIndex !== newTimeSlotIndex || daysPassed > 0) {
+    occupancyDraft.refreshOccupancy(state);
+  }
+
+  for (let i = 0; i < daysPassed; i++) {
+    runDayTickDraft(state);
+  }
+}
+
 export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
   currentTime: START_DATE,
   weather: 'clear',
 
   actions: {
     endBattle: (combatResult) => {
-      console.log('---');
-      console.log(combatResult);
-      const stateSnapshot = get();
-      const traitEffects = get().traits.actions.processBattleEnd(combatResult.combatStatus);
-      const charactersEffectLogs = TraitEffectManager.processTraitEffects(traitEffects, {
-        state: stateSnapshot,
-      });
-      const characterGrowthLogs = get().characters.actions.processBattleEnd(combatResult);
-
       const mergedLogs: Record<string, EffectLog[]> = {};
 
-      console.log(characterGrowthLogs);
-      console.log(charactersEffectLogs);
+      set((state) => {
+        const traitEffects = traitsDraft.collectBattleEndEffects(state, combatResult.combatStatus);
+        const charactersEffectLogs = TraitEffectManager.processTraitEffects(traitEffects, {
+          state,
+        });
+        const characterGrowthLogs = characterDraft.processBattleEnd(state, combatResult);
 
-      const allCharacterIds = new Set([
-        ...Object.keys(charactersEffectLogs),
-        ...Object.keys(characterGrowthLogs),
-      ]);
+        const allCharacterIds = new Set([
+          ...Object.keys(charactersEffectLogs),
+          ...Object.keys(characterGrowthLogs),
+        ]);
 
-      allCharacterIds.forEach((id) => {
-        mergedLogs[id] = [...(charactersEffectLogs[id] || []), ...(characterGrowthLogs[id] || [])];
+        allCharacterIds.forEach((id) => {
+          mergedLogs[id] = [
+            ...(charactersEffectLogs[id] || []),
+            ...(characterGrowthLogs[id] || []),
+          ];
+        });
       });
+
       return mergedLogs;
     },
     endDay: () => {
-      const stateSnapshot = get();
-
-      const traitEffects = get().traits.actions.processDayEnd();
-      const poiEffects = get().poiSlice.actions.processDayPass();
-
-      TraitEffectManager.processTraitEffects(traitEffects, { state: stateSnapshot });
       set((state) => {
-        PoiEffectManager.processPoiEffects(poiEffects, { state });
+        runDayTickDraft(state);
       });
     },
 
     changeTime: (minutes: number) => {
-      const oldTime = get().world.currentTime;
-      const { newTime, daysPassed, oldTimeSlotIndex, newTimeSlotIndex } = advanceWorldTime(
-        oldTime,
-        minutes,
-      );
-
       set((state) => {
-        state.world.currentTime = newTime;
-
-        if (oldTimeSlotIndex !== newTimeSlotIndex || daysPassed > 0) {
-          occupancyDraft.refreshOccupancy(state);
-        }
+        advanceTimeDraft(state, minutes);
       });
-
-      if (daysPassed > 0) {
-        for (let i = 0; i < daysPassed; i++) {
-          get().world.actions.endDay();
-        }
-      }
     },
 
     scoutCell: (cellId, maxRollValue, bonus, duration) => {
@@ -138,6 +152,8 @@ export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
         return;
       }
 
+      // The whole trip is one atomic transaction: exit -> move -> time passes
+      // (may trigger day ticks / POI removal) -> arrive.
       set((state) => {
         interactionDraft.endInteraction(state);
 
@@ -146,15 +162,13 @@ export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
         // Party position must move before time advances, because refreshOccupancy
         // uses the current party position as its anchor.
         partyDraft.moveToPoi(state, targetPoiId, travel.staminaCost);
-      });
 
-      get().world.actions.changeTime(travel.timeCost);
+        advanceTimeDraft(state, travel.timeCost);
 
-      set((state) => {
-        // here we are getting the target POI again because it might have been removed during changeTime effects
-        const targetPoi = state.poiSlice.pois[targetPoiId];
+        // Re-read the target: time advance effects may have removed it.
+        const arrivedPoi = state.poiSlice.pois[targetPoiId];
 
-        if (!targetPoi) {
+        if (!arrivedPoi) {
           if (fallbackCellId && state.poiSlice.pois[fallbackCellId]) {
             state.party.currentPartyPosition = fallbackCellId;
           }
@@ -168,17 +182,17 @@ export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
         poiDraft.processPoiEnter(state, targetPoiId, daysPassed);
 
         //TODO potentially we should scout any poi.
-        if (targetPoi.type === 'cell' && daysPassed > 0) {
+        if (arrivedPoi.type === 'cell' && daysPassed > 0) {
           scoutCellDraft(state, targetPoiId);
         }
 
         occupancyDraft.populatePoiOccupancy(state, targetPoiId);
 
-        if (targetPoi.type !== 'cell') {
+        if (arrivedPoi.type !== 'cell') {
           interactionDraft.startInteraction(state, { poiId: targetPoiId });
         }
 
-        state.ui.currentScreen = targetPoi.type === 'cell' ? 'strategicMap' : 'poiView';
+        state.ui.currentScreen = arrivedPoi.type === 'cell' ? 'strategicMap' : 'poiView';
       });
     },
 
