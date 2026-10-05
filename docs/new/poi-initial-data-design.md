@@ -44,7 +44,12 @@ export const POI_TEMPLATES = {...};
  */
 ```
 
-POI группируются по корневой клетке:
+Record<PoiId, Partial<Record<SlotId, RuntimeSlotAssignment>>>
+
+> ;
+
+interface RuntimeSlotAssignment {
+assignedNpcId: NpcId;
 
 ```ts
 export const INITIAL_POIS_BY_CELL = {
@@ -157,10 +162,9 @@ export interface InitialPoiDetails {
   lastTimeVisited?: number | null;
 }
 
-export type PoiTemplateDetails = Partial<Pick<
-  InitialPoiDetails,
-  'explorationThreshold' | 'lifetimeDaysLeft' | 'faction'
->>;
+export type PoiTemplateDetails = Partial<
+  Pick<InitialPoiDetails, 'explorationThreshold' | 'lifetimeDaysLeft' | 'faction'>
+>;
 ```
 
 Правила initial-данных:
@@ -402,7 +406,7 @@ Slot definition:
 export interface InitialNpcSlot {
   id: string;
   role: string;
-  npcIds: string[];
+  candidateNpcIds: string[];
 
   chance?: number;
   actionIds?: ActionId[];
@@ -413,11 +417,11 @@ export interface InitialNpcSlot {
 Смысл:
 
 ```text
-id        → локальный ID slot внутри POI
-role      → роль NPC в этом slot
-npcIds    → NPC-кандидаты для этого slot
-chance    → вероятность заполнения, диапазон 0..1
-actionIds → действия NPC именно в этой роли
+id              → локальный ID slot внутри POI
+role            → роль NPC в этом slot
+candidateNpcIds → immutable NPC-кандидаты для автоматического заполнения
+chance          → вероятность автоматического заполнения, диапазон 0..1
+actionIds       → действия NPC именно в этой роли
 interceptorIds → автоматические события входа именно в этот slot
 ```
 
@@ -430,18 +434,18 @@ chance: 0.7;
 Правила разрешения occupancy:
 
 ```text
-chance отсутствует  → 1
-npcIds: []          → slot не может занять никто
-приоритет групп     → work > freeTime > home
-несколько кандидатов на slot → случайный выбор
+chance отсутствует       → 1
+candidateNpcIds: []      → без runtime assignment slot не может занять никто
+приоритет групп          → work > freeTime > home
+несколько кандидатов slot → случайный выбор
 ```
 
 Алгоритм намеренно простой:
 
 1. Последовательно обойти группы `work`, `freeTime`, `home`.
 2. Внутри каждой группы обойти slots в порядке массива.
-3. Для текущего slot бросить его `chance`.
-4. Из подходящих и ещё не занятых NPC случайно выбрать одного occupant.
+3. Если есть runtime assignment, проверить назначенного NPC. Совместимый со schedule и свободный NPC занимает slot без `chance`; иначе slot остаётся пустым.
+4. Если assignment нет, бросить `chance` и случайно выбрать одного подходящего и ещё не занятого NPC из `candidateNpcIds`.
 5. Перейти к следующему slot.
 
 Первый обработанный slot получает преимущество. Поэтому, если один NPC подходит нескольким slots одинакового приоритета, он занимает первый подходящий slot по порядку массива и больше не рассматривается. Никакого дополнительного оптимального распределения нет.
@@ -452,25 +456,28 @@ npcIds: []          → slot не может занять никто
 
 Slot-owned `actionIds` и `interceptorIds` являются базовым контентом конкретного slot. Slot не входит в `QuestTargetId`: квестовые `actionIdsByTarget` и `interceptorIdsByTarget` используют только конкретный `npcId` или `poiId`. Если квестовый Interceptor должен работать только в одном slot, его ID хранится в `slot.interceptorIds`, а квестовая актуальность задаётся `conditions` самого Interceptor.
 
-Семантика `npcIds` одинакова для всех POI:
+Семантика `candidateNpcIds` одинакова для всех POI:
 
 ```text
-[]                → slot не может занять никто
-[npcId]           → фиксированный кандидат или назначенный NPC
+[]                → slot не получает automatic occupant
+[npcId]           → один допустимый automatic candidate
 [npcA, npcB, ...] → один occupant случайно выбирается из подходящих кандидатов
 ```
 
-Построенные комнаты базы используют те же slots. Назначение NPC в slot построенной комнаты записывает один ID в `npcIds` runtime-копии slot. Отдельная сущность назначения на работу не вводится.
+Построенные комнаты базы используют те же slots. Постоянное назначение хранится отдельно от template в runtime map:
+
+```ts
+type RuntimeSlotAssignments = Partial<Record<PoiId, Partial<Record<SlotId, NpcId>>>>;
+```
+
+Присутствующий `assignedNpcId` является эксклюзивным: он не меняет `candidateNpcIds`, при совместимом schedule занимает slot без `chance`, а при недоступности оставляет slot пустым. Обычные candidates не становятся fallback для assignment.
 
 Slots описывают правила заполнения, но не текущих occupants. Фактическое runtime-состояние `slotId → npcId` хранится в occupancy slice.
 
 Предварительная форма runtime occupancy:
 
 ```ts
-type PoiSlotOccupants = Record<
-  PoiId,
-  Partial<Record<SlotId, NpcId>>
->;
+type PoiSlotOccupants = Record<PoiId, Partial<Record<SlotId, NpcId>>>;
 ```
 
 Во внутреннем `Record<SlotId, NpcId>` присутствуют только занятые slots. Если `slotId` отсутствует, этот slot пуст:
@@ -550,8 +557,7 @@ raw value клетки → число 0..999; дробные значения д
 
 ```ts
 const resolvedLevel =
-  regionLevelOverrides?.[param]
-  ?? cellLevel + (regionLevelModifiers?.[param] ?? 0);
+  regionLevelOverrides?.[param] ?? cellLevel + (regionLevelModifiers?.[param] ?? 0);
 
 const finalLevel = Math.min(9, Math.max(0, resolvedLevel));
 ```
@@ -674,7 +680,7 @@ export interface InitialPoiDetails {
 export interface InitialNpcSlot {
   id: string;
   role: string;
-  npcIds: string[];
+  candidateNpcIds: string[];
   chance?: number;
   actionIds?: ActionId[];
   interceptorIds?: InterceptorId[];
@@ -717,10 +723,7 @@ export interface PoiTemplateDefinition {
   onDayPass?: ChangeRegionParameterEffect[];
 }
 
-export type PoiTemplateMap = Record<
-  PoiTemplateId,
-  PoiTemplateDefinition
->;
+export type PoiTemplateMap = Record<PoiTemplateId, PoiTemplateDefinition>;
 ```
 
 `details` объединяются отдельно:
@@ -807,24 +810,20 @@ export const POI_TEMPLATES = {
       night: 'open',
     },
 
-    actionIds: [
-      'redBoar:rest',
-      'redBoar:trade',
-      'redBoar:buyDrink',
-    ],
+    actionIds: ['redBoar:rest', 'redBoar:trade', 'redBoar:buyDrink'],
 
     npcSlots: {
       work: [
         {
           id: 'bartender',
           role: 'bartender',
-          npcIds: ['bob'],
+          candidateNpcIds: ['bob'],
           actionIds: ['bartender:askRumors'],
         },
         {
           id: 'waitress',
           role: 'waitress',
-          npcIds: ['lena'],
+          candidateNpcIds: ['lena'],
           actionIds: ['waitress:askRumors'],
         },
       ],
@@ -833,12 +832,9 @@ export const POI_TEMPLATES = {
         {
           id: 'visitor_1',
           role: 'visitor',
-          npcIds: ['carl', 'mara'],
+          candidateNpcIds: ['carl', 'mara'],
           chance: 0.7,
-          actionIds: [
-            'visitor:buyDrink',
-            'visitor:askRumors',
-          ],
+          actionIds: ['visitor:buyDrink', 'visitor:askRumors'],
         },
       ],
     },
@@ -908,9 +904,9 @@ export const POI_TEMPLATES = {
 - `managerIds` отсутствует;
 - общие действия POI хранятся в `actionIds`, а базовые автоматические события входа — в `interceptorIds` template definition;
 - slots группируются по `work/freeTime/home`, пустые группы не указываются;
-- defaults slots: `chance = 1`, пустой `npcIds` запрещает заполнение;
-- `role` принадлежит slot, а `npcIds` одинаково описывает фиксированных NPC, кандидатов и назначения в slots построенных комнат;
-- построенные комнаты базы используют ту же slot-модель без отдельной сущности назначения;
+- defaults slots: `chance = 1`, пустой `candidateNpcIds` запрещает automatic placement;
+- `role` и immutable `candidateNpcIds` принадлежат template slot; candidates не являются persistent assignments;
+- построенные комнаты базы используют отдельные `RuntimeSlotAssignments`, не изменяющие template candidates;
 - slots разрешаются последовательно: `work > freeTime > home`, затем в порядке массивов; первый подходящий slot получает случайного свободного кандидата;
 - фактические occupants slots хранятся в occupancy slice;
 - raw региональные параметры являются числами `0..999` и могут быть дробными; static POI modifiers/overrides проходят development-проверку целочисленности, а итог всегда ограничивается целым диапазоном `0..9`;

@@ -109,14 +109,14 @@ Interceptors имеют собственные `conditions`, потому что
 
 Сохраняется основа существующего interaction slice. Направление замены:
 
-| Сейчас | Целевая модель |
-|---|---|
-| services | Definitions из `INITIAL_ACTIONS` |
-| services текущего контекста | Root content из Frame, POI/slot/NPC и quest action map |
-| `service.executedTimes` | `executionLimit.perDay` для subject + actionId |
-| `performService` | `performAction` |
-| Замена services при force exit | Переход в forceExit Frame |
-| Специальные проверки Action ID в UI | Общий обработчик transition |
+| Сейчас                              | Целевая модель                                         |
+| ----------------------------------- | ------------------------------------------------------ |
+| services                            | Definitions из `INITIAL_ACTIONS`                       |
+| services текущего контекста         | Root content из Frame, POI/slot/NPC и quest action map |
+| `service.executedTimes`             | `executionLimit.perDay` для subject + actionId         |
+| `performService`                    | `performAction`                                        |
+| Замена services при force exit      | Переход в forceExit Frame                              |
+| Специальные проверки Action ID в UI | Общий обработчик transition                            |
 
 В текущем interaction нужны `activeFrameId`, текущий background, log и контекст POI/slot/NPC. Количество выполнений и сохранённая видимость принадлежат дневной памяти субъекта. Не нужно хранить независимые счётчики одновременно в definition, Frame и interaction.
 
@@ -370,10 +370,7 @@ speakerId: '$npc' → конкретный npcId
 Initial Frame использует зафиксированные режимы:
 
 ```ts
-type NpcDisplayMode =
-  | 'none'
-  | 'speaker'
-  | 'always';
+type NpcDisplayMode = 'none' | 'speaker' | 'always';
 ```
 
 ```text
@@ -447,11 +444,11 @@ type InteractionOption =
 
 ### Разные виды случайности
 
-| Механизм | Когда разрешается | Срок результата |
-|---|---|---|
-| `appearanceChance` | При первом подходящем показе для subject/action в этот день | До конца дня |
-| `check.chance` или stat/skill check | При начатой попытке | Результат этой попытки |
-| Веса `ActionOutcome[]` | При выборе результата начатой попытки | Один выбранный результат |
+| Механизм                            | Когда разрешается                                           | Срок результата          |
+| ----------------------------------- | ----------------------------------------------------------- | ------------------------ |
+| `appearanceChance`                  | При первом подходящем показе для subject/action в этот день | До конца дня             |
+| `check.chance` или stat/skill check | При начатой попытке                                         | Результат этой попытки   |
+| Веса `ActionOutcome[]`              | При выборе результата начатой попытки                       | Один выбранный результат |
 
 `appearanceChance` и `check.chance` находятся в `0..1`. Веса относительные, неотрицательные, с положительной суммой; выбирается ровно один вариант по сумме весов. Веса не являются независимыми chance rolls. Функции весов и difficulty разрешаются для текущей попытки.
 
@@ -560,7 +557,7 @@ Effects текущего NPC и явно указанного NPC — разны
 `baseSchedule` NPC не содержит `work`. Рабочее состояние накладывается из POI slots:
 
 ```text
-NPC указан в npcIds рабочего slot
+NPC указан в candidateNpcIds рабочего slot либо назначен в него runtime assignment
 И рабочий POI открыт в текущем TimeOfDay
 → resolved state NPC становится work
 
@@ -581,7 +578,7 @@ hidden   → NPC нигде не размещается
 
 Фактический occupant slot сохраняется до следующего `TimeOfDay`. Пересчёт внутри одного time slot не выполняется. Источник текущего размещения — occupancy slice; NPC initial-объект не получает `currentPoiId`, `slotId`, `role` или `workplaceId`.
 
-Построенные комнаты базы используют ту же систему. Назначение либо снятие NPC изменяет `npcIds` runtime-копии соответствующего slot; отдельная сущность `workAssignment` не нужна.
+Построенные комнаты базы используют ту же систему. Назначение хранится отдельно от immutable template candidates по `poiId + slotId`; оно не изменяет `candidateNpcIds`. Совместимый назначенный NPC занимает slot без `chance`, а при его недоступности slot остаётся пустым без candidate fallback.
 
 Открытым остаётся окончательная форма `resolvedSchedulesByNpcId` и occupancy slice.
 
@@ -590,10 +587,7 @@ hidden   → NPC нигде не размещается
 В runtime `timesMet` всегда нормализован в число. Он увеличивается при выходе из взаимодействия с NPC в недочерний контекст, но не чаще одного раза за календарный день:
 
 ```ts
-if (
-  npc.lastDateMet === null ||
-  diffCalendarDays(npc.lastDateMet, currentTime) > 0
-) {
+if (npc.lastDateMet === null || diffCalendarDays(npc.lastDateMet, currentTime) > 0) {
   npc.timesMet += 1;
 }
 
@@ -646,7 +640,6 @@ role текущего slot
 4. lazy или eager загрузка групп assets;
 5. должен ли разрешённый visual variant сохраняться в presentation snapshot log event;
 6. понадобится ли optional `visualId`, если несколько NPC будут использовать один визуальный набор.
-
 
 ---
 

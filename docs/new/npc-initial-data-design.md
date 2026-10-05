@@ -59,15 +59,9 @@ export const INITIAL_NPCS = {
 ## 2. Initial-тип NPC
 
 ```ts
-export type NpcBaseScheduleState =
-  | 'freeTime'
-  | 'home'
-  | 'hidden';
+export type NpcBaseScheduleState = 'freeTime' | 'home' | 'hidden';
 
-export type NpcBaseSchedule = Record<
-  TimeOfDay,
-  NpcBaseScheduleState
->;
+export type NpcBaseSchedule = Record<TimeOfDay, NpcBaseScheduleState>;
 
 export interface InitialNpc {
   name: string;
@@ -171,7 +165,7 @@ home     → NPC может занимать home slot
 hidden   → NPC нигде не размещается
 ```
 
-`work` намеренно отсутствует в `NpcBaseScheduleState`. Работа задаётся не самим NPC, а его присутствием в `npcIds` рабочего slot конкретного POI. Когда рабочий POI открыт, работа накладывается поверх соответствующего значения `baseSchedule` при построении resolved schedule.
+`work` намеренно отсутствует в `NpcBaseScheduleState`. Работа задаётся не самим NPC, а его участием в рабочем template slot: как automatic candidate либо persistent assignment. Когда рабочий POI открыт, работа накладывается поверх соответствующего значения `baseSchedule` при построении resolved schedule.
 
 Поэтому NPC initial-объект не хранит:
 
@@ -231,17 +225,17 @@ NPC не знает своё текущее место работы или пр�
 {
   id: 'bartender',
   role: 'bartender',
-  npcIds: ['bob'],
+  candidateNpcIds: ['bob'],
   actionIds: ['bartender:askRumors'],
   interceptorIds: ['redBoar/bartender:shiftGreeting'],
 }
 ```
 
-Семантика `npcIds`:
+Семантика `candidateNpcIds`:
 
 ```text
-[]                → slot не может занять никто
-[npcId]           → фиксированный кандидат или назначенный NPC
+[]                → slot не получает automatic occupant
+[npcId]           → один допустимый automatic candidate
 [npcA, npcB, ...] → один occupant случайно выбирается из подходящих кандидатов
 ```
 
@@ -249,7 +243,7 @@ NPC не знает своё текущее место работы или пр�
 
 `actionIds` и `interceptorIds` slot принадлежат именно этой роли и этому месту. Slot не является `QuestTargetId`: квестовые привязки по владельцам используют конкретный `npcId` или `poiId`. Если автоматическое квестовое событие должно происходить только в конкретном slot, его ID можно держать в `slot.interceptorIds`, а актуальность проверять квестовыми `conditions` самого Interceptor.
 
-Построенные комнаты базы используют ту же структуру slots, что и остальные POI. Назначить NPC в slot построенной комнаты означает записать один ID в runtime-копию `slot.npcIds`. Отдельная сущность `workAssignment` не вводится.
+Построенные комнаты базы используют ту же структуру slots, что и остальные POI. Их persistent assignment хранится отдельно по `poiId + slotId`; он не переписывает `candidateNpcIds`. Назначенный NPC занимает совместимый slot без `chance`; при его недоступности slot остаётся пустым без fallback на candidates.
 
 Фактическое текущее размещение хранится в occupancy slice и не входит в `InitialNpc`.
 
@@ -310,14 +304,9 @@ export const INITIAL_NPCS = {
       night: 'home',
     },
 
-    actionIds: [
-      'bob:askAboutPast',
-      'npc:compliment',
-    ],
+    actionIds: ['bob:askAboutPast', 'npc:compliment'],
 
-    interceptorIds: [
-      'bob:introduction',
-    ],
+    interceptorIds: ['bob:introduction'],
   },
 
   lena: {
@@ -333,9 +322,7 @@ export const INITIAL_NPCS = {
       night: 'home',
     },
 
-    actionIds: [
-      'npc:compliment',
-    ],
+    actionIds: ['npc:compliment'],
   },
 
   carl: {
@@ -356,7 +343,7 @@ export const INITIAL_NPCS = {
 } satisfies Record<NpcId, InitialNpc>;
 ```
 
-Работа Bob и Lena в таверне не дублируется здесь. Она определяется `npcIds` рабочих slots таверны и её расписанием открытия.
+Работа Bob и Lena в таверне не дублируется здесь. Она определяется `candidateNpcIds` рабочих slots таверны и её расписанием открытия.
 
 ---
 
@@ -375,7 +362,7 @@ export const INITIAL_NPCS = {
 - характеристики NPC находятся в отдельных character/stat templates;
 - визуальные assets и их resolver отделены от `InitialNpc`;
 - поля `visualSet` сейчас нет; визуальная запись по умолчанию находится по `npcId`;
-- построенные комнаты базы используют ту же slot-модель без отдельной системы назначений;
+- построенные комнаты базы используют ту же slot-модель с отдельными persistent assignments;
 
 Отложено:
 
