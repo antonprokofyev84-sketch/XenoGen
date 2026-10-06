@@ -160,6 +160,10 @@ export interface InitialPoiDetails {
 
   visitedTimes?: number;
   lastTimeVisited?: number | null;
+
+  // Блокировка входа; семантика в tension-force-exit-and-poi-entry.md
+  isEntryDisabled?: true;
+  entryDisabledDaysLeft?: number;
 }
 
 export type PoiTemplateDetails = Partial<
@@ -177,6 +181,8 @@ lifetimeDaysLeft отсутствует     → значение template, ин�
 faction отсутствует              → значение template, иначе POI не принадлежит фракции
 visitedTimes отсутствует         → 0
 lastTimeVisited отсутствует      → null
+isEntryDisabled отсутствует      → false (вход разрешён)
+entryDisabledDaysLeft отсутствует → блокировка не активна
 ```
 
 В initial-записи `isDiscovered` имеет тип `isDiscovered?: true`: отсутствие поля однозначно означает `false`, а явно указывается только редкое начальное состояние `true`. Писать `isDiscovered: false` в initial-данных не нужно.

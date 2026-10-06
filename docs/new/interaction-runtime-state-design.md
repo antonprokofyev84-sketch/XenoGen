@@ -65,12 +65,18 @@ type InteractionSubjectKey = `poi:${PoiId}` | `npc:${NpcId}`;
 
 interface DailyExecutableMemory {
   executions?: number; // только при executionLimit.perDay
-  appeared?: boolean;  // только при appearanceChance
+  appeared?: boolean; // только при appearanceChance
 }
 
 interface SubjectDailyInteractionMemory {
   actions: Partial<Record<ActionId, DailyExecutableMemory>>;
   interceptors: Partial<Record<InterceptorId, DailyExecutableMemory>>;
+  /**
+   * Дневной tension; только для npc-subject.
+   * Резолвится при первом взаимодействии за деньб переиспользуется при повторных,
+   * стирается в конце дня. См tension-force-exit-and-poi-entry.md
+   */
+  tension?: number;
   // Другие дневные данные subject, если они ему нужны.
 }
 
@@ -83,9 +89,7 @@ interface SubjectExecutionTotals {
   interceptors: Partial<Record<InterceptorId, number>>;
 }
 
-type ExecutionTotalsBySubject = Partial<
-  Record<InteractionSubjectKey, SubjectExecutionTotals>
->;
+type ExecutionTotalsBySubject = Partial<Record<InteractionSubjectKey, SubjectExecutionTotals>>;
 
 interface InteractionState {
   currentInteraction?: CurrentInteraction;
@@ -130,11 +134,11 @@ interface ResolvedInteractionOptions {
 }
 ```
 
-| Экран | Заполняемые группы |
-| --- | --- |
-| Внутренний Frame | Только `actions.frame` из `frame.actionIds` |
-| POI root | `actions.frame`, `actions.poi`, `actions.quest` по `poiId`; занятые slots в `navigation.npcSlots`; переходы к родителю и дочерним POI в `navigation.poiTransitions` |
-| Slot/NPC root | `actions.frame`, `actions.slot`, `actions.personal`, `actions.quest` по `npcId`; возврат к текущему POI в навигации |
+| Экран            | Заполняемые группы                                                                                                                                                  |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Внутренний Frame | Только `actions.frame` из `frame.actionIds`                                                                                                                         |
+| POI root         | `actions.frame`, `actions.poi`, `actions.quest` по `poiId`; занятые slots в `navigation.npcSlots`; переходы к родителю и дочерним POI в `navigation.poiTransitions` |
+| Slot/NPC root    | `actions.frame`, `actions.slot`, `actions.personal`, `actions.quest` по `npcId`; возврат к текущему POI в навигации                                                 |
 
 Квестовые Actions POI не подмешиваются в slot root, а персональные Actions NPC — в POI root. Порядок ID внутри авторских массивов сохраняется; UI самостоятельно решает расположение групп. Если один и тот же `actionId` попал в разные группы одного экрана, это ошибка данных, которую следует обнаружить при разработке, а не молча показывать дважды или смешивать группы.
 

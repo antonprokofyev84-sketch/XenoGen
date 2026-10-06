@@ -48,20 +48,36 @@
 | POI-local occupancy `poiId -> npcId`                        | occupancy `poiId -> slotId -> npcId`, разрешаемая из slots                                 |
 | старые quest definitions, services и narratives             | static Quest definitions, Quest runtime и Action/Interceptor indexes                       |
 
-## Требует уточнения до реализации
+## Статус открытых вопросов
 
-Ни один пункт ниже не должен решаться реализацией по догадке.
+Список сверён с `migration-decisions.md` (decision log из фазы 0) и последующими review-решениями. Часть пунктов закрыта; реализация по-прежнему не закрывает оставшиеся открытые пункты по догадке.
 
-1. **Persistence и старые saves.** В проекте нет реализации сохранений: кнопка Load Game пока только выводит сообщение. Нужно решить, входит ли сохранение в эту миграцию. Если да, нужен формат, data version и политика несовместимых старых saves.
-2. **Combat transition.** Документы задают `transition: { type: 'combat' }`, но не определяют context возврата, выбор post-combat Frame и передачу loot/result между combat state и interaction runtime.
-3. **Trade transition.** `TradeSystem.md` содержит идеи, а существующая торговля не генерирует stock по region levels. Нужно определить первый рабочий контракт торговли: источник inventory, владелец торгового container, конкретный контекст POI/slot/NPC и входит ли генерация stock в эту миграцию.
-4. **Порог tension и другие triggers forceExit.** Системный `forceExit` утверждён, но его числовой tension threshold и любые дополнительные triggers ещё не являются частью контракта. Их нельзя выбирать по текущему значению `80` без отдельного решения.
-5. **Граница occupancy.** Не задано, для какого scope пересчитываются slots при смене time slot: только текущий POI, текущая root cell или весь мир. Это влияет на состояние NPC и стоимость обновления.
-6. **Технические fixtures.** Старые services, POI narratives и quests являются тестовым контентом и не переносятся. До UI- и runtime-интеграции нужно определить минимальный fixture-набор, который покрывает все утверждённые контракты без игрового нарратива, balance rules или production quests.
-7. **Минимальный каталог non-quest Effects.** Документы намеренно не перечисляют полный union. До первого контента нужно утвердить, какие из упомянутых effects обязательны помимо quest effects и `changeRegionParameter`.
-8. **Presentation.** Frame contracts задают `background` и `npcDisplay`, но не задают layout NPC overlays, visual registry и точный snapshot presentation в log.
-9. **Проверки.** В проекте нет test runner. Нужно выбрать способ автоматических проверок: добавить конкретный runner или ограничиться typecheck/build и ручными сценариями до отдельного решения.
-10. **Идеи expedition points.** `ideas.md` не является утверждённым контрактом. `expeditionPoints`, отрицательная усталость и новая формула travel не входят в эту миграцию без отдельного решения.
+### Решено (`migration-decisions.md`)
+
+1. **Persistence / save/load.** Вне скоупа. In-conversation save в v1 нет; состояние не обязано быть сериализуемым. `interaction-runtime-state-design (3).md` §8 помечен отложенным. Заявлять совместимость сохранений нельзя, пока persistence не спроектирован отдельно.
+2. **Trade transition.** Генерация stock и экономика вне скоупа. `trade` только открывает существующую модалку; источник inventory, владелец container, контекст и regional generation переписываются отдельно.
+3. **Граница occupancy.** Ленивая локальная симуляция только для входимого POI: occupants разрешаются и кешируются при первом входе в time slot, повторный вход в тот же slot их не перебрасывает, невходимые POI не симулируются. Root-cell scope отложен.
+4. **Политика non-quest Effects.** Первый каталог — только структурные эффекты + утверждённые quest-эффекты + узкий `modifyTension` для `forceExit`. Прочие добавляются лишь под конкретный утверждённый сценарий; осталось перечислить обязательные структурные эффекты.
+5. **Presentation.** `npcDisplay: 'always'` — контекст-NPC справа, активный speaker временно слева, говорящий контекст-NPC остаётся справа и подсвечивается. Baseline-визуалы через `import.meta.glob`, путь `src/assets/npcs/<npcId>/default.webp`. Log event снимает только resolved narrative blocks. Закрытый POI — disabled-переход с пометкой «Закрыто».
+6. **Test runner.** Vitest добавляется в этой миграции для детерминированных domain/orchestration тестов. Вариант «только typecheck/build» отклонён.
+7. **Размещение типов.** Плоско в `src/types`, рядом с существующими файлами; отдельная interaction-поддиректория не создаётся.
+8. **Порядок конца дня.** Задан в `migration-decisions.md` (World Time): POI day-effects+lifetime → quest-таймеры+эффекты → removal sweep → очистка дневной памяти; затем однократный финальный occupancy, валидация контекста и новая interceptor-очередь.
+
+### Дополнительно решено в review
+
+9. **Локализация.** v1 хранит финальный текст инлайн (label и narrative) — квест читается целиком в одном месте. Вводится alias `LocalizedText` (сегодня `= string`) и единый `resolveText()` с самого начала; позже расширяется до `string | Partial<Record<LocaleCode, string>>` без переписывания контента.
+10. **Read-context Action.** Числовые функции получают курируемый read-only facade (region levels текущего POI, affection/relation текущего NPC, tension, quest vars), а не сырой `StoreState`. Частые региональные проверки — декларативным condition `regionLevel` через `resolvePoiRegionLevels` текущего POI. `cost.stamina` — личный ресурс протагониста; партийный пул меняет только `modifyPartyStamina`.
+11. **Conditions «текущий субъект».** `affection` и `reputation` без явного id адресуют текущий субъект: `affection` → текущий NPC; `reputation` → фракция текущего NPC, затем POI. Явный `npcId`/`factionId` переопределяет. Неразрешимый субъект — ошибка валидатора, а не `false`.
+12. **Валидатор.** Консолидированный dev-time контракт — `validation-contract.md`: ссылочная целостность (`actionIds`/`frameId`/`candidateNpcIds`/`templateId`/quest-таргеты/`itemId`/`factionId`/`enemyTypeId`), «один lifecycle-эффект на квест в блоке», `$npc` и `npcDisplay: 'always'` только при наличии `npcId`, разрешимость current-subject условий и прочие инварианты.
+
+### Остаётся открытым
+
+13. **Combat transition.** `combat` out of scope; context возврата, выбор post-combat Frame и передача loot/result проектируются при отдельном переписывании боя.
+14. **Числовой порог tension (balance).** Модель tension и forceExit зафиксирована в `tension-force-exit-and-poi-entry.md`: дневной tension принадлежит NPC (хранится в его `SubjectDailyInteractionMemory`), резолвится при первом взаимодействии за день из effective relation + случайного отклонения; forceExit срабатывает при достижении порога и **повторяется при каждом входе** к этому NPC в тот же день, пока значение на пороге или выше. Открытым остаётся только конкретное числовое значение порога (не брать `80` по умолчанию) и возможные дополнительные triggers.
+15. **Технические fixtures.** Минимальный нейтральный набор, покрывающий все утверждённые контракты, определяется до UI/runtime-интеграции (детализирован в Фазе 1.1).
+16. **Expedition points / `ideas.md`.** `expeditionPoints`, отрицательная усталость и новая travel-формула вне скоупа без отдельного утверждения.
+
+Открытые пункты (13–16) не закрываются реализацией по догадке: решение сначала фиксируется в `migration-decisions.md`.
 
 ## Фаза 0. Зафиксировать миграционный baseline
 
@@ -69,8 +85,8 @@
 2. Зафиксировать, что `docs/new` имеет приоритет над старой документацией и что compatibility layer не является целью по умолчанию.
 3. Инвентаризировать текущие content-записи только для последующего удаления: cells, POIs, templates, local spots, NPCs, services, narrative keys и quest definitions.
 4. Спроектировать новый нейтральный technical fixture set. Он должен быть единственным initial content, необходимым для проверки миграции; старый content не получает mapping и не переносится.
-5. Зафиксировать решение по каждому пункту раздела "Требует уточнения" до фазы, которая от него зависит.
-6. Сохранить текущий `npm run build` как baseline. Если выбран тестовый runner, сначала добавить минимальный smoke test для инициализации нового мира.
+5. Для открытых пунктов раздела "Статус открытых вопросов" (13–16) зафиксировать решение в `migration-decisions.md` до фазы, которая от него зависит.
+6. Сохранить текущий `npm run build` как baseline и добавить Vitest (решено в migration-decisions.md) с минимальным smoke test для инициализации нового мира.
 
 Критерий завершения: утверждён scope, определён technical fixture set и закрыты решения, необходимые для первой реализуемой вертикали.
 
@@ -79,10 +95,10 @@
 1. Ввести единые aliases для `CellId`, `PoiId`, `PoiTemplateId`, `SlotId`, `NpcId`, `FrameId`, `ActionId`, `InterceptorId`, `QuestId` и `QuestStageId`.
 2. Ввести общие `RemainingDays`, `RegionParameterKey`, `RegionParameters`, `RegionLevels`, `ActionNumber`, `ExecutionLimit` и числовые comparison types согласно новым документам.
 3. Ввести immutable types и registries `INITIAL_CELLS`, `INITIAL_POIS_BY_CELL`, `POI_TEMPLATES`, `INITIAL_NPCS`, `INITIAL_FRAMES`, `INITIAL_ACTIONS`, `INITIAL_INTERCEPTORS` и `INITIAL_QUESTS`.
-4. Описать `NarrativeBlock`, `$npc`, `NpcDisplayMode`, `ActionContext`, Action/Interceptor result unions, checks, transitions и conditions ровно в пределах нового контракта.
-5. Перенести в общий condition union существующие виды `stat`, `skill`, `item`, `defeated`, `affection`, `reputation` и добавить только утверждённые `questVar` и `questStatus`.
-6. Ввести development validation для authoring invariants, прямо указанных в документах: grammar Frame IDs, отсутствие `/` и `:` в запрещённых сегментах, полные schedules, chance `0..1`, корректные remaining days, целые region levels и отсутствие duplicate Action/Interceptor IDs из нескольких источников.
-7. **Требует уточнения:** выбрать расположение новых type/data modules. Документы закрепляют registry paths для initial data, но не требуют конкретного разбиения type files.
+4. Описать `NarrativeBlock`, `$npc`, `NpcDisplayMode`, Action/Interceptor result unions, checks, transitions и conditions ровно в пределах нового контракта. Ввести alias `LocalizedText` (= `string`) и единый `resolveText()` seam для label и narrative с самого начала. `ActionContext` для числовых функций — курируемый read-only facade (region levels текущего POI, affection/relation текущего NPC, tension, quest vars), а не сырой `StoreState`.
+5. Перенести в общий condition union существующие виды `stat`, `skill`, `item`, `defeated`, `affection`, `reputation` и добавить утверждённые `questVar`, `questStatus` и декларативный `regionLevel`. Для `affection` и `reputation` без явного id действует дефолт «текущий субъект» (NPC; фракция NPC → POI); явный id переопределяет.
+6. Ввести development validation по консолидированному контракту `validation-contract.md`. Помимо grammar Frame IDs, отсутствия `/` и `:` в запрещённых сегментах, полных schedules, chance `0..1`, корректных remaining days, целых region levels и отсутствия duplicate Action/Interceptor IDs обязательна ссылочная целостность: все `actionIds`/`frameId`/`candidateNpcIds`/`templateId`/quest-таргеты/`itemId`/`factionId`/`enemyTypeId` разрешаются в своих реестрах; «один lifecycle-эффект на квест в блоке»; `$npc` и `npcDisplay: 'always'` только при наличии `npcId`; разрешимость current-subject условий.
+7. Разместить новые type/data-модули плоско в `src/types` рядом с существующими файлами (решено в `migration-decisions.md`); отдельная interaction-поддиректория не создаётся. Registry paths для initial data заданы доками.
 
 Критерий завершения: новый content может компилироваться в isolation; definitions не зависят от Zustand runtime и не мутируются.
 
@@ -101,7 +117,7 @@
 
 ## Фаза 2. Cell, POI и region model
 
-1. Заменить POI graph types: `CellNode` имеет `parentId: null` и `childPoiIds`; `NonCellPoiNode` имеет обязательный `parentId: string`, `templateId`, `rootCellId`, `childPoiIds`, normalized details, copied schedule и `pendingRemoval` только в runtime.
+1. Заменить POI graph types: `CellNode` имеет `parentId: null` и `childPoiIds`; `NonCellPoiNode` имеет обязательный `parentId: string`, `templateId`, `rootCellId`, `childPoiIds`, normalized details, copied schedule, `pendingRemoval`, а так же флаги доступа 'isEntryDisabled' и 'entryDisabledDaysLeft' (isEntryDisabled и entryDisabledDaysLeft допускают initial значения) - в runtime.
 2. Удалить из активной модели `type`, `isLocalSpot`, `nestedPoiIds`, `localSpotIds`, `PoiType`, local-spot selectors и navigation semantics, связанные с ними.
 3. Создать `createCellId` и `parseCellId`; строить cell runtime coordinates из ID, а не хранить их в authoring data.
 4. Разделить current `initialPoi.ts` на `src/data/initial/cells.ts` и `src/data/initial/pois.ts`; cells не должны содержать derived topology or coordinates.
@@ -116,13 +132,13 @@
 ## Фаза 3. POI lifecycle, exploration и day-end
 
 1. Переписать discovery на обход `childPoiIds`; сохранить правило `explorationThreshold <= explorationLevel` для обычных POI.
-2. Ввести общую функцию уменьшения `RemainingDays` и применить её к exploration и POI lifetime.
+2. Ввести общую функцию уменьшения `RemainingDays` и применить её к exploration и POI lifetime и другим счетчикам оставшихся дней.
 3. Заменить `triggers: { onDayPass: [{ do: ... }] }` прямым `onDayPass: ChangeRegionParameterEffect[]` у template.
 4. Реализовать `changeRegionParameter` строго для raw root-cell values: independent chance, defaults `min: 0`, `max: 999` и saturating behavior без принудительного возврата уже вышедшего за границу значения.
 5. Ввести `markPoiForRemovalDraft`: рекурсивно помечает POI и его descendants, выключает их из новых transitions, occupancy и day-pass.
 6. Убрать немедленное `removeSelf` из day-pass. В конце полного `onDayEnd` выполнить один dependency-aware physical removal sweep, включая inventory, guard/combat references, slot occupancy и current interaction.
 7. Перестроить `world` day orchestration в документированный порядок: собрать начальный список POI, обработать POI day-pass/lifetime, обработать quest timers и их effects, выполнить конечный removal sweep, очистить дневную interaction memory и обновить occupancy в требуемом scope.
-8. **Требует уточнения:** окончательный относительный порядок очистки daily interaction memory, обновления occupancy и запуска новой interceptor queue при открытом root interaction.
+8. Применить порядок конца дня из `migration-decisions.md` (World Time): после day-pass/lifetime и quest-таймеров — removal sweep, затем очистка дневной interaction memory; после достижения конечного времени однократно разрешить occupancy конечного time slot, провалидировать текущий контекст и собрать новую interceptor queue (при открытом root она запускается сразу, во внутреннем Frame — ждёт возврата в root).
 
 Критерий завершения: lifetime `1` исполняет последний day-pass, pending subtree не исполняет дальнейшие effects, а removal не оставляет dangling references.
 
@@ -149,21 +165,21 @@
 5. Реализовать stage/quest timers и их two-pass expiry order; выполнять собранные expiry effects после обоих countdown passes.
 6. Ввести единый typed effect executor, который может быть вызван из Action, Interceptor, quest timer и POI day-pass. Он включает `modifyTension` только для утверждённого `forceExit`; не переносить текущие incomplete fallback handlers как целевой API.
 7. Подключить resource costs к inventory/party/world только через Action executor, чтобы проверка и списание использовали одинаковые already-resolved amounts.
-8. **Требует уточнения:** минимальный non-quest Effect union и конфликтующие lifecycle effects в разных independently-authored effect groups.
+8. Политика non-quest Effect union решена (`migration-decisions.md`): только структурные эффекты + quest-эффекты + `modifyTension`; осталось перечислить обязательные структурные эффекты. К структурным относятся, в частности, `markCurrentPoiForRemoval`, `changeRegionParameter` и `disablePoiEntryForDays` (дневная блокировка входа в POI). Постоянную установку/снятие `isEntryDisabled` добавлять эффектами по мере необходимости — на старте постоянная блокировка задаётся в initial-данных POI. Правило «не более одного lifecycle-эффекта на квест в одном блоке effects» проверяется валидатором (`validation-contract.md`).
 
 Критерий завершения: квест initial stage выдаёт target IDs, stage change обновляет оба индекса, завершённый quest больше не выдаёт content и его runtime остаётся компактным.
 
 ## Фаза 6. Frame, Action и Interceptor runtime
 
 1. Реализовать `CurrentInteraction` как discriminated POI or slot/NPC context с обязательной парой `slotId + npcId`, `activeFrameId`, current background, log и typed pending Interceptor queue.
-2. Заменить current services state/daily memory на subject-keyed daily Action/Interceptor memory и separate total counters. Subject: `poi:<poiId>` для POI и `npc:<npcId>` для slot/NPC.
+2. Заменить current services state/daily memory на subject-keyed daily Action/Interceptor memory и separate total counters. Subject: `poi:<poiId>` для POI и `npc:<npcId>` для slot/NPC. Дневной `tension` NPC хранится в его subject daily memory: резолвится при первом взаимодействии за день из effective relation (affection + репутация фракции + loyalty) и случайного отклонения, переиспользуется при повторных входах, стирается в конце дня. См. `tension-force-exit-and-poi-entry.md`.
 3. Реализовать pure Action number resolver, check resolver, weighted-result resolver, conditions/requirements/cost resolver и cached daily appearance chance. RNG выполняет executor, а не authoring function or React selector.
 4. Реализовать root option resolver по правилам документов: frame IDs; POI IDs; slot IDs; NPC IDs; quest indexes; runtime navigation. Внутренний Frame получает только own `frame.actionIds`.
 5. Выполнить `performAction` в зафиксированном порядке: resolve cost once; debit upfront and count execution; check/select result; apply effects and append resolved narrative snapshot; execute transition; process time/world consequences; rebuild visible options.
 6. Реализовать context switching POI <-> slot without party movement, с новым log при смене context и возвратом в current POI для `currentPoi` transition.
 7. Реализовать interceptor snapshot collection, priority ordering, extraction-before-execution, recheck, silent continuation, pause on Frame and queue replacement after time-slot change.
 8. Представить очередь типизированным union: authored Interceptor ID либо system `forceExit`, а не magic string среди `InterceptorId`.
-9. После `modifyTension`, пересекающего утверждённый threshold, вызвать idempotent `scheduleForceExit`: очистить authored queue, добавить единственный system queue item и сохранить его через time-slot refresh.
+9. При достижении порога дневным `tension` NPC вызвать idempotent `scheduleForceExit`: очистить authored queue, добавить единственный system queue item и сохранить его через time-slot refresh. Поскольку tension дневной и персистентный, forceExit повторяется при каждом новом входе к этому NPC в тот же день, пока значение на пороге или выше. Сильный авторский исход (forceExit-Frame) может применить `disablePoiEntryForDays` текущего POI и вывести игрока в parent.
 10. Исполнять system `forceExit` только при достижении root текущего context. Он не прерывает внутренний Frame, не проходит authoring checks и не запускает обычную entry queue.
 11. Разрешать force-exit Frame по reserved context ID. При его отсутствии использовать fallback: slot/NPC context возвращается в current POI, POI context переходит в parent. Внешний переход, POI removal или invalidated slot/NPC context очищает pending system item.
 12. Удалить hard-coded UI handling для service IDs `leave` and `trade`; все transitions проходят через единый runtime executor and public world actions for external movement.
@@ -179,7 +195,7 @@
 5. Получать root Frame IDs from `templateId` and slot root IDs from `templateId/slotId`, never from a runtime instance ID.
 6. Implement background inheritance and reset on new interaction; resolve `$npc` and `{$npc}` once into log snapshots.
 7. Preserve the existing trade modal only as the target of the new `trade` transition until the trade scope is approved.
-8. **Требует уточнения:** NPC overlay composition, visual asset resolver, log snapshot fields and final UX for disabled closed-POI transitions.
+8. Presentation в основном решена (`migration-decisions.md`): overlay composition (контекст-NPC справа, speaker слева, подсветка), baseline-визуалы через `import.meta.glob` (`src/assets/npcs/<npcId>/default.webp`), log snapshot = только resolved narrative blocks, закрытый POI = disabled-переход с пометкой «Закрыто» (аналогично `isEntryDisabled` → «Вход недоступен», `entryDisabledDaysLeft > 0` → «Вас сюда не пускают»; `pendingRemoval` вообще не предлагается). Остаётся открытым лишь расширенный visual-variant resolver (role/экипировка/состояние/настроение), отложенный в npc-доке.
 
 Критерий завершения: UI does not branch on legacy service IDs, local spots or `poi.type`; it renders only derived options and immutable log snapshots.
 
@@ -187,7 +203,7 @@
 
 1. Изменить travel and world guards from `type === 'cell'` to topology guard `parentId === null`.
 2. Убрать 5-minute local-spot move. Travel between cells, cell/POI and ordinary parent-child POI follows the remaining agreed rules; any new expedition-points behavior stays out of scope.
-3. Переписать new-game bootstrap in `CharacterCreation` to initialize cells, grouped POIs, NPC runtime, quests and initial occupancy in dependency order.
+3. Вынести new-game bootstrap в **отдельный шаг после `CharacterCreation`** — самостоятельный сборщик мира. По порядку зависимостей он инициализирует cells, сгруппированные POI, NPC runtime, quests и начальную occupancy, затем запускает игру (переключение `ui.currentScreen` на игровой экран). `CharacterCreation` лишь собирает выбор игрока и передаёт его bootstrap-шагу; сама сборка мира и старт не живут внутри экрана создания персонажа.
 4. Проверить all callers of `travelToPoi` and external Action transitions for closed/pending-removal/discovery constraints.
 5. После того как fixture set покрывает утверждённые сценарии, удалить deprecated active-code APIs and data: service rules, service state, `POI_NARRATIVES` flow, local spot templates/data, old quest services/narratives and old POI types/selectors.
 6. Не удалять old docs until the new documentation reflects actual shipped behavior; mark historical docs as outdated or move them to an archive according to repository policy.
@@ -212,4 +228,4 @@
 5. Phase 6 is the runtime boundary that replaces services; Phase 7 consumes it.
 6. Phase 8 happens only after all active callers have a replacement and the technical fixture set covers every approved contract.
 
-No phase should silently fill an item marked "Требует уточнения". Such a decision must be added to the migration decision log first.
+No phase should silently fill an open item marked (13-16 "статус открытых вопросов") "Требует уточнения". Such a decision must be added to 'migration-decisions.md' first.

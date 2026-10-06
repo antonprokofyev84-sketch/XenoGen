@@ -53,3 +53,44 @@ After reaching the final time, resolve final-time-slot occupancy once, validate 
 
 - Add Vitest in this migration for deterministic domain and orchestration tests.
 - Keep TypeScript types flat under `src/types`; add new domain files alongside existing files rather than creating an interaction subdirectory.
+
+## Resolved Follow-up Decisions
+
+These resolve open points raised during design review. They refine the sections above and the initial-data documents.
+
+### Save / Load
+
+- Save/load is out of scope for this and the foreseeable migration. There is no in-conversation save.
+- `interaction-runtime-state-design (3).md` section 8 ("Save и восстановление") is deferred. Its rules do not constrain the runtime; the state is not required to be serialisable in this migration.
+
+### Protagonist stamina
+
+- `cost.stamina` on an Action is the protagonist's personal resource, not the party pool.
+- The party pool is changed only by the `modifyPartyStamina` effect. The two are distinct and must not be conflated in content.
+- Expedition points (`ideas.md`) remain out of scope.
+
+### Localisation seam
+
+- v1 content stores final display text inline (labels and narrative strings), so a quest reads as a single self-contained definition.
+- A single `LocalizedText` alias (today = string) and a single `resolveText()` seam are introduced from the start. Narrative already resolves `{$npc}` once at log-event creation; the same seam is added for `label`.
+- Later localisation widens `LocalizedText` to `string | Partial<Record<LocaleCode, string>>`, keeping text co-located in the same file (no external key catalog), or an extraction script lifts the strings. Either path is a localised change, not a project-wide rewrite.
+
+### Conditions default to the current subject
+
+- `affection` and `reputation` conditions/requirements default to the current interaction subject when no explicit id is given:
+  - `affection` → the current NPC.
+  - `reputation` → the faction of the current subject: the current NPC's faction, falling back to the current POI's faction. It tests the player's standing with that faction; the protagonist has no faction of their own to test.
+- An explicit `npcId` / `factionId` overrides the default and tests that specific target.
+- The default applies only to subject-bearing condition types. `stat`, `skill`, `item`, `defeated`, `questVar`, `questStatus` have no "current" subject.
+- An unresolvable current subject is an authoring error reported by the validator — never a silent `false`.
+- This mirrors the effect side (`modifyCurrentNpcAffection`, `modifyCurrentFactionReputation`) and lets a reusable personal Action gate on the current NPC.
+
+### Action read-context (facade) and region checks
+
+- Number functions receive a curated, read-only facade (current POI region levels, current NPC affection/relation, tension, quest vars), not the raw `StoreState`. This decouples content from slice shape.
+- Common region gating uses a declarative condition (e.g. `{ type: 'regionLevel', param, min/max/exact }`) resolved through the canonical `resolvePoiRegionLevels` of the current POI, so most checks need no function.
+- The final facade shape is settled when the runtime is implemented; content must not reach into arbitrary slices.
+
+### Validation
+
+- A consolidated development-time validator owns all cross-reference and authoring-invariant checks previously scattered across the initial-data documents. Its contract is in `validation-contract.md`.
