@@ -27,6 +27,9 @@
 ## 2. Initial-структура квеста
 
 ```ts
+type LocalizedText = string;
+type ResolvedText = string;
+
 interface QuestTimeLimit {
   days: number;
   onExpire: Effect[];
@@ -34,10 +37,10 @@ interface QuestTimeLimit {
 }
 
 interface InitialQuest {
-  name: string;
+  name: LocalizedText;
 
   /** Основная задача квеста. */
-  description: string;
+  description: LocalizedText;
 
   category: QuestCategory;
 
@@ -51,10 +54,10 @@ interface InitialQuest {
 }
 
 interface InitialQuestStage {
-  title?: string;
+  title?: LocalizedText;
 
   /** Запись, добавляемая в историю квеста при переходе на стадию. */
-  description?: string;
+  description?: LocalizedText;
 
   /** Тайм-лимит конкретной стадии. */
   timeLimit?: QuestTimeLimit;
@@ -97,7 +100,7 @@ interface RunningQuestRuntime {
   stageId: QuestStageId;
   isHidden: boolean;
   vars: Record<string, QuestVarValue>;
-  journalEntries: string[];
+  journalEntries: ResolvedText[];
 
   questDaysLeft?: number;
   stageDaysLeft?: number;
@@ -106,7 +109,7 @@ interface RunningQuestRuntime {
 interface FinishedQuestRuntime {
   status: 'completed' | 'failed';
   isHidden: boolean;
-  journalEntries: string[];
+  journalEntries: ResolvedText[];
 }
 
 type QuestRuntime =
@@ -122,7 +125,7 @@ type QuestRuntime =
   stageId: 'initialStage',
   isHidden: definition.isHidden ?? false,
   vars: {},
-  journalEntries: [definition.description],
+  journalEntries: [resolveText(definition.description)],
   questDaysLeft: definition.timeLimit?.days,
   stageDaysLeft: definition.stages.initialStage.timeLimit?.days,
 }
@@ -608,10 +611,10 @@ result: {
 При создании runtime она добавляется первой записью:
 
 ```ts
-journalEntries: [definition.description]
+journalEntries: [resolveText(definition.description)]
 ```
 
-Каждая рабочая стадия может иметь собственное `description`. При переходе на стадию эта запись добавляется в runtime-массив квеста.
+Каждая рабочая стадия может иметь собственное `description`. При переходе на стадию `resolveText()` применяется один раз, после чего разрешённая строка добавляется в runtime-массив квеста.
 
 ```text
 Пропавший курьер
@@ -790,19 +793,23 @@ maraIsAngry: {
 
 ### 10.4 Снимок и очередь
 
-При входе один раз собирается:
+В interaction используется единая pending-очередь:
 
 ```ts
-pendingInterceptorIds: InterceptorId[];
+type PendingInteractionEvent =
+  | { type: 'interceptor'; interceptorId: InterceptorId }
+  | { type: 'forceExit' };
 ```
+
+Этот раздел описывает authored items `type: 'interceptor'`. System `forceExit` не является квестовым или initial Interceptor и по общему runtime-правилу может заменить authored-остаток очереди.
 
 Очередь:
 
 1. Собирает Interceptors текущего контекста из всех источников: для POI — `poi.interceptorIds` и квестовую map по `poiId`; для slot/NPC — `slot.interceptorIds`, `npc.interceptorIds` occupant и квестовую map по `npcId`.
 2. Проверяет `conditions`, `appearanceChance` и execution limits.
 3. Сортирует их по `priority`.
-4. Сохраняет ID в `pendingInterceptorIds`.
-5. Извлекает следующий ID, одновременно удаляет его из очереди и повторно проверяет его актуальность и `conditions`.
+4. Сохраняет ID как authored items в `pendingEvents`.
+5. Извлекает следующий authored item, одновременно удаляет его из очереди и повторно проверяет актуальность definition и `conditions`.
 6. Если Interceptor больше не актуален, он молча отбрасывается и берётся следующий.
 7. Иначе Interceptor выполняется. Переход во Frame приостанавливает очередь; результат без перехода сразу продолжает её.
 
@@ -812,7 +819,7 @@ pendingInterceptorIds: InterceptorId[];
 
 Interceptors, появившиеся после создания снимка из-за изменения state, в текущую очередь не добавляются до следующего отдельного входа или пересборки после смены time slot.
 
-Специальный `handledActionIds` не нужен: ID удаляется из очереди до исполнения.
+Специальный `handledInterceptorIds` не нужен: authored item удаляется из очереди до исполнения.
 
 ### 10.5 Продолжение и сброс очереди
 
@@ -834,7 +841,7 @@ Interceptors, появившиеся после создания снимка и
   → root клуба
 ```
 
-Смена time slot удаляет старую очередь и создаёт новую для актуального состояния мира. Изменение времени считается атомарным: если одно действие пересекло несколько time slots, schedules и occupancy обновляются до конечного состояния, после чего очередь пересобирается один раз.
+Смена time slot удаляет старые authored items и создаёт новые для актуального состояния мира. Изменение времени считается атомарным: если одно действие пересекло несколько time slots, schedules и occupancy обновляются до конечного состояния, после чего authored-очередь пересобирается один раз. Уже запланированный system `forceExit` переживает refresh и продолжает заменять authored-очередь.
 
 После обновления occupancy runtime сначала проверяет актуальность текущего контекста. Если NPC больше не занимает текущий slot, его interaction завершается и очередь для него не строится.
 
@@ -873,7 +880,7 @@ executionLimit?: {
 - вся память, относящаяся к конкретному дню, полностью очищается в конце дня, как в текущей системе;
 - к дневной памяти относится дневное количество исполнений и другие значения, срок жизни которых ограничен текущим днём;
 - `executionLimit.total` не является дневной памятью и не должен очищаться в конце дня;
-- очередь `pendingInterceptorIds` принадлежит текущему interaction-контексту, не является дневной или постоянной памятью и полностью заменяется при смене time slot;
+- `pendingEvents` принадлежит текущему interaction-контексту и не является дневной или постоянной памятью. При смене time slot authored Interceptor items заменяются актуальным снимком; уже запланированный system `forceExit` сохраняется до исполнения или инвалидирования контекста;
 - Actions и Interceptors используют одинаковую семантику `appearanceChance` и `executionLimit`, но хранятся и собираются как разные сущности.
 
 Maps, массивы, размещение счётчиков и точный способ хранения результата `appearanceChance` этим документом не определяются.
@@ -934,7 +941,7 @@ interface QuestSlice {
 
 Изменение quest vars не обновляет индексы. Оно влияет только на последующую проверку `conditions` и `requirements`.
 
-Индексы строятся целиком при создании новой игры и после загрузки сохранения. В save-файле они не хранятся; после этого обновляются инкрементально при изменении стадии или статуса квеста.
+Индексы строятся целиком при создании новой игры, после чего обновляются инкрементально при изменении стадии или статуса квеста. Возможное восстановление индексов после загрузки относится к будущему persistence design и не входит в текущую миграцию.
 
 ## 12. Запуск квестов по условиям
 
@@ -999,26 +1006,15 @@ export const missingCourierFrames = { /* ... */ };
 
 Общие registries объединяют эти экспорты.
 
-## 15. Сохранение и загрузка
+## 15. Сохранение и загрузка — отложено
 
-При загрузке сохранения runtime сверяется с актуальными initial-данными:
-
-- если добавлен новый статический квест, для него создаётся runtime со `status: 'initial'`;
-- если definition статического квеста удалён, его runtime удаляется;
-- если сохранённый `stageId` больше не существует, требуется явная миграция; молча возвращать квест в `initialStage` нельзя;
-- изменение структуры runtime обрабатывается миграцией формата сохранения;
-- производные индексы Actions и Interceptors не загружаются из save-файла, а строятся заново после загрузки.
+Save/load не входит в текущую и ближайшую миграцию. Правила сверки сохранённого quest runtime с изменившимися definitions, миграция `stageId` и восстановление производных индексов будут проектироваться вместе с persistence и сейчас не ограничивают quest runtime.
 
 ## 16. Проверки целостности
 
 Полные определения в реестрах имеют уникальные `ActionId` и `InterceptorId`. Один и тот же ID не указывается одновременно несколькими источниками.
 
-Перед исполнением Action повторно проверяются:
-
-- его присутствие в актуальном наборе Actions владельца;
-- `conditions`;
-- `requirements`;
-- `cost`.
+Обычный Action исполняется из уже актуализированного набора UI-вариантов. При нажатии не выполняется повторный полный resolver его присутствия, `conditions` или `requirements`; динамическая стоимость разрешается один раз для начатой попытки. После завершения любого Action все варианты фактически показываемого экрана собираются заново.
 
 Перед исполнением ожидающего Interceptor повторно проверяются его актуальность и `conditions`, как описано в модели очереди Interceptors.
 

@@ -74,7 +74,6 @@ root Frame   = contextId
 ```text
 redBoar                          POI root
 redBoar:closed                   будущий closed Frame POI
-redBoar:forceExit                forceExit Frame POI
 redBoar:askOwner                 внутренний Frame POI
 
 redBoar/bartender                slot root
@@ -89,7 +88,7 @@ redBoar/bartender:askAboutMara   внутренний Frame slot
 
 NPC ID в имени slot root отсутствует. Конкретный NPC определяется runtime occupancy и interaction-контекстом.
 
-Имена `closed` и `forceExit` зарезервированы для системных Frames соответствующего контекста. Наличие такой записи в `INITIAL_FRAMES` не обязательно: например, отдельный closed Frame на первом этапе не используется.
+Имя `closed` зарезервировано для системных Frames POI-контекста, а `forceExit` — для slot/NPC-контекста. Наличие такой записи в `INITIAL_FRAMES` не обязательно: например, отдельный closed Frame на первом этапе не используется.
 
 Обычные контентные Frames могут именоваться через владельца контента, а не через место показа:
 
@@ -134,10 +133,7 @@ Conditions, checks, costs, effects и дальнейший flow принадле
 ## 4. Предварительная структура InitialFrame
 
 ```ts
-export type NpcDisplayMode =
-  | 'none'
-  | 'speaker'
-  | 'always';
+export type NpcDisplayMode = 'none' | 'speaker' | 'always';
 
 export interface InitialFrame {
   background?: string;
@@ -178,7 +174,7 @@ interface InitialFrame {
 
 Background не является обязательным, включая POI root и slot root.
 
-Если `background` отсутствует, Frame не меняет текущий background. При начале нового interaction предыдущий background сбрасывается, поэтому первый Frame без background может отображаться без изображения. На первом этапе это допустимо.
+Если `background` отсутствует, Frame не меняет текущий background. Travel в другой POI или полное завершение interaction сбрасывает предыдущий background, поэтому первый Frame нового POI без background может отображаться без изображения. Переключение POI root ↔ slot/NPC context не является reset фона: slot root без собственного background наследует фон POI. При возврате POI root снова применяет собственный background, если он задан, либо сохраняет текущий по тому же общему правилу наследования.
 
 В TypeScript initial-файлах предпочтителен статический импорт asset:
 
@@ -203,17 +199,15 @@ export const RED_BOAR_FRAMES = {
 ```ts
 export interface DialogueLine {
   speakerId: CharacterId | '$npc';
-  text: string;
+  text: LocalizedText;
 }
 
 export interface ThoughtLine {
-  thought: string;
+  thought: LocalizedText;
 }
 
-export type NarrativeBlock =
-  | string
-  | DialogueLine
-  | ThoughtLine;
+export type LocalizedText = string;
+export type NarrativeBlock = LocalizedText | DialogueLine | ThoughtLine;
 ```
 
 Семантика:
@@ -253,7 +247,7 @@ Helpers вида `description(...)`, `thought(...)` и `speak(...)` не явл�
 Для подстановки его отображаемого имени в текст используется placeholder `{$npc}`:
 
 ```ts
-'{$npc} sits alone at the table.'
+'{$npc} sits alone at the table.';
 ```
 
 При создании runtime log event значения разрешаются один раз:
@@ -274,10 +268,7 @@ Frame должен иметь один простой режим, управля
 Зафиксированы три режима:
 
 ```ts
-export type NpcDisplayMode =
-  | 'none'
-  | 'speaker'
-  | 'always';
+export type NpcDisplayMode = 'none' | 'speaker' | 'always';
 ```
 
 ```text
@@ -290,7 +281,7 @@ always  → постоянно показывать npcId текущего slot-
 
 Default — `speaker`. Режим `always` без `npcId` в текущем контексте является ошибкой initial-данных.
 
-Положение персонажей, момент смены speaker, поведение при реплике основного NPC и данные, сохраняемые в логе, являются runtime/presentation-вопросами и вынесены в отдельный документ.
+Для baseline presentation контекстный NPC режима `always` остаётся справа. Другой активный speaker временно показывается слева; когда говорит сам контекстный NPC, он остаётся справа и визуально выделяется. Расширенные visual variants по роли, экипировке, состоянию и настроению отложены. Log сохраняет только разрешённые narrative blocks, а не layout или visual snapshot.
 
 ---
 
@@ -345,7 +336,7 @@ Interceptors не входят в root content и не смешиваются с
 
 Frame не содержит `condition`, `isIntro`, `once` или другие правила автоматического выбора.
 
-При входе в POI либо slot Interceptor может открыть не root, а Frame события: первое знакомство с NPC, постановочный квестовый эпизод или локальное событие. `forceExit`, возникающий как реакция на состояние interaction, остаётся отдельной runtime-механикой.
+При входе в POI либо slot authored Interceptor может открыть не root, а Frame события: первое знакомство с NPC, постановочный квестовый эпизод или локальное событие. `forceExit` является system item общей pending-очереди только slot/NPC-контекста: он заменяет её authored-остаток, ждёт root и при наличии открывает reserved Frame `<templateId>/<slotId>:forceExit`. Без Frame runtime возвращает игрока в текущий POI.
 
 Сам альтернативный Frame является обычной записью в `INITIAL_FRAMES`:
 
@@ -400,19 +391,19 @@ redBoar/bartender:closed
 - POI root имеет ID, равный `templateId`, например `redBoar`.
 - Slot root имеет ID `templateId/slotId`, например `redBoar/bartender`, и не содержит NPC ID.
 - Суффикс `root` не используется; `:` отделяет локальный Frame от context ID.
-- `closed` и `forceExit` являются зарезервированными именами системных context Frames.
+- `closed` является зарезервированным именем POI Frame, а `forceExit` — slot/NPC Frame.
 - Контентные Frames могут именоваться через владельца контента, например `redBoar:missingCourier:question` или `bob:missingCourier:question`.
 - Frame является пассивным presentation-состоянием и не содержит runtime, conditions, checks, costs, effects или transitions.
 - Background принадлежит только Frame, остаётся optional и может передаваться результатом статического asset import.
-- При новом interaction background сбрасывается; отсутствие background в следующем Frame означает не менять текущий.
-- Narrative использует `string | DialogueLine | ThoughtLine`; `speakerId: '$npc'` ссылается на NPC текущего slot-контекста.
+- При travel в другой POI или полном завершении interaction background сбрасывается; POI ↔ slot/NPC сохраняет фон, а отсутствие background в следующем Frame означает не менять текущий.
+- Narrative использует `LocalizedText | DialogueLine | ThoughtLine`; `speakerId: '$npc'` ссылается на NPC текущего slot-контекста.
 - Placeholder `{$npc}` разрешается в отображаемое имя или роль при создании log event.
 - `npcDisplay` использует `none | speaker | always`, default — `speaker`.
 - Frame хранит ссылки `actionIds`, а Action definitions находятся отдельно.
 - Conditions принадлежат Actions.
 - Источники содержимого POI root и slot root определены отдельно.
 - Внутренний Frame использует только собственные `frame.actionIds`.
-- Автоматический запуск события при входе выполняется Interceptors, а не самим Frame.
+- Автоматический запуск события при входе выполняется authored Interceptors, а system `forceExit` использует ту же pending-очередь и reserved Frame, но не является authored definition.
 - На первом этапе закрытый POI показывается disabled-переходом без отдельного closed Frame.
 - Action IDs глобальны в рамках общего registry; локального пространства Action IDs у Frame нет.
 

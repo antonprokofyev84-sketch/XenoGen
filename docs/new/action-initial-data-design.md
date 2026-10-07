@@ -6,7 +6,7 @@
 
 Используется согласованная модель Frames: Frame описывает ситуацию и содержит ссылки на Actions; Action описывает выбор игрока и его результат. Простое действие может не менять Frame.
 
-Приведённые TypeScript-формы — целевой контракт для дальнейшей реализации. Это не утверждение, что такие типы и обработчики уже есть в проекте. Полный каталог effects расширяется по мере разработки.
+Приведённые TypeScript-формы — целевой контракт для дальнейшей реализации. Это не утверждение, что такие типы и обработчики уже есть в проекте. Каталог effects текущей миграции закрыт в `migration-decisions.md`; расширение требует отдельного утверждённого сценария.
 
 ## 1. Registry и организация файлов
 
@@ -27,9 +27,7 @@ Initial Action не содержит количество выполнений, 
 ## 2. Базовая структура
 
 ```ts
-export type ActionNumber =
-  | number
-  | ((context: ActionContext) => number);
+export type ActionNumber = number | ((context: ActionContext) => number);
 
 export interface ExecutionLimit {
   perDay?: number;
@@ -37,7 +35,7 @@ export interface ExecutionLimit {
 }
 
 export interface InitialActionBase {
-  label: string;
+  label: LocalizedText;
 
   // Все условия должны выполняться; иначе Action скрыт.
   conditions?: ActionCondition[];
@@ -50,16 +48,17 @@ export interface InitialActionBase {
   executionLimit?: ExecutionLimit;
 }
 
-export type InitialAction = InitialActionBase & (
-  | {
-      result: ActionOutcome;
-      check?: never;
-    }
-  | {
-      check: ActionCheck;
-      result?: never;
-    }
-);
+export type InitialAction = InitialActionBase &
+  (
+    | {
+        result: ActionOutcome;
+        check?: never;
+      }
+    | {
+        check: ActionCheck;
+        result?: never;
+      }
+  );
 
 export interface ActionResult {
   narrative?: NarrativeBlock[];
@@ -72,9 +71,7 @@ export interface WeightedActionResult {
   result: ActionResult;
 }
 
-export type ActionOutcome =
-  | ActionResult
-  | WeightedActionResult[];
+export type ActionOutcome = ActionResult | WeightedActionResult[];
 ```
 
 У Action есть либо обычный `result`, либо `check` с ветками. Одновременно оба поля не используются. Отдельный `type: 'direct' | 'checked'` не требуется.
@@ -83,17 +80,17 @@ export type ActionOutcome =
 
 ## 3. Defaults
 
-| Отсутствующее поле | Значение по смыслу |
-|---|---|
-| `conditions` | Нет условий скрытия |
-| `requirements` | Нет дополнительных требований доступности |
-| `appearanceChance` | `1`: случайного ограничения видимости нет |
-| `cost` или отдельная его составляющая | Нет соответствующей стоимости |
-| `executionLimit.perDay` | Нет дневного лимита выполнений |
-| `executionLimit.total` | Нет общего лимита выполнений |
-| `narrative` | Не добавлять художественный текст результата |
-| `effects` | Нет эффектов результата |
-| `transition` | Остаться в текущем Frame |
+| Отсутствующее поле                    | Значение по смыслу                           |
+| ------------------------------------- | -------------------------------------------- |
+| `conditions`                          | Нет условий скрытия                          |
+| `requirements`                        | Нет дополнительных требований доступности    |
+| `appearanceChance`                    | `1`: случайного ограничения видимости нет    |
+| `cost` или отдельная его составляющая | Нет соответствующей стоимости                |
+| `executionLimit.perDay`               | Нет дневного лимита выполнений               |
+| `executionLimit.total`                | Нет общего лимита выполнений                 |
+| `narrative`                           | Не добавлять художественный текст результата |
+| `effects`                             | Нет эффектов результата                      |
+| `transition`                          | Остаться в текущем Frame                     |
 
 `label` обязателен. Для Action обязательно задаётся один из вариантов `result` / `check`. Внутри `check` обе ветки обязательны; пустую по смыслу ветку можно явно записать как `{}`.
 
@@ -103,13 +100,13 @@ export type ActionOutcome =
 
 Для `conditions` и `requirements` используется один тип `ActionCondition`. Различается реакция на невыполнение:
 
-| Механизм | Что описывает | Если проверка не пройдена |
-|---|---|---|
-| `conditions` | Стоит ли вообще показывать Action | Скрыть |
-| `requirements` | Можно ли сейчас выполнить видимый Action | Disabled |
-| `cost` | Что будет потрачено при попытке | Disabled, если ресурсов недостаточно |
-| `executionLimit` | Сколько попыток разрешено за день и/или за всё время | Disabled, если соответствующий лимит исчерпан |
-| `appearanceChance` | Случайное появление на этот день | Скрыть при неудачном броске |
+| Механизм           | Что описывает                                        | Если проверка не пройдена                     |
+| ------------------ | ---------------------------------------------------- | --------------------------------------------- |
+| `conditions`       | Стоит ли вообще показывать Action                    | Скрыть                                        |
+| `requirements`     | Можно ли сейчас выполнить видимый Action             | Disabled                                      |
+| `cost`             | Что будет потрачено при попытке                      | Disabled, если ресурсов недостаточно          |
+| `executionLimit`   | Сколько попыток разрешено за день и/или за всё время | Disabled, если соответствующий лимит исчерпан |
+| `appearanceChance` | Случайное появление на этот день                     | Скрыть при неудачном броске                   |
 
 Массивы условий работают как **AND**. Группы OR/NOT на этом этапе не вводятся.
 
@@ -125,8 +122,10 @@ export type ActionOutcome =
 - навык — `skill`;
 - количество предметов — `item`;
 - число побеждённых врагов определённого типа — `defeated`;
-- affection конкретного NPC — `affection`;
-- репутация конкретной фракции — `reputation`.
+- affection текущего либо явно указанного NPC — `affection`;
+- репутация фракции текущего субъекта либо явно указанной фракции — `reputation`;
+- число состоявшихся встреч с конкретным NPC — `timesMet`;
+- итоговый уровень регионального параметра текущего POI — `regionLevel`.
 
 К существующим условиям в первой версии добавляются проверки квестовой переменной и статуса квеста:
 
@@ -152,6 +151,22 @@ interface QuestStatusCondition {
   questId: QuestId;
   status: 'initial' | 'active' | 'completed' | 'failed';
 }
+
+interface RegionLevelCondition {
+  type: 'regionLevel';
+  param: RegionParameterKey;
+  min?: number;
+  max?: number;
+  exact?: number;
+}
+
+interface TimesMetCondition {
+  type: 'timesMet';
+  npcId: NpcId;
+  min?: number;
+  max?: number;
+  exact?: number;
+}
 ```
 
 Отсутствующая quest var сравнивается как обычный `undefined`: она не преобразуется в `false`. `questStage` и общее условие времени в первую версию не входят; их можно добавить позднее по конкретному сценарию.
@@ -170,7 +185,14 @@ requirements: [
 ],
 ```
 
-NPC, фракция и квест в условиях указываются конкретными IDs. `$current` для conditions сейчас не вводится. Это не отменяет `$npc` в narrative.
+Для `affection` и `reputation` явный ID optional. Если он отсутствует, condition адресует текущий interaction subject:
+
+```text
+affection без npcId   → текущий NPC slot/NPC-контекста
+reputation без factionId → фракция текущего NPC, затем фракция текущего POI
+```
+
+Явный `npcId` или `factionId` переопределяет default. Если текущий субъект невозможно разрешить, это authoring error валидатора, а не обычный результат `false`. Остальные conditions (`stat`, `skill`, `item`, `defeated`, `questVar`, `questStatus`, `regionLevel`) не получают неявную текущую цель. `regionLevel` читает итоговый уровень текущего POI через canonical `resolvePoiRegionLevels`.
 
 Стадию собственного квеста не нужно дублировать в каждом Action: производный квестовый индекс подключает Action только на текущей стадии.
 
@@ -194,21 +216,26 @@ NPC, фракция и квест в условиях указываются к�
 
 ## 5. Числа и чистые функции
 
-Числовое значение, зависящее от игры, можно задавать функцией. Это относится к шансам, сложности, весам результатов, составляющим стоимости и числовым аргументам effects там, где они нужны.
+Числовое значение Action, зависящее от игры, можно задавать функцией. В v1 это относится к шансам, сложности, весам результатов и составляющим стоимости. Числовые аргументы утверждённых effects пока статичны; конкретный effect можно расширить до функции позднее вместе со сценарием, которому это действительно нужно.
 
 ```ts
 export interface ActionContext {
-  readonly state: Readonly<StoreState>;
   readonly poiId: PoiId;
   readonly slotId?: SlotId;
   readonly npcId?: NpcId;
   readonly frameId: FrameId;
+
+  /** Curated values; content does not read Zustand slices directly. */
+  readonly regionLevels: Readonly<RegionLevels>;
+  readonly currentNpcAffection?: number;
+  readonly effectiveRelation?: number;
+  readonly tension?: number;
+
+  readonly getQuestVar: (questId: QuestId, key: string) => QuestVarValue | undefined;
 }
 ```
 
-Это минимальное направление контракта: доступ к актуальному состоянию и идентификаторам контекста. `slotId` и `npcId` присутствуют вместе. `state`, включая вложенные данные, доступен функции только для чтения; поверхностный `Readonly` сам по себе не обеспечивает это для всех вложенных объектов.
-
-Заранее собирать большой объект со всеми возможными удобными полями не нужно. Какие selectors и часто используемые значения стоит добавить, станет понятно при написании реальных Actions. Финальная привязка `ActionContext` к store относится к runtime-документу.
+Это минимальное направление курируемого read-only facade. `slotId` и `npcId` присутствуют вместе. Точная финальная форма может быть уточнена при реализации, но content-функции не получают сырой `StoreState` и не читают произвольные slices. Частые проверки регионального уровня описываются декларативным `regionLevel`, а не функцией.
 
 Функция:
 
@@ -270,15 +297,12 @@ export type ActionCheck = ActionCheckRule & {
 Например, с использованием поля старого interaction slice:
 
 ```ts
-const resolvePersuasionChance = ({ state }: ActionContext): number => {
-  const relation =
-    state.interactionSlice.currentInteraction?.effectiveRelation ?? 0;
-
-  return relation >= 20 ? 1 : 0.4;
+const resolvePersuasionChance = ({ effectiveRelation = 0 }: ActionContext): number => {
+  return effectiveRelation >= 20 ? 1 : 0.4;
 };
 ```
 
-Порог `20` и шанс `0.4` здесь только пример баланса. Путь к данным иллюстрирует чтение существующего state, а не фиксирует будущую структуру slice.
+Порог `20` и шанс `0.4` здесь только пример баланса.
 
 ```ts
 check: {
@@ -350,6 +374,8 @@ export interface ActionCost {
 
 `cost` — единственный источник обязательных затрат. Не нужно одновременно описывать одну плату как условие наличия денег и как effect их списания.
 
+`cost.stamina` всегда относится к личной stamina протагониста, который по умолчанию выполняет Action.
+
 Если ресурсов недостаточно, действие disabled и попытка не начинается. Если попытка началась, стоимость списывается и при успехе, и при провале `check`.
 
 Награды и дополнительные последствия выбранной ветки остаются effects. Например, плата за попытку переговоров относится к `cost`, а штраф за угрозу — к `onFail.effects`.
@@ -358,19 +384,42 @@ export interface ActionCost {
 
 ## 10. Effects и их цели
 
-Effects описывают изменения игры: инвентарь, параметры персонажей, affection, репутацию, tension, квесты и другие механики. Полный каталог заранее не проектируется.
-
-Для частого случая текущего собеседника и для явной цели используются разные effects. Рабочая форма:
+Effects описывают изменения игры. Каталог текущей миграции ограничен утверждёнными quest effects, structural effects, `modifyTension` и rewards инвентаря протагониста `addMoney`, `addItem`, `removeItem`; остальные социальные, stat/skill, arbitrary-target inventory effects добавляются только под конкретный принятый сценарий.
 
 ```ts
-{ type: 'modifyCurrentNpcAffection', delta: 2 }
-{ type: 'modifyNpcAffection', npcId: 'mara', delta: 2 }
+interface MarkCurrentPoiForRemovalEffect {
+  type: 'markCurrentPoiForRemoval';
+}
 
-{ type: 'modifyCurrentFactionReputation', delta: -1 }
-{ type: 'modifyFactionReputation', factionId: 'scavengers', delta: -1 }
+interface ModifyTensionEffect {
+  type: 'modifyTension';
+  delta: number;
+}
+
+type Effect =
+  | QuestEffect
+  | ChangeRegionParameterEffect
+  | DisablePoiEntryForDaysEffect
+  | SetPoiEntryDisabledEffect
+  | MarkCurrentPoiForRemovalEffect
+  | ModifyTensionEffect
+  | { type: 'addMoney'; amount: number }
+  | { type: 'addItem'; itemId: ItemId; count: number }
+  | { type: 'removeItem'; itemId: ItemId; count: number };
 ```
 
-Текущая цель берётся из interaction-контекста. Явная цель позволяет изменить другого NPC или другую фракцию. Точный resolver текущей фракции нужно сверить при адаптации interaction slice.
+`QuestEffect`, `ChangeRegionParameterEffect` и оба effect доступа определены в профильных документах. Все варианты используют общий discriminator `type`. В первой версии `changeRegionParameter.delta` и `modifyTension.delta` — статические конечные числа; динамический effect argument добавляется только вместе с реальным сценарием.
+
+Цель каждого утверждённого effect задаётся однозначно:
+
+- quest effects несут явный `questId`;
+- `disablePoiEntryForDays` и `setPoiEntryDisabled` используют явный `poiId` либо `'$currentPoi'`;
+- `markCurrentPoiForRemoval` всегда относится к текущему POI;
+- `changeRegionParameter` относится к root cell текущего POI-контекста; для `onDayPass` это POI-владелец эффекта;
+- `modifyTension` относится к текущему NPC subject и поэтому требует NPC-контекст;
+- `addMoney`, `addItem` и `removeItem` относятся к инвентарю протагониста; произвольный target инвентаря в v1 не вводится.
+
+Effects изменения affection или faction reputation в v1 union не входят. Их текущая/явная цель будет спроектирована только вместе с конкретным утверждённым сценарием.
 
 Action в глобальном registry не должен терять цель квестового эффекта. В примерах она указана явно:
 
@@ -416,16 +465,16 @@ export type ActionTransition =
   | { type: 'combat' };
 ```
 
-| Transition | Значение |
-|---|---|
-| Не указан | Остаться в текущем Frame |
-| `frame` | Открыть указанный Frame в текущем interaction-контексте |
-| `root` | Вернуться в root текущего контекста: POI либо slot/NPC |
+| Transition   | Значение                                                                      |
+| ------------ | ----------------------------------------------------------------------------- |
+| Не указан    | Остаться в текущем Frame                                                      |
+| `frame`      | Открыть указанный Frame в текущем interaction-контексте                       |
+| `root`       | Вернуться в root текущего контекста: POI либо slot/NPC                        |
 | `currentPoi` | Перейти в root текущего POI, закончив slot/NPC-контекст; партию не перемещать |
-| `parentPoi` | Переместить партию в родительский POI/клетку |
-| `poi` | Переместить партию в указанный POI |
-| `trade` | Открыть торговлю; текущий Frame сохраняется |
-| `combat` | Запустить бой |
+| `parentPoi`  | Переместить партию в родительский POI/клетку                                  |
+| `poi`        | Переместить партию в указанный POI                                            |
+| `trade`      | Открыть торговлю; текущий Frame сохраняется                                   |
+| `combat`     | Запустить бой                                                                 |
 
 Если текущий контекст уже POI, `currentPoi` означает возврат к его root. Это не повторный travel и не новое посещение.
 
@@ -444,14 +493,15 @@ Frame ID указывает на definition. Он не меняет автома
 ```ts
 export interface DialogueLine {
   speakerId: CharacterId | '$npc';
-  text: string;
+  text: LocalizedText;
 }
 
 export interface ThoughtLine {
-  thought: string;
+  thought: LocalizedText;
 }
 
-export type NarrativeBlock = string | DialogueLine | ThoughtLine;
+export type LocalizedText = string;
+export type NarrativeBlock = LocalizedText | DialogueLine | ThoughtLine;
 ```
 
 ```ts
@@ -464,7 +514,7 @@ narrative: [
 
 `$npc` — NPC текущего slot-контекста. `{$npc}` подставляет имя знакомого NPC либо название роли незнакомого. Подстановка выполняется один раз при создании log event; в log сохраняются конкретные значения.
 
-ActionResult использует presentation исходного Frame. При переходе narrative нового Frame получает presentation нового Frame. Детали хранения snapshots вынесены в runtime-документ.
+При создании log event `resolveText()` и `{$npc}` применяются один раз. Log хранит только разрешённые narrative blocks. Background, visual variant, overlay layout, role и display name исходного Frame отдельно не снимкуются.
 
 Обычному выходу из POI не требуется специальный narrative.
 
@@ -511,7 +561,6 @@ export const RED_BOAR_ACTIONS = {
     cost: { money: 5, time: 15 },
     result: {
       narrative: ['Выпивка обжигает горло.'],
-      effects: [{ type: 'modifyPartyStamina', delta: 5 }],
     },
   },
 
@@ -519,9 +568,7 @@ export const RED_BOAR_ACTIONS = {
     label: 'Спросить о слухах',
     executionLimit: { perDay: 1 },
     result: {
-      narrative: [
-        { speakerId: '$npc', text: 'У восточных руин снова видели чужаков.' },
-      ],
+      narrative: [{ speakerId: '$npc', text: 'У восточных руин снова видели чужаков.' }],
     },
   },
 
@@ -542,19 +589,18 @@ export const RED_BOAR_ACTIONS = {
       type: 'chance',
       chance: resolvePersuasionChance,
       onSuccess: {
-        narrative: [
-          { speakerId: 'bob', text: 'Он спустился в подвал. Начни оттуда.' },
+        narrative: [{ speakerId: 'bob', text: 'Он спустился в подвал. Начни оттуда.' }],
+        effects: [
+          {
+            type: 'setQuestStage',
+            questId: 'missingCourier',
+            stageId: 'searchCellar',
+          },
         ],
-        effects: [{
-          type: 'setQuestStage',
-          questId: 'missingCourier',
-          stageId: 'searchCellar',
-        }],
         transition: { type: 'root' },
       },
       onFail: {
         narrative: [{ speakerId: 'bob', text: 'Я не хочу в это ввязываться.' }],
-        effects: [{ type: 'modifyCurrentNpcAffection', delta: -2 }],
       },
     },
   },
@@ -589,4 +635,4 @@ export const RED_BOAR_ACTIONS = {
 3. При работе с quests окончательно согласовать передачу quest context в глобальные Actions и эффекты; в примерах используется явный `questId`.
 4. При проектировании runtime определить окончательный `ActionContext`, selectors, тип исполнителя проверки и единый resolver чисел.
 
-Место обработки transitions, дневная память, appearance rolls, порядок исполнения, послебоевой возврат, удаление POI и нерешённые детали движка собраны в `interaction-runtime-engine-questions.md`. Отдельное поле автоуспеха не требуется.
+Место обработки transitions, дневная память, appearance rolls и принятый порядок исполнения описаны в `interaction-runtime-state-design.md` и `interaction-runtime-engine-questions.md`. `performAction` доверяет актуализированным UI-вариантам: повторного полного resolver/recheck при нажатии нет. Отдельное поле автоуспеха не требуется.

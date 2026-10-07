@@ -250,7 +250,7 @@ Static POI modifiers and overrides affect only the POI's local level context. Pe
 
 ```ts
 interface ChangeRegionParameterEffect {
-  kind: 'changeRegionParameter';
+  type: 'changeRegionParameter';
   cellParam: RegionParameterKey;
   delta: number;
 
@@ -263,7 +263,7 @@ interface ChangeRegionParameterEffect {
 ```ts
 onDayPass: [
   {
-    kind: 'changeRegionParameter',
+    type: 'changeRegionParameter',
     cellParam: 'contamination',
     delta: 1,
     chance: 0.3,

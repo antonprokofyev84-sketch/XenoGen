@@ -1,10 +1,10 @@
-# Interaction Runtime and Engine Backlog
+# Interaction Runtime and Engine Design
 
 ## Назначение документа
 
-Документ отделяет runtime, Zustand, execution flow и UI/presentation-вопросы от initial-структур. Сюда также собираются runtime-решения, возникающие при проектировании initial-данных NPC, POI, Frames и Actions.
+Документ отделяет runtime, Zustand, execution flow и UI/presentation от initial-структур. Он синхронизирован с `migration-decisions.md`, `interaction-runtime-state-design.md` и `tension-force-exit-and-poi-entry.md`; старые варианты ниже не являются альтернативными контрактами.
 
-Пока initial-данные POI, Frames, Actions, NPC и quests не разобраны полностью, перечисленные здесь вопросы не должны усложнять их definitions. После завершения initial-модели этот backlog станет основой для проектирования runtime interaction engine.
+Нерешённые балансные или внешние вопросы помечаются явно. Всё остальное в документе описывает принятый runtime-контракт.
 
 Актуальный контракт initial Actions описан в `action-initial-data-design.md`. Ниже отдельно отмечены принятые правила и вопросы реализации. Имена новых runtime helpers и расположение полей служат ориентиром, а не готовой схемой Zustand. Разделы про NPC из последней переданной версии документа сохранены.
 
@@ -42,9 +42,9 @@ poiId + slotId + npcId        → slot/NPC-контекст
 → после её завершения показать обычный root
 ```
 
-Interceptor может открыть Frame события либо применить silent effects. `forceExit`, вызванный состоянием interaction, остаётся отдельной runtime-реакцией.
+Authored Interceptor может открыть Frame события либо применить silent effects. `forceExit`, вызванный состоянием interaction, является system item той же pending-очереди, но не authored Interceptor definition.
 
-Дневная interaction memory сохраняется до конца дня, включая счётчики Actions и результаты случайной видимости. Ключ Actions уже выбран: subject + actionId; схема хранения ещё не определена. При выходе из interaction дневное состояние не сбрасывается.
+Дневная interaction memory сохраняется до конца дня, включая счётчики Actions, результаты случайной видимости и дневной tension NPC. Ключ executable memory — subject + executableId; структура зафиксирована в `interaction-runtime-state-design.md`. При выходе из interaction дневное состояние не сбрасывается.
 
 ### Narrative при переходах
 
@@ -76,9 +76,9 @@ Interceptors имеют собственные `conditions`, потому что
 
 ### Background
 
-При начале нового interaction текущий background сбрасывается. После этого первый Frame может установить новый background либо оставить экран без изображения.
+При travel в другой POI или полном завершении interaction текущий background сбрасывается. После этого первый Frame может установить новый background либо оставить экран без изображения.
 
-Внутри одного interaction Frame без `background` сохраняет текущий background.
+Внутри одного interaction Frame без `background` сохраняет текущий background. Переключение POI root ↔ slot/NPC context начинает новый log, но сохраняет background; новый root Frame заменяет его только при наличии собственного значения.
 
 ### Закрытый POI
 
@@ -98,7 +98,7 @@ Interceptors имеют собственные `conditions`, потому что
 - `EffectManager` и effect summaries;
 - сохранение уже разрешённых narrative blocks в log events;
 - `interactionDraft`, который вызывается из атомарного travel pipeline;
-- force reaction после выполнения действия;
+- планирование system `forceExit` после полного выполнения Action;
 - отдельное состояние trade modal.
 
 Что именно останется после переписывания, определяется при проектировании нового runtime; сохранять текущие maps и типы только ради совместимости не требуется.
@@ -126,31 +126,30 @@ Interceptors имеют собственные `conditions`, потому что
 
 ## 4. Interaction context switching
 
-Нужно определить точный flow перехода между POI root и slot root без перемещения партии.
+Переход между POI root и slot root не перемещает партию и выполняется отдельной runtime navigation command.
 
-Предварительная схема открытия slot:
+Схема открытия slot:
 
 ```text
 сохранить состояние текущего POI-субъекта
 → установить slotId и npcId
 → загрузить дневную память NPC
-→ пересчитать relation/tension
+→ получить либо впервые рассчитать дневные relation/tension NPC
+→ начать новый log, сохранив текущий background
 → открыть slot root Frame
 ```
 
-Предварительная схема возврата:
+Схема возврата:
 
 ```text
 сохранить дневную память NPC
 → очистить slotId и npcId
 → восстановить состояние POI-субъекта
+→ начать новый log, сохранив текущий background
 → открыть POI root без повторения его narrative
 ```
 
-Открытые вопросы:
-
-1. Сохраняется ли единый interaction log при переключении POI ↔ slot.
-2. Является ли переключение контекста частью `performAction`, отдельной runtime-командой или общей системой interaction options.
+POI ↔ slot/NPC всегда начинает новый log. Background при этом не сбрасывается: root Frame нового контекста применяет собственный background либо наследует текущий. Navigation option вызывает runtime-команду context switching; обычный `performAction` используется только для authored Actions.
 
 Occupant может измениться при переходе в новый time slot. Schedules и occupancy обновляются до пересборки Interceptors. Если текущий NPC больше не занимает slot, его interaction-контекст завершается, и runtime возвращается к актуальному POI-контексту.
 
@@ -180,7 +179,16 @@ Occupant может измениться при переходе в новый t
 
 Это правило не сбрасывает накопительные `timesMet`, `visitedTimes`, постоянные отношения и состояние квестов. Они принадлежат своим механикам.
 
-При новом входе восстанавливается дневное состояние, но не старый `activeFrameId`: сначала разрешается очередь Interceptors входа, затем открывается root; `forceExit` обрабатывается своей runtime-механикой.
+При новом входе восстанавливается дневное состояние, но не старый `activeFrameId`. Перед сборкой authored Interceptors runtime вызывает `ensureNpcDailyTension()` для slot/NPC-контекста. Если tension уже достиг порога, `scheduleForceExit` заменяет authored snapshot до его исполнения. Затем pending queue может открыть Frame; при пустой очереди открывается обычный root.
+
+При первой встрече с NPC за день initial tension использует исправленную базовую формулу текущей реализации:
+
+```ts
+const randomOffset = Math.floor(random() * 41) - 20;
+const initialTension = clamp(-effectiveRelation + randomOffset, 0, 100);
+```
+
+Старый знак `effectiveRelation + randomOffset` был ошибочным: хорошее отношение не должно повышать напряжение. Числовой threshold `forceExit` остаётся балансной константой.
 
 ### Долговременные последствия
 
@@ -194,7 +202,7 @@ Occupant может измениться при переходе в новый t
 
 ---
 
-## 6. Interceptors при входе и force reaction
+## 6. Interceptors при входе и system `forceExit`
 
 Interceptors полностью заменяют прежнюю идею entry rules для автоматических событий входа:
 
@@ -223,7 +231,7 @@ Interceptors полностью заменяют прежнюю идею entry r
 
 ### Очередь входа и смена time slot
 
-При реальном переходе из родительского контекста в дочерний runtime собирает `pendingInterceptorIds`, проверяет `conditions`, дневной результат `appearanceChance` и execution limits и сортирует IDs по `priority`. Отсутствующий `priority` равен `100`.
+При реальном переходе из родительского контекста в дочерний runtime собирает authored items в `pendingEvents`, проверяет `conditions`, дневной результат `appearanceChance` и execution limits и сортирует их по `priority`. Отсутствующий `priority` равен `100`.
 
 Перед исполнением конкретный ID сначала удаляется из очереди, затем повторно проверяются его актуальность и `conditions`:
 
@@ -243,26 +251,25 @@ Interceptors полностью заменяют прежнюю идею entry r
 1. обновляет schedules и occupancy;
 2. проверяет актуальность текущего interaction-контекста;
 3. собирает новую очередь для актуального контекста;
-4. запускает её сразу, если открыт root, либо сохраняет до следующего возврата в root, если игрок остаётся во внутреннем Frame.
+4. запускает её сразу, если открыт root, либо сохраняет до следующего возврата в root, если игрок остаётся во внутреннем Frame. Перед запуском такой queue в slot/NPC-контексте после очистки дневной memory runtime вызывает `ensureNpcDailyTension()`.
 
 Если переход текущего Action ведёт в parent, другой POI, дочерний контекст, бой или завершает interaction, очередь прежнего контекста удаляется. Дневной результат `appearanceChance` при пересборке не перебрасывается.
 
 После смены time slot тот же Interceptor может снова попасть в новую очередь. Если событие не должно повторяться, его результат меняет содержательное состояние его `conditions` либо использует подходящий `executionLimit`; отдельный список обработанных IDs не вводится. Например, первое представление NPC использует `timesMet === 0` и `executionLimit.total: 1`, а успешный фейсконтроль должен выдать состояние доступа, включая при необходимости временный пропуск.
 
-### Force reaction
+### System `forceExit`
 
-`forceExit`, возникающий из текущего состояния interaction — например, после пересечения tension threshold, — остаётся отдельной runtime-реакцией, а не Interceptor входа:
+`forceExit`, возникающий из текущего состояния interaction — например, после достижения tension threshold, — является system item общей pending-очереди, а не authored Interceptor входа.
 
 ```text
-Action выполнен
-→ применены effects
-→ tension пересёк threshold
-→ force transition заменяет либо дополняет transition ActionResult
+Action полностью выполнен, включая transition и мировое действие
+→ trigger требует forceExit
+→ scheduleForceExit идемпотентно заменяет authored-остаток очереди
+→ внутренний Frame, если он открыт, разрешается до root
+→ в root system item открывает reserved Frame либо применяет fallback
 ```
 
-При реализации остаётся определить только поведение самой force reaction: нужен ли fallback Frame, всегда ли она имеет приоритет над transition результата и какие outcomes кроме выхода или боя допустимы.
-
-Адреса специальных Frames сохраняются: `<templateId>:forceExit` для POI и `<templateId>/<slotId>:forceExit` для slot.
+System `forceExit` существует только для slot/NPC tension и использует reserved Frame `<templateId>/<slotId>:forceExit`. При отсутствии Frame context возвращается в текущий POI. POI-context force exit не реализуется. Внешний переход Action, удаление POI или invalidation slot/NPC context очищает запланированный item; system `forceExit` не создаёт второй несовместимый transition поверх уже покинутого контекста.
 
 ---
 
@@ -305,7 +312,7 @@ Root POI находится по `templateId`, root slot — по `<templateId>/
 
 Не вызывать публичный action с новым `set` изнутри незавершённого `set`. Текущий world travel pipeline уже отвечает за завершение старого interaction, перемещение и открытие нового. Его не нужно копировать в interaction slice или напрямую вызывать world drafts оттуда.
 
-Направление вызовов не требует отдельной сущности-команды для каждого перехода. Точную границу транзакций и общих helpers нужно определить при реализации. Background и narrative остаются данными Frames/logs, а не внешних transitions.
+Направление вызовов не требует отдельной сущности-команды для каждого перехода. Реализация может разделить чтение, draft-изменения и внешний world action на несколько технических шагов, но обязана сохранить принятый порядок одной Action-операции и не создавать вложенных `set`. Background и narrative остаются данными Frames/logs, а не внешних transitions.
 
 ### Бой и возврат
 
@@ -315,53 +322,27 @@ Action только запускает бой. Принятый flow побед�
 
 Как combat slice хранит контекст возврата, выбирает послебоевой Frame и передаёт добычу, обсуждается отдельно. Специальный initial-флаг `removePoiOnVictory` не вводится.
 
-### Оставшиеся вопросы реализации
+### Границы реализации
 
-1. Точная координация смены времени и внешнего transition, если cost пересекает границу дня.
-2. Передача параметров запуска боя и контекста возврата из combat slice.
-3. Способ открытия slot из динамических options: runtime-команда или общее действие UI. Для статических Actions отдельный `openSlot` пока не требуется.
-4. Приоритет force reaction относительно transition выбранного ActionResult (раздел 6).
+- Порядок Action, внешнего transition и пересечённых дневных тиков уже зафиксирован; конкретное разбиение на store-транзакции не должно его менять.
+- Передача параметров запуска боя и контекста возврата из combat slice остаётся частью отдельного combat design.
+
+Открытие slot выполняет runtime navigation command. Приоритет `forceExit` отдельно не выбирается: Action завершается полностью, а system item существует только пока исходный контекст остаётся актуальным и исполняется при достижении root.
 
 ---
 
-## 8. Interaction log и presentation snapshots
+## 8. Interaction log и presentation state
 
-Уже принято хранить в логе разрешённые narrative blocks и effect summaries, чтобы старые записи не менялись при обновлении state.
-
-Принято сохранять presentation исходного Frame в log event с narrative ActionResult. Это решает случай:
-
-```text
-ActionResult создан во Frame A
-→ active Frame уже переключился на Frame B
-→ старый log event всё ещё отображается по presentation Frame A
-```
-
-Одного имени режима NPC может быть недостаточно. Возможный snapshot:
-
-```ts
-interface InteractionPresentationSnapshot {
-  npcDisplay: NpcDisplayMode;
-  npcId?: NpcId;
-  role?: string;
-}
-```
-
-При создании log event dynamic narrative разрешается один раз:
+Log event хранит только разрешённые narrative blocks. При его создании `resolveText()` и dynamic narrative разрешаются один раз:
 
 ```text
 speakerId: '$npc' → конкретный npcId
 {$npc}            → имя знакомого NPC либо название роли незнакомого NPC
 ```
 
-В log должны попадать уже разрешённые blocks, чтобы последующее изменение occupancy, знакомства или роли не меняло старый текст.
+В log должны попадать уже разрешённые blocks, чтобы последующее изменение occupancy, знакомства или роли не меняло старый текст. Background, visual variant, overlay layout, role и display name отдельным presentation snapshot не сохраняются.
 
-Открытые вопросы:
-
-1. Нужно ли сохранять в snapshot resolved background.
-2. Нужно ли сохранять resolved visual variant NPC.
-3. Должен ли DialogueLine в runtime log дополнительно содержать отображаемое имя speaker либо достаточно сохранённого `speakerId`.
-4. UI-механика переключения presentation: у narrative ActionResult уже зафиксирован snapshot исходного Frame, у narrative целевого Frame — snapshot целевого. Вопрос касается отображения, а не выбора источника.
-5. Как долго log хранится при переключении POI ↔ slot и при travel.
+Смена Frame внутри одного POI- либо slot/NPC-контекста сохраняет log. Переход POI ↔ slot/NPC, переход в другой slot/NPC либо travel в другой POI начинает новый log. Narrative результата остаётся в log исходного контекста и автоматически в новый не переносится.
 
 ---
 
@@ -381,18 +362,9 @@ always  → постоянно показывать npcId slot-контекст�
 
 Default — `speaker`. Использование `always` без `npcId` является ошибкой initial-данных.
 
-Нужно решить:
-
-1. Где отображается постоянный NPC режима `always`: слева или справа.
-2. Где отображается другой speaker.
-3. Перемещается ли постоянный NPC на позицию speaker, когда говорит сам, либо только визуально выделяется.
-4. Сохраняется ли последний speaker во время последующих description/thought blocks.
-5. Когда speaker скрывается: после реплики, при новом speaker, при новом Frame или при новом log event.
-6. Как визуально выделяется говорящий NPC.
-
 Режим `none` не показывает overlays, даже если в narrative есть speaker. Это уже заданная семантика режима.
 
-Рассматриваемая стабильная композиция:
+Зафиксированная baseline-композиция:
 
 ```text
 NPC режима always → постоянно справа
@@ -400,35 +372,33 @@ NPC режима always → постоянно справа
 always NPC говорит → остаётся справа, но визуально выделяется
 ```
 
-Это пока предложение, а не зафиксированное решение.
+Точная анимация появления/скрытия speaker и расширенные visual variants могут уточняться на UI-этапе, не меняя этого контракта композиции.
 
 ---
 
 ## 10. Root content resolution
 
-Initial-источники root-контента уже определены в `frame-initial-data-design.md`. Runtime должен решить:
-
-1. Точный порядок объединения Action IDs. Runtime не дедуплицирует IDs: появление одного `ActionId` из нескольких источников является ошибкой initial-данных.
-2. Реализация актуализации conditions/requirements/cost: они проверяются на актуальном state и повторно перед выполнением; appearance roll берётся из дневной памяти.
-3. Создаются ли slot и child-POI entries как runtime Actions или отдельные структурные options.
-4. Как единый UI-массив поддерживает кнопки, портреты, карточки и элементы поверх background.
-5. Кто обрабатывает выбор slot или child POI без проверок конкретных IDs в React-компонентах.
-6. Пересчитывается ли root content при каждом изменении state либо только при входе/возврате.
-
-Один из рассматриваемых вариантов:
+Runtime возвращает отдельные группы по источнику, а не один смешанный UI-массив:
 
 ```ts
-type InteractionOption =
-  | { type: 'action'; actionId: ActionId }
-  | { type: 'slot'; slotId: SlotId; npcId: NpcId }
-  | {
-      type: 'childPoi';
-      poiId: PoiId;
-      disabledReason?: string;
-    };
+interface ResolvedInteractionOptions {
+  actions: {
+    frame: UiAction[];
+    poi: UiAction[];
+    slot: UiAction[];
+    personal: UiAction[];
+    quest: UiAction[];
+  };
+  navigation: {
+    npcSlots: UiNpcSlot[];
+    poiTransitions: UiPoiTransition[];
+  };
+}
 ```
 
-Этот union пока не принят.
+Внутренний Frame получает только `actions.frame`. POI root получает frame/poi/quest Actions и navigation из мира; slot root — frame/slot/personal/quest Actions и возврат в текущий POI. UI самостоятельно решает, показывать ли группы кнопками, карточками, портретами или иным способом.
+
+`conditions` и дневной appearance result определяют видимость; `requirements`, cost и execution limits — disabled-state. Обычные parent/child/slot transitions строятся из runtime мира и выполняются navigation commands. После любого завершённого Action заново собираются все варианты фактически показываемого экрана. При нажатии повторного полного resolver/recheck Action нет.
 
 ---
 
@@ -436,7 +406,7 @@ type InteractionOption =
 
 ### Read context
 
-Функции числовых параметров получают state только для чтения и идентификаторы текущего контекста. Минимальное направление: `state`, `poiId`, `slotId?`, `npcId?`, `frameId`. Сразу вводить много заранее рассчитанных полей не нужно: востребованные selectors станут понятны при создании контента.
+Функции числовых параметров получают курируемый read-only facade и идентификаторы текущего контекста: `poiId`, `slotId?`, `npcId?`, `frameId`, итоговые region levels текущего POI, affection/effective relation текущего NPC, tension и доступ к quest vars. Сырой `StoreState` content-функциям не передаётся. Частые проверки региона используют декларативный `regionLevel` condition.
 
 Функция возвращает число и не вызывает RNG, `set`, effects или world actions. Общий resolver различает число и функцию. Формула может использовать параметры региона, отношения, квесты и другие данные из state.
 
@@ -470,24 +440,27 @@ type InteractionOption =
 
 ### Порядок одной попытки
 
-1. Получить definition и убедиться, что Action относится к текущему доступному набору.
-2. Проверить conditions, дневную случайную видимость, requirements, лимит и достаточность стоимости.
-3. Зафиксировать исходный контекст и разрешённые числа попытки; выполнить check, если он есть, затем выбрать один результат соответствующей ветки.
-4. Учесть начатую попытку, списать cost и применить effects выбранного результата.
-5. Добавить narrative ActionResult в log, затем результаты применённых effects. Данные проверки и затрат также сохраняются для отображения.
-6. Выполнить transition; narrative целевого Frame добавляется по обычному правилу входа.
+UI передаёт `actionId` из уже актуализированного набора. В начале `performAction` не выполняется повторный полный resolver присутствия, `conditions` или `requirements`.
 
-При непрохождении проверок из пункта 2 попытка не начинается: cost не списывается, счётчик не растёт и check не бросается. Провал начатого check, наоборот, расходует стоимость и увеличивает счётчик.
+1. Зафиксировать исходный контекст и один раз разрешить динамические величины cost.
+2. Авансом списать money/items и личную stamina протагониста; учесть начатую попытку. `cost.time` сохранить для завершающего мирового действия.
+3. Выполнить check, если он есть, и выбрать один result соответствующей ветки или weighted outcome.
+4. Последовательно применить effects выбранного результата.
+5. Добавить в log только разрешённые narrative blocks результата.
+6. Выполнить transition. Для внешнего перемещения вызвать стандартное world action и передать ему отложенный `cost.time` вместе с обычными затратами самого перемещения, не списывая один расход дважды. Если перемещения нет, но есть `cost.time`, вызвать стандартное `spendTime`/`rest` action.
+7. Обработать последствия времени, schedule, occupancy и pending queue, затем пересобрать все варианты фактически показываемого экрана.
+
+Невыполненные requirements, лимит или недостаточная стоимость уже сделали показанный Action disabled, поэтому попытка не начинается. Провал начатого check расходует ту же стоимость и увеличивает счётчик.
 
 Динамическая стоимость разрешается один раз для попытки: проверять достаточность одной суммы и списывать другую нельзя. Числовые аргументы выбранного результата также должны применяться в том значении, которое executor разрешил для этой попытки; уточнение общей read/write-фазы относится к реализации.
 
-Порядок создания log — narrative, результаты effects, затем переход. Это не ожидание окончания показа текста. Не вводится особая очередь, блокирующая transition до прочтения narrative. Обычный Action выхода может вообще не иметь narrative.
+Action сначала применяет effects, затем добавляет уже разрешённые narrative blocks в log и только после этого выполняет transition. Это не означает ожидание окончания показа текста: отдельная очередь, блокирующая transition до прочтения narrative, не вводится. Обычный Action выхода может вообще не иметь narrative.
 
-Force reaction после effects уже существует в старом slice. Её приоритет относительно transition остаётся отдельным вопросом раздела 6; она не должна приводить к двум несовместимым внешним переходам.
+Если effect требует `forceExit`, runtime планирует system item. Action и его transition завершаются полностью; item исполняется только если исходный контекст всё ещё актуален и управление дошло до его root. Поэтому второй несовместимый внешний transition не создаётся.
 
 ### Effects и время
 
-Effects текущего NPC и явно указанного NPC — разные варианты descriptor; аналогично для текущей и явно указанной фракции. Нужно адаптировать имеющийся `resolveInteractionEffects`, сохранив явный read context и существующий EffectManager там, где он подходит.
+Executor реализует только закрытый v1-каталог из `migration-decisions.md`. Quest effects всегда несут явный `questId`; structural POI effects используют явный `poiId` либо утверждённый `'$currentPoi'`; `modifyTension` относится к текущему NPC subject. Варианты изменения affection/reputation текущей или явно указанной цели остаются отложенными и не переносятся из старого `resolveInteractionEffects` без отдельного сценария.
 
 При глобальных квестовых Actions необходимо однозначно передать quest target. В initial-примерах указан `questId`; имя Action или Frame не является способом автоматически определить цель эффекта.
 
@@ -501,13 +474,13 @@ Effects текущего NPC и явно указанного NPC — разны
 
 Для формулы берётся согласованная величина: raw-параметры клетки — числа `0..999`, включая дробные значения; конечные уровни POI — целые `0..9`. Формула побега — настройка контента/баланса, а не новое поле Frame.
 
-### Оставшиеся вопросы реализации
+### Детали реализации, не меняющие контракт
 
-1. Финальный `ActionContext`, selectors и тип исполнителя check.
-2. Границы `set` и обработка времени; сохранить основы двухфазного выполнения без вложенных store-транзакций.
-3. Место хранения дневных counts и appearance cache, включая сброс активного interaction.
-4. Длительность хранения log при travel — отдельно от стандартного порядка добавления событий.
-5. Полный каталог effects и resolver текущей фракции — по мере появления реальных действий.
+1. Точные TypeScript-интерфейсы `ActionContext`, selectors и будущего выбора исполнителя check.
+2. Техническое разбиение resolve/draft/world action без вложенных store-транзакций при сохранении принятого порядка.
+3. Физическое размещение дневных counts и appearance cache в slices; вся дневная память, включая память активного interaction, очищается общей фазой конца дня.
+
+Срок жизни log уже определён: Frames одного контекста сохраняют его, а POI ↔ slot/NPC и travel в другой POI начинают новый. Каталог v1 effects закрыт в `migration-decisions.md`; новые relation effects не добавляются без отдельного сценария.
 
 ---
 
@@ -533,16 +506,16 @@ Effects текущего NPC и явно указанного NPC — разны
 
 ---
 
-## 13. Очерёдность будущей работы
+## 13. Очерёдность реализации
 
 После завершения всех initial-структур:
 
-1. Утвердить runtime `CurrentInteraction` и interaction memory.
-2. Утвердить Frame resolver и context switching POI ↔ slot.
-3. Утвердить Action execution pipeline.
-4. Реализовать согласованный transition contract и уточнить внешнюю оркестрацию.
-5. Утвердить log presentation snapshots и NPC overlays.
-6. Утвердить root content resolver и UI options.
+1. Реализовать утверждённые runtime `CurrentInteraction`, typed pending queue и interaction memory.
+2. Реализовать Frame resolver и context switching POI ↔ slot с новым log и наследованием background.
+3. Реализовать утверждённый Action execution pipeline без повторного click-time resolver.
+4. Реализовать согласованный transition contract и внешнюю world orchestration.
+5. Реализовать log из resolved narrative blocks и baseline NPC overlays.
+6. Реализовать grouped root content resolver и runtime navigation options.
 7. Встроить дневной reset, пометку и централизованное удаление POI.
 8. После этого мигрировать старый services-based interaction slice.
 
@@ -554,16 +527,19 @@ Effects текущего NPC и явно указанного NPC — разны
 
 ### Resolved schedule и occupancy
 
-`baseSchedule` NPC не содержит `work`. Рабочее состояние накладывается из POI slots:
+`baseSchedule` NPC содержит `work`. Расписание задаёт время, а POI slot — место работы:
 
 ```text
-NPC указан в candidateNpcIds рабочего slot либо назначен в него runtime assignment
-И рабочий POI открыт в текущем TimeOfDay
-→ resolved state NPC становится work
+baseSchedule[currentTimeOfDay] === work
+И NPC указан в candidateNpcIds рабочего slot либо назначен в него runtime assignment
+И рабочий POI открыт
+→ NPC допустим только для work slots этого рабочего контекста
 
-иначе
-→ используется значение baseSchedule
+baseSchedule[currentTimeOfDay] === work, но подходящего открытого workplace нет
+→ NPC остаётся неразмещённым, без fallback в freeTime/home
 ```
+
+Resolved schedule строится глобально для NPC, независимо от того, посещён ли рабочий POI. Static candidate допускается максимум в одном work slot; runtime assignment supersedes static work membership. Поэтому NPC с текущим состоянием `work` заранее исключён из `freeTime`/`home`, а подходящий открытый work POI резервирует его для рабочей группы до фактического разрешения occupancy.
 
 Runtime placement использует resolved state:
 
@@ -576,11 +552,11 @@ hidden   → NPC нигде не размещается
 
 Если NPC имеет resolved state `work`, но не занял ни одного рабочего slot, он остаётся неразмещённым и не откатывается к `freeTime` либо `home`.
 
-Фактический occupant slot сохраняется до следующего `TimeOfDay`. Пересчёт внутри одного time slot не выполняется. Источник текущего размещения — occupancy slice; NPC initial-объект не получает `currentPoiId`, `slotId`, `role` или `workplaceId`.
+Фактическая occupancy при этом разрешается лениво только для POI, в который вошёл игрок. Невходимый POI не выполняет chance rolls и не получает cache фактических occupants: он лишь резервирует работающих NPC через resolved schedule. При первом входе в POI в time slot его occupants выбираются и кешируются; повторный вход использует cache. Источник текущего размещения — occupancy slice; NPC initial-объект не получает `currentPoiId`, `slotId`, `role` или `workplaceId`.
 
 Построенные комнаты базы используют ту же систему. Назначение хранится отдельно от immutable template candidates по `poiId + slotId`; оно не изменяет `candidateNpcIds`. Совместимый назначенный NPC занимает slot без `chance`, а при его недоступности slot остаётся пустым без candidate fallback.
 
-Открытым остаётся окончательная форма `resolvedSchedulesByNpcId` и occupancy slice.
+Внутренняя форма `resolvedSchedulesByNpcId` и occupancy indexes выбирается при реализации, но разделение глобального resolved schedule и lazy actual occupancy является частью контракта.
 
 ### Times met
 
@@ -623,6 +599,8 @@ Assets подключаются средствами Vite:
 
 Asset import возвращает разрешённую Vite строку URL. Сырые пути к папкам не хранятся в runtime NPC state.
 
+Baseline использует `import.meta.glob` и соглашение `src/assets/npcs/<npcId>/default.webp`.
+
 В будущем resolver может получать `npcId` и runtime-контекст изображения:
 
 ```text
@@ -632,14 +610,7 @@ role текущего slot
 настроение или отношение
 ```
 
-Пока не определены:
-
-1. структура visual registry;
-2. соглашение об именах файлов;
-3. приоритет visual variants;
-4. lazy или eager загрузка групп assets;
-5. должен ли разрешённый visual variant сохраняться в presentation snapshot log event;
-6. понадобится ли optional `visualId`, если несколько NPC будут использовать один визуальный набор.
+Отложены расширенная структура visual registry, приоритет вариантов, lazy/eager стратегия групп и optional `visualId` для общего набора. Visual variant в log event не сохраняется: log содержит только разрешённые narrative blocks.
 
 ---
 
@@ -704,13 +675,13 @@ result: {
 1. Зафиксировать список POI, существующих к началу дневного тика. POI, созданные позднее effects этого же `onDayEnd`, в текущем тике не обрабатываются.
 2. Обойти этот список и выполнить `onDayPass`. Непосредственно перед каждым POI повторно проверить `pendingRemoval`; помеченный узел пропустить.
 3. Уменьшить `lifetimeDaysLeft` непомеченных POI. Если срок достиг `0`, сразу вызвать рекурсивный `markPoiForRemoval` для всего поддерева.
-4. Уменьшить `explorationDaysLeft` клеток. Истечение разведки не помечает клетку на удаление.
+4. Обработать остальные зарегистрированные world-owned дневные счётчики. В частности, уменьшить `explorationDaysLeft` клеток и `entryDisabledDaysLeft` POI; истечение разведки оставляет `0`, а временная блокировка при нуле удаляет поле. Новые счётчики подключаются к этой общей фазе со своим zero-state rule.
 5. Пройти таймеры стадий квестов и добавить их `onExpire` в массив effects.
 6. Пройти общие таймеры активных квестов и добавить их `onExpire` следом.
 7. Выполнить собранные квестовые effects по порядку. Любой effect удаления POI на этом шаге также только рекурсивно ставит `pendingRemoval`.
 8. Одним общим проходом физически удалить все помеченные POI и очистить их зависимости.
 9. Полностью очистить дневную память Actions и Interceptors; долговременные total-счётчики не очищать.
-10. Обновить occupancy и остальные производные данные нового дня в порядке, который будет закреплён при реализации соответствующих slices.
+10. После обработки всех пересечённых границ дня и достижения конечного времени один раз построить global resolved schedules, разрешить необходимую occupancy конечного time slot, проверить текущий interaction-контекст и собрать его новую pending queue.
 
 Обычный временный POI со сроком жизни `1` сначала выполняет effects последнего дня и только после этого помечается. POI, помеченный до своей очереди `onDayPass`, как и все его рекурсивно помеченные потомки, дневные effects не выполняет.
 
@@ -726,8 +697,8 @@ result: {
 
 Централизация делает порядок удаления предсказуемым, но сама по себе не исправляет оставшиеся ссылки. Это ответственность общей процедуры удаления зависимостей. Её состав нужно сверить с актуальными slices при реализации, без добавления дополнительных initial-полей.
 
-### Вопросы реализации
+### Требования к реализации
 
-1. Как завершить активный interaction/travel, если время пересекло конец дня до обычного выхода; исходный context и нужный parent target должны быть доступны обработчику.
-2. Какие конкретно maps проекта очищает единый финальный removal helper. Это проверка реализации, а не новый выбор initial-структуры.
-3. В каком точном месте после физического удаления пересчитываются occupancy и остальные производные данные нового дня.
+- Если время пересекает конец дня внутри Action или travel, команда заранее сохраняет минимальные исходные данные, необходимые для завершения уже выбранного перехода, включая parent target удаляемого POI.
+- Единый removal helper обязан очистить все фактически существующие зависимости удалённых POI; перечень проверяется по актуальным slices при реализации.
+- Resolved schedules, occupancy конечного time slot, валидация interaction-контекста и pending queue выполняются после всех дневных тиков текущей операции времени, а не между промежуточными днями.

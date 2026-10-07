@@ -8,11 +8,11 @@
 - начальную принадлежность к фракции;
 - начальное отношение к игроку;
 - счётчик состоявшихся встреч;
-- базовое расписание вне работы;
+- полное расписание, включая рабочее время;
 - персональные Actions и Interceptors NPC;
 - границу между NPC, POI slots, характеристиками и визуальными assets.
 
-Runtime-размещение, occupancy, наложение рабочего расписания, обновление `timesMet`, выбор изображения и interaction state вынесены в `interaction-runtime-engine-questions.md`.
+Runtime-размещение, occupancy, сопоставление рабочего времени с POI slots, обновление `timesMet`, выбор изображения и interaction state вынесены в `interaction-runtime-engine-questions.md`.
 
 ---
 
@@ -59,7 +59,7 @@ export const INITIAL_NPCS = {
 ## 2. Initial-тип NPC
 
 ```ts
-export type NpcBaseScheduleState = 'freeTime' | 'home' | 'hidden';
+export type NpcBaseScheduleState = 'work' | 'freeTime' | 'home' | 'hidden';
 
 export type NpcBaseSchedule = Record<TimeOfDay, NpcBaseScheduleState>;
 
@@ -144,15 +144,15 @@ timesMet > 0         → NPC уже знаком игроку
 
 ## 6. Base schedule
 
-`baseSchedule` описывает состояние NPC вне наложенной работы:
+`baseSchedule` описывает полное состояние NPC в каждый time slot, включая рабочее время:
 
 ```ts
 baseSchedule: {
   late_night: 'home',
   early_morning: 'home',
-  morning: 'freeTime',
-  afternoon: 'freeTime',
-  evening: 'freeTime',
+  morning: 'work',
+  afternoon: 'work',
+  evening: 'work',
   night: 'home',
 },
 ```
@@ -160,12 +160,20 @@ baseSchedule: {
 Допустимые значения:
 
 ```text
-freeTime → NPC может занимать freeTime slot
-home     → NPC может занимать home slot
+work     → NPC может занимать только work slot своего рабочего места
+freeTime → NPC может занимать только freeTime slot
+home     → NPC может занимать только home slot
 hidden   → NPC нигде не размещается
 ```
 
-`work` намеренно отсутствует в `NpcBaseScheduleState`. Работа задаётся не самим NPC, а его участием в рабочем template slot: как automatic candidate либо persistent assignment. Когда рабочий POI открыт, работа накладывается поверх соответствующего значения `baseSchedule` при построении resolved schedule.
+Работа определяется двумя независимыми частями данных:
+
+- `baseSchedule: 'work'` говорит, **когда** NPC работает;
+- участие в `work` slot как automatic candidate либо persistent assignment говорит, **где** он может работать.
+
+Только сочетание рабочего time slot, подходящего work slot и открытого POI делает NPC кандидатом рабочего размещения. Static `candidateNpcIds` могут указывать NPC максимум в одном work slot. Runtime assignment supersedes static work membership, поэтому NPC можно перевести в построенную комнату без второй работы. Поскольку schedule уже равен `work`, NPC в это время не рассматривается для `freeTime` или `home` slots нигде в мире, даже если игрок ещё не посетил рабочий POI. Если подходящего открытого рабочего места нет либо NPC не занял рабочий slot, он остаётся неразмещённым и не получает fallback в `freeTime`/`home`.
+
+Это не делает actual occupancy глобальной. Глобальная проверка schedule и рабочих связей лишь резервирует NPC за рабочей группой и исключает его из остальных групп; конкретный occupant slot, chance roll и cache создаются лениво при первом входе игрока в рабочий POI в текущем time slot.
 
 Поэтому NPC initial-объект не хранит:
 
@@ -298,9 +306,9 @@ export const INITIAL_NPCS = {
     baseSchedule: {
       late_night: 'home',
       early_morning: 'home',
-      morning: 'freeTime',
-      afternoon: 'freeTime',
-      evening: 'freeTime',
+      morning: 'work',
+      afternoon: 'work',
+      evening: 'work',
       night: 'home',
     },
 
@@ -316,9 +324,9 @@ export const INITIAL_NPCS = {
     baseSchedule: {
       late_night: 'home',
       early_morning: 'home',
-      morning: 'freeTime',
-      afternoon: 'freeTime',
-      evening: 'freeTime',
+      morning: 'work',
+      afternoon: 'work',
+      evening: 'work',
       night: 'home',
     },
 
@@ -343,7 +351,7 @@ export const INITIAL_NPCS = {
 } satisfies Record<NpcId, InitialNpc>;
 ```
 
-Работа Bob и Lena в таверне не дублируется здесь. Она определяется `candidateNpcIds` рабочих slots таверны и её расписанием открытия.
+Расписание Bob и Lena задаёт часы `work`, а `candidateNpcIds` рабочих slots таверны задаёт их рабочее место. Одного из этих источников недостаточно: NPC со `work` без подходящего slot остаётся неразмещённым, а NPC в `candidateNpcIds` не работает во время `freeTime`, `home` или `hidden`.
 
 ---
 
@@ -356,8 +364,8 @@ export const INITIAL_NPCS = {
 - `faction` optional; отсутствие означает отсутствие фракции, а не автоматический fallback `independents`;
 - `affection` по умолчанию равен `0`, текущий рабочий диапазон — `-100..100`;
 - `timesMet` по умолчанию равен `0` и заменяет отдельный `isKnown`;
-- `baseSchedule` содержит только `freeTime | home | hidden`; состояния `work` в нём нет;
-- работа, роль и допустимое размещение задаются POI slots;
+- `baseSchedule` содержит `work | freeTime | home | hidden`; `work` задаёт рабочее время NPC;
+- работа требует одновременно `baseSchedule: 'work'` и связи с work slot через candidate либо assignment; глобальный resolver исключает такого NPC из `freeTime/home`, а actual slot occupancy разрешается лениво только при входе в POI;
 - `actionIds` NPC содержат только его персональные Actions, а `interceptorIds` — персональные автоматические события;
 - характеристики NPC находятся в отдельных character/stat templates;
 - визуальные assets и их resolver отделены от `InitialNpc`;

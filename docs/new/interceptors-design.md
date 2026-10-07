@@ -38,11 +38,11 @@ Interceptor не является невидимой кнопкой и не см
 
 ## Ответственность сущностей
 
-| Сущность | Ответственность |
-|---|---|
-| `Action` | Выбор, который игрок видит и может нажать |
-| `Interceptor` | Автоматическое событие при входе в контекст |
-| `Frame` | Сцена: текст, фон и доступные игроку Actions |
+| Сущность                             | Ответственность                                      |
+| ------------------------------------ | ---------------------------------------------------- |
+| `Action`                             | Выбор, который игрок видит и может нажать            |
+| `Interceptor`                        | Автоматическое событие при входе в контекст          |
+| `Frame`                              | Сцена: текст, фон и доступные игроку Actions         |
 | `ActionResult` / `InterceptorResult` | Narrative, effects и допустимый для сущности переход |
 
 Interceptor обычно открывает Frame. Например, фейсконтроль автоматически останавливает игрока, а Frame предлагает уйти, подкупить охранника или начать драку.
@@ -94,19 +94,19 @@ interface InitialInterceptorBase {
 
   /** Ограничение количества исполнений. */
   executionLimit?: ExecutionLimit;
-
 }
 
-type InitialInterceptor = InitialInterceptorBase & (
-  | {
-      result: InterceptorResult;
-      check?: never;
-    }
-  | {
-      check: InterceptorCheck;
-      result?: never;
-    }
-);
+type InitialInterceptor = InitialInterceptorBase &
+  (
+    | {
+        result: InterceptorResult;
+        check?: never;
+      }
+    | {
+        check: InterceptorCheck;
+        result?: never;
+      }
+  );
 ```
 
 Interceptor содержит либо `result`, либо `check`. `check` поддерживается обязательно как возможность системы: он позволяет автоматически запускать случайные события и квестовые сцены с разными результатами проверки. Если проверка конкретному событию не нужна, используется обычный `result`.
@@ -166,13 +166,9 @@ Actions и Interceptors собираются отдельно.
 
 ```ts
 interface InitialQuestStage {
-  actionIdsByTarget?: Partial<
-    Record<QuestTargetId, ActionId[]>
-  >;
+  actionIdsByTarget?: Partial<Record<QuestTargetId, ActionId[]>>;
 
-  interceptorIdsByTarget?: Partial<
-    Record<QuestTargetId, InterceptorId[]>
-  >;
+  interceptorIdsByTarget?: Partial<Record<QuestTargetId, InterceptorId[]>>;
 }
 ```
 
@@ -224,22 +220,28 @@ Slot не является `QuestTargetId`. `slot.interceptorIds` содержи
 
 ## Снимок и очередь
 
-При входе runtime собирает массив Interceptors, актуальный для текущего контекста и time slot:
+В interaction существует одна pending-очередь событий текущего контекста:
 
 ```ts
 interface CurrentInteraction {
   // остальные данные взаимодействия
-  pendingInterceptorIds: InterceptorId[];
+  pendingEvents: PendingInteractionEvent[];
 }
+
+type PendingInteractionEvent =
+  | { type: 'interceptor'; interceptorId: InterceptorId }
+  | { type: 'forceExit' };
 ```
+
+При входе runtime сначала восстанавливает или рассчитывает дневное состояние субъекта, затем собирает authored Interceptors, актуальные для текущего контекста и time slot, и сохраняет их как элементы `type: 'interceptor'`. Если восстановленный дневной tension NPC уже достиг порога, runtime до начала исполнения вызывает `scheduleForceExit`, который заменяет этот authored snapshot системным item. System `forceExit` не является authored definition и описан отдельно ниже.
 
 Порядок работы:
 
 1. Собрать Interceptors текущего NPC или POI из всех источников.
 2. Проверить `conditions`, `appearanceChance` и лимиты.
 3. Отсортировать Interceptors по `priority`.
-4. Сохранить их ID в `pendingInterceptorIds`.
-5. Извлечь следующий ID из массива, одновременно удалить его из очереди и непосредственно в этот момент повторно проверить его актуальность и `conditions`. Если Interceptor больше не актуален, молча отбросить ID и взять следующий.
+4. Сохранить их как authored items в `pendingEvents`.
+5. Извлечь следующий authored item, одновременно удалить его из очереди и непосредственно в этот момент повторно проверить актуальность definition и `conditions`. Если Interceptor больше не актуален, молча отбросить item и взять следующий.
 6. Выполнить прошедший повторную проверку Interceptor.
 7. Если результат открыл Frame, приостановить очередь. Если перехода нет, сразу перейти к следующему ID.
 
@@ -275,12 +277,14 @@ interface CurrentInteraction {
 
 1. обновляет schedules и occupancy;
 2. проверяет, существует ли ещё текущий interaction-контекст;
-3. удаляет прежний `pendingInterceptorIds`;
-4. собирает и сортирует новую очередь для актуального контекста и конечного time slot.
+3. удаляет прежние authored items;
+4. собирает и сортирует новую authored-очередь для актуального контекста и конечного time slot.
 
 Если действие пересекло несколько time slots, промежуточные очереди не строятся: используется только конечное состояние времени.
 
 Если после действия открыт root актуального контекста, новая очередь начинает исполняться сразу. Если игрок остаётся во внутреннем Frame, очередь сохраняется и ждёт возврата в root. Переход из Frame в parent, другой POI, дочерний контекст, бой или завершение interaction удаляет эту очередь по обычным правилам.
+
+Если до смены time slot был запланирован system `forceExit`, он не заменяется новой authored-очередью: `forceExit` продолжает быть единственным pending item до исполнения либо до выхода/инвалидации текущего контекста.
 
 Результат `appearanceChance` остаётся дневным и при пересборке в тот же день не перебрасывается. Новая очередь отличается за счёт актуальных источников, `conditions`, execution limits, schedules и occupancy.
 
@@ -289,13 +293,19 @@ interface CurrentInteraction {
 ### Последствия снимка
 
 - Один Interceptor присутствует в одной собранной очереди не более одного раза: его ID удаляется до исполнения. После смены time slot тот же ID может снова попасть в новую очередь, если его `conditions` и limits по-прежнему позволяют выполнение.
-- Специальный `handledActionIds` не нужен.
-- Повторная проверка `conditions` жёстко выполняется на шаге 5 — в момент извлечения конкретного ID из `pendingInterceptorIds`. Если предыдущий Frame изменил переменные и условия ожидающего Interceptor перестали выполняться, извлечённый ID молча сбрасывается, после чего runtime берёт следующий.
+- Специальный `handledInterceptorIds` не нужен.
+- Повторная проверка `conditions` жёстко выполняется на шаге 5 — в момент извлечения конкретного authored item из `pendingEvents`. Если предыдущий Frame изменил переменные и условия ожидающего Interceptor перестали выполняться, извлечённый item молча сбрасывается, после чего runtime берёт следующий.
 - Interceptors, появившиеся из-за изменения state уже после создания снимка, в текущую очередь не добавляются. Они смогут выполниться при следующем отдельном входе или пересборке после смены time slot.
 
 Одинаковый ID не должен одновременно приходить из нескольких источников. Runtime не дедуплицирует список и не считает число источников: такое повторение является ошибкой initial-данных и проверяется development-валидатором.
 
 Внутри одного time slot снимок делает цепочку конечной и не требует повторной полной сборки после каждого Frame.
+
+### System `forceExit`
+
+`forceExit` использует ту же `pendingEvents`, но не проходит `conditions`, `appearanceChance`, `priority` или `executionLimit`. После утверждённого trigger `scheduleForceExit` идемпотентно очищает authored items и оставляет единственный `{ type: 'forceExit' }`.
+
+System item не прерывает внутренний Frame. Он существует только в slot/NPC-контексте и при достижении root разрешает reserved Frame `<templateId>/<slotId>:forceExit`. Если Frame отсутствует, применяется fallback: slot/NPC context возвращается в текущий POI. Выход из контекста, удаление POI или invalidation текущего slot/NPC очищают item.
 
 ## Повторяемость
 
@@ -355,7 +365,7 @@ executionLimit: {
 - Actions и Interceptors хранятся и собираются отдельно;
 - дневные execution-счётчики и сохранённые результаты `appearanceChance` очищаются полностью в конце дня, включая память активного interaction;
 - счётчик `executionLimit.total` является долговременным и в конце дня не очищается;
-- `pendingInterceptorIds` принадлежит текущему interaction-контексту, полностью заменяется при смене time slot и удаляется при завершении или переходе в другой контекст;
+- `pendingEvents` принадлежит текущему interaction-контексту; authored items полностью заменяются при смене time slot, а запланированный system `forceExit` переживает refresh и удаляется только при исполнении, завершении или переходе в другой контекст;
 - точный выбор maps или массивов сейчас не является частью контракта.
 
 Полные определения по-прежнему находятся в реестрах:
@@ -383,10 +393,7 @@ const INTERCEPTORS: Record<InterceptorId, Interceptor>;
 Общий принцип:
 
 ```ts
-if (
-  lastDateMet === null ||
-  diffCalendarDays(lastDateMet, currentTime) > 0
-) {
+if (lastDateMet === null || diffCalendarDays(lastDateMet, currentTime) > 0) {
   timesMet += 1;
 }
 
@@ -547,7 +554,7 @@ Interceptor работает только при входе во взаимод�
 
 Основной момент сборки — реальный вход в контекст. Возврат из Frame в root сам по себе не запускает новую фазу и продолжает сохранённую очередь. Исключение — смена time slot: она заранее заменяет старую очередь новым снимком, который начинает исполняться при следующем попадании в root.
 
-### `handledActionIds`
+### `handledInterceptorIds`
 
 Не используется. ID извлекается и удаляется до выполнения. После смены time slot повторяемость регулируют актуальные `conditions` и `executionLimit`, а не отдельный список обработанных IDs.
 
@@ -557,7 +564,7 @@ Interceptor работает только при входе во взаимод�
 
 ### Смешивание Actions и Interceptors в одном массиве
 
-Не используется. У квестов и других источников для них отдельные свойства, а runtime собирает отдельные списки.
+Не используется. Actions остаются UI-вариантами, а pending queue содержит только автоматические interaction events. System `forceExit` может находиться в одной очереди с authored Interceptors как отдельный тип union, но не является Action или записью `INITIAL_INTERCEPTORS`.
 
 ## Итог
 
@@ -566,10 +573,10 @@ Interceptor работает только при входе во взаимод�
 - Action — выбор игрока;
 - Interceptor — автоматическое событие при входе;
 - Interceptor обычно открывает Frame, но может выполнить silent effects без перехода; решения игрока, если они нужны, описываются обычными Actions Frame;
-- при каждом входе создаётся приоритетный снимок Interceptors; при смене time slot старая очередь удаляется и строится новая для конечного состояния мира;
+- при каждом входе создаётся приоритетный снимок authored Interceptors; при смене time slot authored-очередь заменяется новой для конечного состояния мира;
 - каждый подход к `slot/NPC` является отдельным входом;
 - возврат в root того же контекста продолжает текущую очередь; очередь, пересобранная во внутреннем Frame после смены time slot, ждёт этого возврата;
-- выход из контекста удаляет очередь;
+- system `forceExit` идемпотентно заменяет authored-остаток очереди, ждёт root и переживает time-slot refresh; выход из контекста удаляет очередь;
 - повторяемость регулируется условиями и `executionLimit.perDay/total`;
 - `check` поддерживается;
 - `cost`, `label` и `requirements` Interceptor не имеет;

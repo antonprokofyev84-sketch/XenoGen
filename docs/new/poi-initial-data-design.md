@@ -41,15 +41,10 @@ export const POI_TEMPLATES = {...};
  * - details.faction                   → template value, otherwise undefined
  * - details.visitedTimes omitted      → 0
  * - details.lastTimeVisited omitted   → null
+ * - details.isEntryDisabled omitted   → false
+ * - details.entryDisabledDaysLeft omitted → временной блокировки нет
  */
 ```
-
-Record<PoiId, Partial<Record<SlotId, RuntimeSlotAssignment>>>
-
-> ;
-
-interface RuntimeSlotAssignment {
-assignedNpcId: NpcId;
 
 ```ts
 export const INITIAL_POIS_BY_CELL = {
@@ -69,9 +64,9 @@ export const INITIAL_POIS_BY_CELL = {
 
 ```ts
 interface InitialPoi {
-  id: string;
-  templateId: string;
-  parentId: string;
+  id: PoiId;
+  templateId: PoiTemplateId;
+  parentId: CellId | PoiId;
   details: InitialPoiDetails;
 }
 ```
@@ -141,7 +136,7 @@ Cell        → parentId === null
 1. Создать все runtime POI и добавить каждому `rootCellId` из ключа `INITIAL_POIS_BY_CELL`.
 2. Пройти по созданным POI и добавить каждый ID в `childPoiIds` его непосредственного родителя.
 
-В `childPoiIds` входят только непосредственные дети, а не все потомки. Отдельный слой исчерпывающей валидации initial-данных пока не нужен: данные создаются и тестируются автором игры, а отсутствующий `parentId` или `templateId` должен проявляться как обычная ошибка инициализации.
+В `childPoiIds` входят только непосредственные дети, а не все потомки. Ссылочная целостность `parentId`/`templateId`, отсутствие циклов и остальные authoring-инварианты проверяются единым development-валидатором из `validation-contract.md`; runtime initializer не исправляет данные молча.
 
 ---
 
@@ -201,6 +196,9 @@ export interface PoiDetails {
 
   visitedTimes: number;
   lastTimeVisited: number | null;
+
+  isEntryDisabled?: true;
+  entryDisabledDaysLeft?: number;
 }
 ```
 
@@ -215,6 +213,8 @@ export const DEFAULT_POI_DETAILS: Omit<PoiDetails, 'faction'> = {
   lastTimeVisited: null,
 };
 ```
+
+Optional access fields намеренно отсутствуют в `DEFAULT_POI_DETAILS`: `undefined` означает разрешённый вход и отсутствие временной блокировки. Они копируются из initial placement только при наличии.
 
 `isDiscovered` принадлежит конкретному экземпляру и не задаётся в template. Инициализатор превращает отсутствующее значение в `false`.
 
@@ -314,8 +314,8 @@ schedule: {
 Расписание участвует и в симуляции NPC:
 
 - `work` slots заполняются только когда POI открыт;
-- закрытый POI не удерживает работников в `work` slots;
-- `isDiscovered` не влияет на эту симуляцию: NPC может уйти на работу в ещё не открытый игроком POI и поэтому отсутствовать в других местах.
+- закрытый POI не резервирует и не заполняет `work` slots; NPC с текущим `baseSchedule: 'work'` при этом остаётся неразмещённым, а не переходит в `freeTime/home`;
+- Фактическая occupancy остаётся lazy: невходимый POI не получает occupants и не делает chance rolls. Однако рабочая допустимость строится глобально. NPC рассматривается work slot только когда его собственный `baseSchedule` в текущем time slot равен `work`, он связан со slot через candidate/assignment и POI открыт. Такой NPC заранее исключён из `freeTime` и `home`; рабочий POI как бы резервирует его до посещения, но конкретный occupant slot выбирается и кешируется только при входе игрока. Если подходящего открытого work slot нет либо chance не дал occupancy, NPC остаётся неразмещённым без fallback.
 
 ---
 
@@ -365,9 +365,7 @@ actionIds: [
 
 Общие сервисы POI находятся здесь. Возможности NPC, зависящие от занимаемой роли, находятся в соответствующем slot.
 
-Порядок объединения POI/role/NPC/quest actions будет описан отдельно.
-
-Остаётся отдельно решить, должны ли системное возвращение к родителю и переходы к дочерним POI генерироваться автоматически или храниться как авторские action IDs.
+Runtime сохраняет Actions отдельными группами по источнику: Frame, POI, slot, personal NPC и quest. Обычное возвращение к родителю, переходы к обнаруженным дочерним POI и вход в занятые NPC slots являются runtime-derived navigation options, а не авторскими Action IDs. Авторский Action используется, когда переходу нужны собственные narrative, check, cost или effects.
 
 Template также может содержать базовые автоматические события входа в конкретный POI:
 
@@ -410,9 +408,9 @@ Slot definition:
 
 ```ts
 export interface InitialNpcSlot {
-  id: string;
+  id: SlotId;
   role: string;
-  candidateNpcIds: string[];
+  candidateNpcIds: NpcId[];
 
   chance?: number;
   actionIds?: ActionId[];
@@ -456,7 +454,7 @@ candidateNpcIds: []      → без runtime assignment slot не может за
 
 Первый обработанный slot получает преимущество. Поэтому, если один NPC подходит нескольким slots одинакового приоритета, он занимает первый подходящий slot по порядку массива и больше не рассматривается. Никакого дополнительного оптимального распределения нет.
 
-Один NPC не может одновременно занимать несколько slots. Выбранный occupant сохраняется до следующего time slot; пересчёт внутри одного time slot не выполняется.
+Один NPC не может одновременно занимать несколько slots или иметь две работы. Static `candidateNpcIds` допускают NPC максимум в одном work slot; runtime work assignment supersedes static work membership. Выбранный occupant сохраняется до следующего time slot; пересчёт внутри одного time slot не выполняется.
 
 `role` принадлежит slot, а не NPC. Для рабочего slot это работа NPC; в остальных группах это его локальная роль. Помимо role-specific Actions значение `role` может передаваться отдельному visual resolver, но сами изображения в slot не хранятся.
 
@@ -473,7 +471,13 @@ Slot-owned `actionIds` и `interceptorIds` являются базовым ко�
 Построенные комнаты базы используют те же slots. Постоянное назначение хранится отдельно от template в runtime map:
 
 ```ts
-type RuntimeSlotAssignments = Partial<Record<PoiId, Partial<Record<SlotId, NpcId>>>>;
+interface RuntimeSlotAssignment {
+  assignedNpcId: NpcId;
+}
+
+type RuntimeSlotAssignments = Partial<
+  Record<PoiId, Partial<Record<SlotId, RuntimeSlotAssignment>>>
+>;
 ```
 
 Присутствующий `assignedNpcId` является эксклюзивным: он не меняет `candidateNpcIds`, при совместимом schedule занимает slot без `chance`, а при недоступности оставляет slot пустым. Обычные candidates не становятся fallback для assignment.
@@ -597,7 +601,7 @@ onDayPass: [
 
 ```ts
 export interface ChangeRegionParameterEffect {
-  kind: 'changeRegionParameter';
+  type: 'changeRegionParameter';
   cellParam: RegionParameterKey;
   delta: number;
 
@@ -612,7 +616,7 @@ export interface ChangeRegionParameterEffect {
 ```ts
 onDayPass: [
   {
-    kind: 'changeRegionParameter',
+    type: 'changeRegionParameter',
     cellParam: 'contamination',
     delta: 1,
     chance: 0.3,
@@ -647,7 +651,7 @@ current 2, delta -5, min 0     → 0
 current 100, delta -5, min 200 → 100
 ```
 
-Эффект изменяет региональные параметры root cell, содержащей POI. Это следует из контекста POI, поэтому `rootCell` не дублируется в `kind`.
+Эффект изменяет региональные параметры root cell, содержащей POI. Это следует из контекста POI, поэтому `rootCell` не дублируется в descriptor.
 
 Если проходит несколько дней, `chance` каждого эффекта бросается независимо для каждого прошедшего дня.
 
@@ -659,6 +663,8 @@ POI-часть одного дневного тика:
 2. После завершения `onDayPass` уменьшить непостоянные `lifetimeDaysLeft` непомеченных POI.
 3. Если `lifetimeDaysLeft` достиг `0`, немедленно рекурсивно пометить этот POI и всех его потомков.
 4. Физически пока ничего не удалять. Один общий проход удаления выполняется в самом конце полного `onDayEnd`, после квестовых таймеров и применения собранных effects.
+
+Та же общая world-owned фаза `onDayEnd` уменьшает остальные зарегистрированные дневные счётчики, включая `explorationDaysLeft` клетки и `entryDisabledDaysLeft` POI. Для временной блокировки значение `1` удаляется на ближайшем конце дня; отдельный pipeline для каждого нового счётчика не создаётся.
 
 Поэтому временный POI с `lifetimeDaysLeft: 1` успевает выполнить эффекты своего последнего дня. Если родитель помечен заранее или во время ещё не завершённого обхода, его уже помеченные потомки дневные effects не выполняют. Новые POI, созданные во время текущего `onDayEnd`, не входят в начальный список и начнут участвовать в симуляции со следующего дня.
 
@@ -681,12 +687,14 @@ export interface InitialPoiDetails {
   faction?: FactionId;
   visitedTimes?: number;
   lastTimeVisited?: number | null;
+  isEntryDisabled?: true;
+  entryDisabledDaysLeft?: number;
 }
 
 export interface InitialNpcSlot {
-  id: string;
+  id: SlotId;
   role: string;
-  candidateNpcIds: string[];
+  candidateNpcIds: NpcId[];
   chance?: number;
   actionIds?: ActionId[];
   interceptorIds?: InterceptorId[];
@@ -699,7 +707,7 @@ export interface InitialNpcSlots {
 }
 
 export interface ChangeRegionParameterEffect {
-  kind: 'changeRegionParameter';
+  type: 'changeRegionParameter';
   cellParam: RegionParameterKey;
   delta: number;
   chance?: number;
@@ -708,9 +716,9 @@ export interface ChangeRegionParameterEffect {
 }
 
 export interface InitialPoi {
-  id: string;
-  templateId: string;
-  parentId: string;
+  id: PoiId;
+  templateId: PoiTemplateId;
+  parentId: CellId | PoiId;
 
   details: InitialPoiDetails;
 }
@@ -741,7 +749,7 @@ const runtimeDetails = normalizePoiDetails({
 });
 ```
 
-То есть template может дать начальные `faction`, `explorationThreshold` и `lifetimeDaysLeft`, а конкретная placement-запись может их переопределить. `isDiscovered` принадлежит экземпляру: указанное `true` сохраняется, отсутствие нормализуется в `false`. `visitedTimes` и `lastTimeVisited` также принадлежат экземпляру. Остальные поля definition не дублируются в placement-записи.
+То есть template может дать начальные `faction`, `explorationThreshold` и `lifetimeDaysLeft`, а конкретная placement-запись может их переопределить. `isDiscovered`, `isEntryDisabled`, `entryDisabledDaysLeft`, `visitedTimes` и `lastTimeVisited` принадлежат экземпляру. Отсутствующий `isDiscovered` нормализуется в обязательный runtime `false`; optional access fields остаются отсутствующими, потому что `undefined` уже означает разрешённый вход. Остальные поля definition не дублируются в placement-записи.
 
 ---
 
@@ -866,7 +874,7 @@ export const POI_TEMPLATES = {
 
     onDayPass: [
       {
-        kind: 'changeRegionParameter',
+        type: 'changeRegionParameter',
         cellParam: 'contamination',
         delta: 1,
         chance: 0.3,
@@ -901,12 +909,13 @@ export const POI_TEMPLATES = {
 - `parentId` хранится явно;
 - `childPoiIds` строится двухпроходным инициализатором и содержит непосредственных детей;
 - initial `isDiscovered` имеет тип `isDiscovered?: true`: отсутствие означает `false`, явно записывается только `true`, а в runtime поле всегда является обязательным `boolean`;
+- `isEntryDisabled?: true` и `entryDisabledDaysLeft?: number` принадлежат instance details; отсутствие означает разрешённый вход, а временной счётчик уменьшается общей фазой `onDayEnd` и удаляется при достижении нуля;
 - `explorationThreshold` получает default `0`;
 - отсутствие `lifetimeDaysLeft` означает постоянный POI; указанное initial/template значение может быть только положительным целым числом, а `0` возникает только в runtime перед пометкой на удаление;
 - расписание хранится в template как полный `schedule`, копируется в runtime и может быть там постоянно изменено;
 - root Frame POI имеет ID, равный `templateId`; root Frame slot имеет ID `templateId/slotId`; суффикс `root` не используется;
 - проверка расписания выполняется до перемещения; закрытый переход disabled и отдельный closed Frame на первом этапе не используется;
-- закрытый POI не заполняет `work` slots;
+- закрытый POI не резервирует и не заполняет `work` slots; рабочее состояние NPC не получает fallback в другие группы;
 - `managerIds` отсутствует;
 - общие действия POI хранятся в `actionIds`, а базовые автоматические события входа — в `interceptorIds` template definition;
 - slots группируются по `work/freeTime/home`, пустые группы не указываются;
@@ -919,14 +928,12 @@ export const POI_TEMPLATES = {
 - override имеет приоритет только для совпадающего параметра;
 - `onDayPass` работает с raw values клетки и хранится прямым массивом в template definition;
 - пометка POI на удаление сразу рекурсивно помечает всё его поддерево; помеченные узлы не выполняют `onDayPass`, а физическое удаление всех помеченных POI происходит одним общим проходом в конце `onDayEnd`;
-- `isDiscovered` управляет видимостью для игрока, но не исключает POI и связанных NPC из симуляции;
+- `isDiscovered` управляет видимостью для игрока и не влияет на global resolved schedule NPC; actual slot occupancy при этом создаётся лениво только для POI, в который вошёл игрок;
 - вложенный POI пока разрешает региональные параметры непосредственно от root cell.
 
 Отложено:
 
-- точный алгоритм объединения POI/role/NPC/quest actions;
-- окончательная структура runtime occupancy slice;
-- автоматическая генерация действий возврата и переходов к дочерним POI;
+- окончательная внутренняя структура runtime occupancy slice при сохранении утверждённых template/assignment/cache слоёв;
 - временные изменения расписания;
 - наследование региональных параметров по цепочке parent POI;
 - конкретные closed-flow сценарии взлома, проникновения и кражи.
