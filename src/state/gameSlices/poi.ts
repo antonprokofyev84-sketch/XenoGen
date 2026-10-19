@@ -153,7 +153,7 @@ const collectPoiSubtreeIdsDraft = (state: StoreState, rootPoiId: string): string
 const clearPoiDependenciesDraft = (state: StoreState, poiId: string) => {
   delete state.inventory.containers[poiId];
   clearPoiOccupancy(state.occupancySlice, poiId);
-  delete state.guardsSlice.guardsByPoiId[poiId];
+  delete state.guardSlice.guardsByPoiId[poiId];
 };
 
 const clearInteractionIfPoiRemovedDraft = (state: StoreState, removedPoiIds: Set<string>) => {

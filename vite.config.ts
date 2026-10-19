@@ -25,6 +25,7 @@ export default defineConfig(({ command }) => {
       // Доменные и оркестрационные тесты не нуждаются в DOM
       environment: 'node',
       include: ['src/**/*.test.ts'],
+      passWithNoTests: true,
     },
   };
 });

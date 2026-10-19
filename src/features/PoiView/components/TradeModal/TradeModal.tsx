@@ -8,7 +8,7 @@ import {
   calculateTradeBaseCost,
   getItemBasePrice,
 } from '@/systems/trade/tradeExecution';
-import { buildTradeOfferRule, evaluateTradeNegotiation } from '@/systems/trade/tradeNegotiation';
+import { evaluateTradeNegotiation } from '@/systems/trade/tradeNegotiation';
 import { getBuyMultiplier, getSellMultiplier } from '@/systems/trade/tradePricing';
 import { toNpcSubjectKey } from '@/types/interactionRuntime.types';
 import type { InventoryItem } from '@/types/inventory.types';

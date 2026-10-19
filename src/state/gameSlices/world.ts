@@ -64,11 +64,6 @@ function scoutCellDraft(
 }
 
 /**
- * Runs a single "day passed" tick on the draft: collects trait + POI day-pass
- * effects and applies them in place. No nested set() – safe to compose inside a
- * larger transaction (e.g. time advance during travel).
- */
-/**
  * Один дневной тик на draft.
  *
  * Порядок зафиксирован контрактом и выполняется для каждой пересечённой

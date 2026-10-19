@@ -81,7 +81,7 @@ export function payResolvedCost(state: StoreState, cost: ResolvedActionCost): vo
   }
 
   for (const item of cost.items) {
-    const unpaid = inventoryDraft.removeItemsByTemplateId(
+    const unpaid = inventoryDraft.removeItemsByTemplate(
       state,
       PROTAGONIST_ID,
       item.itemId,

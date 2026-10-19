@@ -1,4 +1,4 @@
-import type { InitialActionMap } from '@/types/actions.types';
+import type { InitialActionMap } from '@/types/action.types';
 
 import { FIXTURE_ACTIONS } from './fixtures/actions.fixture';
 

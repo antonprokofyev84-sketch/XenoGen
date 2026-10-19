@@ -14,7 +14,7 @@
 
 Миграция реализуема, но это не продолжение старой Universal POI Migration, а её частичная отмена и замена. Наиболее рискованные области -- порядок мирового времени, POI removal, runtime Actions/Interceptors и смена NPC/slot-контекста.
 
-Текущий проект даёт полезную основу:
+Исходное состояние проекта (до начала миграции) давало полезную основу:
 
 - Zustand + Immer store и атомарный `world.actions.travelToPoi`;
 - `advanceTimeDraft` с обработкой переходов времени;
@@ -22,7 +22,7 @@
 - stat-roll service, inventory, faction, party и combat state;
 - экран `PoiView`, interaction log и trade modal.
 
-Но целевые подсистемы ещё отсутствуют:
+Но в исходном состоянии целевые подсистемы отсутствовали:
 
 - нет Frame, Action и Interceptor registries;
 - нет нового Action executor и resolver доступных вариантов;
@@ -31,7 +31,7 @@
 - нет persistence/save implementation;
 - нет тестового раннера или существующих unit/e2e tests.
 
-Текущая production-сборка проходит: `npm run build`.
+Production-сборка исходного состояния проходила: `npm run build`. Теперь это основной gate миграции (см. «Проверки и release gates»).
 
 ## Карта замены контрактов
 
@@ -85,7 +85,7 @@
 4. Спроектировать новый нейтральный technical fixture set. Он должен быть единственным initial content, необходимым для проверки миграции; старый content не получает mapping и не переносится.
 5. Для открытых пунктов раздела "Статус открытых вопросов" (13–15) зафиксировать решение в `migration-decisions.md` до фазы, которая от него зависит.
 6. Сохранить текущий `npm run build` как основной gate миграции и добавить Vitest (решено в migration-decisions.md) как инфраструктуру. Само написание тестов остаётся отдельной задачей.
-7. Ввести единый инъектированный источник случфйности (seedable RNG). Через него обязаны идти все броски: `appearanceChance`, `check.chance`, stat/skill rolls, веса `ActionOutcome[]`, `InitialNpcSlot.chance` и выбор candidate, `onDayPass.chance` и случайное отклонение дневного tension. Это требование архитектуры, а не только тестов: без него невозможны воспроизводимые сценарии и отложенное покрытие тестами.
+7. Ввести единый инъектированный источник случайности (seedable RNG). Через него обязаны идти все броски: `appearanceChance`, `check.chance`, stat/skill rolls, веса `ActionOutcome[]`, `InitialNpcSlot.chance` и выбор candidate, `onDayPass.chance` и случайное отклонение дневного tension. Это требование архитектуры, а не только тестов: без него невозможны воспроизводимые сценарии и отложенное покрытие тестами.
 
 Критерий завершения: утверждён scope, определён technical fixture set и закрыты решения, необходимые для первой реализуемой вертикали.
 
@@ -223,7 +223,7 @@
 
 Написание тестов вынесено в отдельную задачу после завершения миграции и не является критерием завершения ни одной фазы.
 Инфраструктура для этой задачи готовится в ходе миграции: Vitest подключён, вся случайность идёт через инжектируемый seedable RNG,
-a technical fixtures покрывают каждый утверждённый контракт.
+технические fixtures покрывают каждый утверждённый контракт.
 
 Список ниже сохранён как готовый чек-лист для этой будущей задачи — детерминированное покрытие для:
 
@@ -251,5 +251,5 @@ a technical fixtures покрывают каждый утверждённый к
 5. Phase 6 is the runtime boundary that replaces services; Phase 7 consumes it.
 6. Phase 8 happens only after all active callers have a replacement and the technical fixture set covers every approved contract.
 
-No phase should silently fill an open item (13-16 in «Статус открытых вопросов»). Such a decision must be added to
-`migration-decisions.md` first.
+Ни одна фаза не должна молча закрывать открытые пункты 13–15 из раздела «Статус открытых вопросов». Сначала решение добавляется в
+`migration-decisions.md`.
