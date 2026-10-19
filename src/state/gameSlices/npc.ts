@@ -1,69 +1,49 @@
-import { TIME_OF_DAY_SLOT_COUNT } from '@/constants';
 import type { StoreState } from '@/state/useGameState';
-import type { InteractionService } from '@/types/interaction.types';
-import type { NpcDetails, NpcSchedule, NpcScheduleAction } from '@/types/npc.types';
+import type { NpcId } from '@/types/ids.types';
+import type { InitialNpc, InitialNpcMap } from '@/types/npcContent.types';
+import type { RuntimeNpc, RuntimeNpcMap } from '@/types/npcRuntime.types';
+import { diffCalendarDays } from '@/utils/diffCalendarDays';
 
 import type { GameSlice } from '../types';
 
-const isValidNpcScheduleSlot = (slot: number) => slot >= 0 && slot < TIME_OF_DAY_SLOT_COUNT;
-
+/**
+ * Изменяемое состояние NPC: отношения и история встреч.
+ *
+ * Неизменные данные личности сюда не копируются: они читаются из
+ * `INITIAL_NPCS` по тому же ключу. Текущее место NPC принадлежит occupancy,
+ * а характеристики и боевой билд — отдельным character/stat templates.
+ */
 export interface NpcSlice {
-  byId: Record<string, NpcDetails>;
+  byId: RuntimeNpcMap;
+
   actions: {
-    initializeNpcs: (npcs: NpcDetails[]) => void;
-    addNpc: (npc: NpcDetails) => void;
-    removeNpc: (npcId: string) => void;
+    /** Создаёт runtime-записи для всех авторских NPC. */
+    initializeNpcs: (npcs: InitialNpcMap) => void;
     clearAllNpcs: () => void;
     setNpcAffection: (npcId: string, affection: number) => void;
-    setNpcLastDateMet: (npcId: string, lastDateMet: number | null) => void;
-    setNpcServices: (npcId: string, services: InteractionService[]) => void;
-    setNpcSchedule: (npcId: string, schedule: NpcSchedule) => void;
-    setNpcScheduleAction: (npcId: string, slot: number, action: NpcScheduleAction) => void;
+    /** Фиксирует состоявшуюся встречу; `timesMet` растёт не чаще раза в день. */
+    registerNpcMeeting: (npcId: string) => void;
   };
 }
 
 export const npcSelectors = {
   selectNpcById:
     (npcId: string) =>
-    (state: StoreState): NpcDetails | undefined =>
+    (state: StoreState): RuntimeNpc | undefined =>
       state.npcSlice.byId[npcId],
-
-  selectNpcAffection:
-    (npcId: string) =>
-    (state: StoreState): number | undefined =>
-      state.npcSlice.byId[npcId]?.affection,
-
-  selectNpcFactionId:
-    (npcId: string) =>
-    (state: StoreState): string | undefined =>
-      state.npcSlice.byId[npcId]?.factionId,
-
-  selectNpcServices:
-    (npcId: string) =>
-    (state: StoreState): InteractionService[] =>
-      state.npcSlice.byId[npcId]?.services ?? [],
-
-  selectNpcSchedule:
-    (npcId: string) =>
-    (state: StoreState): NpcSchedule | undefined =>
-      state.npcSlice.byId[npcId]?.schedule,
-
-  selectNpcScheduleAction:
-    (npcId: string, slot: number) =>
-    (state: StoreState): NpcScheduleAction | undefined =>
-      state.npcSlice.byId[npcId]?.schedule[slot]?.action,
 };
 
-const initializeNpcsDraft = (state: StoreState, npcs: NpcDetails[]) => {
-  state.npcSlice.byId = Object.fromEntries(npcs.map((npc) => [npc.id, npc]));
-};
+const createRuntimeNpc = (npcId: NpcId, initial: InitialNpc): RuntimeNpc => ({
+  id: npcId,
+  affection: initial.affection ?? 0,
+  timesMet: initial.timesMet ?? 0,
+  lastDateMet: null,
+});
 
-const addNpcDraft = (state: StoreState, npc: NpcDetails) => {
-  state.npcSlice.byId[npc.id] = npc;
-};
-
-const removeNpcDraft = (state: StoreState, npcId: string) => {
-  delete state.npcSlice.byId[npcId];
+const initializeNpcsDraft = (state: StoreState, npcs: InitialNpcMap) => {
+  state.npcSlice.byId = Object.fromEntries(
+    Object.entries(npcs).map(([npcId, npc]) => [npcId, createRuntimeNpc(npcId, npc)]),
+  );
 };
 
 const clearAllNpcsDraft = (state: StoreState) => {
@@ -73,66 +53,43 @@ const clearAllNpcsDraft = (state: StoreState) => {
 const setNpcAffectionDraft = (state: StoreState, npcId: string, affection: number) => {
   const npc = state.npcSlice.byId[npcId];
   if (!npc) return;
+
   npc.affection = affection;
 };
 
-const setNpcLastDateMetDraft = (state: StoreState, npcId: string, lastDateMet: number | null) => {
+/**
+ * Встречей считается выход из взаимодействия с NPC в недочерний контекст, а
+ * не простое присутствие NPC в occupancy. Повторные взаимодействия в тот же
+ * календарный день обновляют только `lastDateMet`, поэтому отдельная дневная
+ * map не нужна.
+ */
+const registerNpcMeetingDraft = (state: StoreState, npcId: string) => {
   const npc = state.npcSlice.byId[npcId];
   if (!npc) return;
-  npc.lastDateMet = lastDateMet;
-};
 
-const setNpcServicesDraft = (state: StoreState, npcId: string, services: InteractionService[]) => {
-  const npc = state.npcSlice.byId[npcId];
-  if (!npc) return;
-  npc.services = services;
-};
+  const { currentTime } = state.world;
 
-const setNpcScheduleDraft = (state: StoreState, npcId: string, schedule: NpcSchedule) => {
-  const npc = state.npcSlice.byId[npcId];
-  if (!npc) return;
-  npc.schedule = schedule;
-};
+  if (npc.lastDateMet === null || diffCalendarDays(npc.lastDateMet, currentTime) > 0) {
+    npc.timesMet += 1;
+  }
 
-const setNpcScheduleActionDraft = (
-  state: StoreState,
-  npcId: string,
-  slot: number,
-  action: NpcScheduleAction,
-) => {
-  const npc = state.npcSlice.byId[npcId];
-  if (!npc || !isValidNpcScheduleSlot(slot)) return;
-  npc.schedule[slot] = { action };
+  npc.lastDateMet = currentTime;
 };
 
 export const npcDraft = {
   initializeNpcs: initializeNpcsDraft,
-  addNpc: addNpcDraft,
-  removeNpc: removeNpcDraft,
   clearAllNpcs: clearAllNpcsDraft,
   setNpcAffection: setNpcAffectionDraft,
-  setNpcLastDateMet: setNpcLastDateMetDraft,
-  setNpcServices: setNpcServicesDraft,
-  setNpcSchedule: setNpcScheduleDraft,
-  setNpcScheduleAction: setNpcScheduleActionDraft,
+  registerNpcMeeting: registerNpcMeetingDraft,
 };
 
 export const createNpcSlice: GameSlice<NpcSlice> = (set) => ({
   byId: {},
+
   actions: {
     initializeNpcs: (npcs) =>
       set((state) => {
         initializeNpcsDraft(state, npcs);
-      }),
-
-    addNpc: (npc) =>
-      set((state) => {
-        addNpcDraft(state, npc);
-      }),
-
-    removeNpc: (npcId) =>
-      set((state) => {
-        removeNpcDraft(state, npcId);
       }),
 
     clearAllNpcs: () =>
@@ -145,24 +102,9 @@ export const createNpcSlice: GameSlice<NpcSlice> = (set) => ({
         setNpcAffectionDraft(state, npcId, affection);
       }),
 
-    setNpcLastDateMet: (npcId, lastDateMet) =>
+    registerNpcMeeting: (npcId) =>
       set((state) => {
-        setNpcLastDateMetDraft(state, npcId, lastDateMet);
-      }),
-
-    setNpcServices: (npcId, services) =>
-      set((state) => {
-        setNpcServicesDraft(state, npcId, services);
-      }),
-
-    setNpcSchedule: (npcId, schedule) =>
-      set((state) => {
-        setNpcScheduleDraft(state, npcId, schedule);
-      }),
-
-    setNpcScheduleAction: (npcId, slot, action) =>
-      set((state) => {
-        setNpcScheduleActionDraft(state, npcId, slot, action);
+        registerNpcMeetingDraft(state, npcId);
       }),
   },
 });

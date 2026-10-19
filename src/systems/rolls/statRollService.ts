@@ -1,5 +1,7 @@
 import type { StoreState } from '@/state/useGameState';
 import { characterSelectors } from '@/state/useGameState';
+import type { Rng } from '@/systems/rolls/rng';
+import { defaultRng } from '@/systems/rolls/rng';
 import type { MainStatKey, SkillKey } from '@/types/character.types';
 
 export interface StatRollParams {
@@ -25,6 +27,7 @@ export function rollStatCheck(
     stat: SkillKey | MainStatKey;
     difficulty?: number;
   },
+  rng: Rng = defaultRng,
 ): StatRollResult {
   const { characterId, stat, difficulty = 0 } = params;
 
@@ -39,7 +42,7 @@ export function rollStatCheck(
   const totalChance = 100 - difficulty + statValue;
 
   // 3. Кидаем d100
-  const roll = Math.floor(Math.random() * 100) + 1;
+  const roll = Math.floor(rng() * 100) + 1;
 
   return {
     stat,

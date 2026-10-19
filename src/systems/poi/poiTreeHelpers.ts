@@ -1,57 +1,35 @@
 import type { StoreState } from '@/state/useGameState';
-import type { BasePoiNode } from '@/types/poi.types';
+import type { PoiId } from '@/types/ids.types';
 
-export function getNestedPoiIds(poiId: string, state: StoreState): string[] {
-  const poi = state.poiSlice.pois[poiId];
-  if (!poi) return [];
-  return poi.nestedPoiIds;
+/**
+ * Обход дерева мира через store.
+ *
+ * Дерево строится только на `childPoiIds`: отдельных списков вложенных POI и
+ * локальных точек больше нет.
+ */
+
+export function getChildPoiIds(poiId: string, state: StoreState): readonly PoiId[] {
+  return state.poiSlice.pois[poiId]?.childPoiIds ?? [];
 }
 
-export function getLocalSpotIds(poiId: string, state: StoreState): string[] {
-  const poi = state.poiSlice.pois[poiId];
-  if (!poi) return [];
-  return poi.localSpotIds;
-}
-
-export function getAllChildPoiIds(poiId: string, state: StoreState): string[] {
-  const poi = state.poiSlice.pois[poiId];
-  if (!poi) return [];
-
-  return [...poi.nestedPoiIds, ...poi.localSpotIds];
-}
-
-export function isLocalSpotPoi(poi: BasePoiNode): boolean {
-  return poi.isLocalSpot === true;
-}
-
-export function getLocalAreaRootPoiId(poiId: string, state: StoreState): string {
-  const poi = state.poiSlice.pois[poiId];
-  if (!poi) return poiId;
-
-  if (poi.isLocalSpot === true && poi.parentId) {
-    return poi.parentId;
-  }
-
-  return poiId;
-}
-
+/** POI и его непосредственные дети: область, в которой ищутся локальные NPC. */
 export function getLocalPoiIds(poiId: string, state: StoreState): string[] {
-  const localRootId = getLocalAreaRootPoiId(poiId, state);
-  const localSpotIds = getLocalSpotIds(localRootId, state);
-
-  return [localRootId, ...localSpotIds];
+  return [poiId, ...getChildPoiIds(poiId, state)];
 }
 
 export function getLocalNpcIds(poiId: string, state: StoreState): string[] {
-  const localPoiIds = getLocalPoiIds(poiId, state);
   const npcIds: string[] = [];
 
-  for (const localPoiId of localPoiIds) {
-    const npcId = state.occupancySlice.poiOccupants[localPoiId];
-    if (!npcId) continue;
-    npcIds.push(npcId);
+  for (const localPoiId of getLocalPoiIds(poiId, state)) {
+    const occupants = state.occupancySlice.slotOccupants[localPoiId];
+    if (!occupants) continue;
+
+    for (const npcId of Object.values(occupants)) {
+      if (npcId === undefined) continue;
+
+      npcIds.push(npcId);
+    }
   }
 
   return npcIds;
 }
-

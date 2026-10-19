@@ -29,7 +29,7 @@ export const LeftPanelFooter = () => {
 
   const travelCost = useGameState(
     useShallow((state) => {
-      if (!selectedCellId || !selectedCell || selectedCell.type !== 'cell') {
+      if (!selectedCellId || !selectedCell || selectedCell.parentId !== null) {
         return BLOCKED_TRAVEL_COST;
       }
 
@@ -37,7 +37,7 @@ export const LeftPanelFooter = () => {
     }),
   );
 
-  if (!selectedCell || selectedCell.type !== 'cell') {
+  if (!selectedCell || selectedCell.parentId !== null) {
     return null;
   }
 

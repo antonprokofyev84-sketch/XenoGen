@@ -1,72 +1,111 @@
 import { useShallow } from 'zustand/react/shallow';
 
-import textData from '@/locales/en.json';
 import { interactionSelectors, poiSelectors, useGameState } from '@/state/useGameState';
+import type { NpcOverlay } from '@/systems/interaction/presentation';
+import {
+  POI_TRANSITION_BLOCK_LABELS,
+  resolvePoiDisplayName,
+} from '@/systems/interaction/resolveOptions';
 import { resolvePoiImage } from '@/systems/poi/poiImageResolver';
-import { isNonCell } from '@/types/poi.types';
+import { isNonCellNode } from '@/types/worldNode.types';
 import { assetsVersion } from '@/utils/assetsVersion';
-
-import { SubPoiCard } from './SubPoiCard';
 
 import './ImagePanel.scss';
 
-const getPoiDisplayName = (poiType: string | null) => {
-  if (!poiType) return 'Unknown POI';
+interface NpcOverlaySlotProps {
+  overlay: NpcOverlay;
+  side: 'left' | 'right';
+}
 
-  return textData.poi[poiType as keyof typeof textData.poi]?.name ?? poiType;
-};
+const NpcOverlaySlot = ({ overlay, side }: NpcOverlaySlotProps) => (
+  <div
+    className={`npcOverlay npcOverlay--${side} ${overlay.isSpeaking ? 'npcOverlay--speaking' : ''}`}
+    data-testid={`npc-overlay-${overlay.npcId}`}
+  >
+    {overlay.imageUrl !== undefined && <img src={overlay.imageUrl} alt={overlay.name} />}
+    <span className="npcOverlayName">{overlay.name}</span>
+  </div>
+);
 
+/**
+ * Сцена взаимодействия.
+ *
+ * Фон задаёт текущий Frame и наследует предыдущий, если своего у него нет.
+ * Контекстный NPC стоит справа, говорящий — слева; подсвечивается тот, чья
+ * реплика сейчас последняя в логе.
+ *
+ * Навигация по дочерним POI приходит из резолвера вариантов, поэтому панель
+ * не обходит дерево мира сама и не знает про бывшие локальные точки.
+ */
 export const ImagePanel = () => {
-  const currentInteraction = useGameState(interactionSelectors.selectCurrentInteraction);
-  const travelToPoi = useGameState((state) => state.world.actions.travelToPoi);
-  const poiOccupants = useGameState((state) => state.occupancySlice.poiOccupants);
+  // Селектор мемоизован, ссылка стабильна — дополнительное сравнение не нужно.
+  const presentation = useGameState(interactionSelectors.selectPresentation);
 
-  const poiId = currentInteraction?.poiId ?? null;
-  const npcId = currentInteraction?.npcId ?? null;
-
-  const poi = useGameState((state) => (poiId ? poiSelectors.selectPoiById(poiId)(state) : null));
-  const discoveredChildren = useGameState(
-    useShallow((state) => (poiId ? poiSelectors.selectDiscoveredChildrenOfPoi(poiId)(state) : [])),
+  // А здесь `filter` создаёт новый массив, поэтому сравнение нужно: его элементы
+  // приходят из мемоизованных опций и сохраняют ссылки.
+  const childTransitions = useGameState(
+    useShallow((state) =>
+      interactionSelectors
+        .selectInteractionOptions(state)
+        .navigation.poiTransitions.filter((transition) => transition.direction === 'child'),
+    ),
   );
+  const travelToPoi = useGameState((state) => state.world.actions.travelToPoi);
 
-  const poiType = poi && isNonCell(poi) ? poi.type : null;
-  const poiName = getPoiDisplayName(poiType);
-  const poiImageUrl = assetsVersion(resolvePoiImage(poiType ?? 'unknown', poiId, npcId));
+  const poiId = useGameState(
+    (state) => interactionSelectors.selectCurrentInteraction(state)?.poiId ?? null,
+  );
+  const poi = useGameState((state) => (poiId ? poiSelectors.selectPoiById(poiId)(state) : null));
+  const templateId = poi && isNonCellNode(poi) ? poi.templateId : null;
 
-  const handleSubPoiClick = (targetPoiId: string) => {
-    travelToPoi(targetPoiId);
-  };
+  const backgroundUrl = assetsVersion(
+    presentation.background ?? resolvePoiImage(templateId ?? 'unknown', poiId, null),
+  );
 
   return (
     <div className="imagePanel">
       <div className="imageContainer">
         <div className="poiImage">
           <img
-            key={poiImageUrl}
-            src={poiImageUrl}
-            alt={poiName}
-            onLoad={(e) => {
-              e.currentTarget.style.visibility = 'visible';
+            key={backgroundUrl}
+            src={backgroundUrl}
+            alt={resolvePoiDisplayName(templateId ?? 'unknown')}
+            onLoad={(event) => {
+              event.currentTarget.style.visibility = 'visible';
             }}
-            //TODO potentially we don't need  onError handler as we already getting only existing images from resolver.
-            onError={(e) => {
-              e.currentTarget.style.visibility = 'hidden';
+            onError={(event) => {
+              event.currentTarget.style.visibility = 'hidden';
             }}
           />
           <div className="vignette" />
+
+          {presentation.speakerNpc && (
+            <NpcOverlaySlot overlay={presentation.speakerNpc} side="left" />
+          )}
+          {presentation.contextNpc && (
+            <NpcOverlaySlot overlay={presentation.contextNpc} side="right" />
+          )}
         </div>
 
-        {discoveredChildren.length > 0 && (
+        {childTransitions.length > 0 && (
           <div className="subPoiStrip">
-            {discoveredChildren.map((childPoi) => (
-              <SubPoiCard
-                key={childPoi.id}
-                poiId={childPoi.id}
-                disabled={
-                  childPoi.npcPlacement?.requiresOccupant === true && !poiOccupants[childPoi.id]
-                }
-                onSelect={handleSubPoiClick}
-              />
+            {childTransitions.map((transition) => (
+              <button
+                key={transition.poiId}
+                type="button"
+                className="subPoiCard"
+                disabled={transition.isDisabled}
+                onClick={() => travelToPoi(transition.poiId)}
+                data-testid={`sub-poi-${transition.poiId}`}
+              >
+                <span className="subPoiCardName">{transition.label}</span>
+
+                {transition.blockReason && (
+                  <span className="subPoiCardBlockReason">
+                    {POI_TRANSITION_BLOCK_LABELS[transition.blockReason]}
+                  </span>
+                )}
+              </button>
             ))}
           </div>
         )}

@@ -53,7 +53,9 @@ After reaching the final time, resolve final-time-slot occupancy once, validate 
 
 ## Engineering
 
-- Add Vitest in this migration for deterministic domain and orchestration tests.
+- Add Vitest in this migration as infrastructure for deterministic domain and orchestration tests.
+- **Writing the tests themselves is a separate task after the migration.** No phase is gated on test coverage. The migration's automatic gate is `npm run build`; correctness is additionally checked by the authoring validator and manual vertical scenarios on technical fixtures. The deferred coverage checklist lives in `migration-plan.md`.
+- All randomness goes through a single injectable seedable RNG so that the deferred tests, and any reproducible scenario, are possible without reworking call sites.
 - Keep TypeScript types flat under `src/types`; add new domain files alongside existing files rather than creating an interaction subdirectory.
 
 ## Resolved Follow-up Decisions

@@ -1,227 +1,130 @@
 import { DEFAULT_EXPLORATION_DURATION, DEFAULT_VISIT_DATE } from '@/constants';
+import { INITIAL_CELLS } from '@/data/initial/cells';
+import { POI_TEMPLATES } from '@/data/initial/poiTemplates';
+import { INITIAL_POIS_BY_CELL } from '@/data/initial/pois';
 import type { StoreState } from '@/state/useGameState';
-import { createPoiFromDescriptor, createPoiFromTemplate } from '@/systems/poi/poiFactory';
-import { generatePoiSeedsForCell } from '@/systems/poi/poiSeedGenerator';
-import { poiStrategies } from '@/systems/poi/poiStrategies';
-import {
-  getLocalAreaRootPoiId,
-  getLocalNpcIds,
-  getLocalPoiIds,
-} from '@/systems/poi/poiTreeHelpers';
-import { isCell, isNonCell } from '@/types/poi.types';
-import type {
-  CellPoiNode,
-  EffectsMap,
-  InitialPoi,
-  NonCellNode,
-  PoiDetails,
-  PoiNode,
-} from '@/types/poi.types';
+import { clearPoiOccupancy } from '@/systems/npc/slotOccupancy';
+import { decreaseWorldDayCounters, runPoiDayPass } from '@/systems/world/dayPass';
+import { createInitialWorld } from '@/systems/world/initialWorldFactory';
+import { markPoiForRemoval } from '@/systems/world/worldTree';
+import type { RegionParameterKey } from '@/types/region.types';
+import { REGION_RAW_MAX, REGION_RAW_MIN } from '@/types/region.types';
+import type { CellNode, NonCellPoiNode, WorldNode } from '@/types/worldNode.types';
+import { isCellNode, isNonCellNode } from '@/types/worldNode.types';
 import { diffCalendarDays } from '@/utils/diffCalendarDays';
 
 import type { GameSlice } from '../types';
 
-// Slice type
-
-const MAX_POI_CHILDREN_SOFT_LIMIT = 6;
-const BASE_POI_ROLL_MAX = 2;
-
+/**
+ * Слайс мира: клетки и POI в одном индексе.
+ * Топология определяется через `parentId`, а связи — единственным списком
+ * `childPoiIds`. Локальных точек и отдельного дискриминатора `type` больше нет.
+ */
 export interface PoiSlice {
-  pois: Record<string, PoiNode>;
+  pois: Record<string, WorldNode>;
 
   actions: {
-    initializePois: (initial: InitialPoi[]) => void;
-    createPoi: (options: {
-      id?: string;
-      poiType: string;
-      parentId: string;
-      detailsOverride?: Partial<PoiDetails>;
-    }) => void;
+    /** Строит мир из авторских реестров двухпроходной инициализацией. */
+    initializeWorld: () => void;
     removePoiWithDependencies: (poiId: string) => void;
-    removePoiSubtree: (poiId: string) => void;
+    markPoiForRemoval: (poiId: string) => void;
     clearAllPois: () => void;
-    processDayPass: () => EffectsMap;
-    processPoiEnter: (poiId: string) => void;
+    /** Дневные эффекты POI, сроки жизни и мировые счётчики дней. */
+    runDayPass: () => void;
+    /** Единый проход удаления помеченных POI в конце дня. */
+    sweepPendingRemovals: () => void;
+    processPoiEnter: () => void;
     exploreCell: (cellId: string, explorationLevel: number, explorationDaysLeft: number) => void;
-    modifyCellThreat: (cellId: string, delta: number) => void;
-    modifyCellContamination: (cellId: string, delta: number) => void;
-    modifyCellProsperity: (cellId: string, delta: number) => void;
-    modifyCellTechLevel: (cellId: string, delta: number) => void;
+    modifyCellRegionParameter: (cellId: string, param: RegionParameterKey, delta: number) => void;
   };
 }
 
+// ============================================================================
 // Selectors
-
+// ============================================================================
 export const poiSelectors = {
-  selectSelectedPoi: (state: StoreState): PoiNode | null => {
+  selectSelectedPoi: (state: StoreState): WorldNode | null => {
     const selectedPoiId = state.party.currentPartyPosition;
     return state.poiSlice.pois[selectedPoiId] ?? null;
   },
+
   selectPoiById:
     (poiId: string | null | undefined) =>
-    (state: StoreState): PoiNode | null =>
+    (state: StoreState): WorldNode | null =>
       (poiId ? state.poiSlice.pois[poiId] : null) ?? null,
 
   selectCellById:
     (poiId: string | null | undefined) =>
-    (state: StoreState): CellPoiNode | null => {
-      const poi = (poiId ? state.poiSlice.pois[poiId] : null) ?? null;
-      return poi && isCell(poi) ? poi : null;
+    (state: StoreState): CellNode | null => {
+      const poi = poiId ? state.poiSlice.pois[poiId] : null;
+      return poi && isCellNode(poi) ? poi : null;
     },
 
   selectNonCellById:
     (poiId: string | null | undefined) =>
-    (state: StoreState): NonCellNode | null => {
-      const poi = (poiId ? state.poiSlice.pois[poiId] : null) ?? null;
-      return poi && isNonCell(poi) ? poi : null;
+    (state: StoreState): NonCellPoiNode | null => {
+      const poi = poiId ? state.poiSlice.pois[poiId] : null;
+      return poi && isNonCellNode(poi) ? poi : null;
     },
 
   selectParentPoi:
     (poiId: string) =>
-    (state: StoreState): PoiNode | null => {
+    (state: StoreState): WorldNode | null => {
       const node = state.poiSlice.pois[poiId];
-      if (!node || !node.parentId) return null;
+      if (!node || node.parentId === null) return null;
       return state.poiSlice.pois[node.parentId] ?? null;
     },
 
   selectParentCellId:
     (poiId: string) =>
-    (state: StoreState): string | null => {
-      const node = state.poiSlice.pois[poiId];
-      if (!node) return null;
-      return node.rootCellId;
-    },
+    (state: StoreState): string | null =>
+      state.poiSlice.pois[poiId]?.rootCellId ?? null,
 
-  selectParrentCellPoi:
+  selectParentCellPoi:
     (poiId: string) =>
-    (state: StoreState): PoiNode | null => {
+    (state: StoreState): WorldNode | null => {
       const node = state.poiSlice.pois[poiId];
       if (!node) return null;
-      const cellId = node.rootCellId;
-      return state.poiSlice.pois[cellId] ?? null;
+      return state.poiSlice.pois[node.rootCellId] ?? null;
     },
 
   selectChildrenOfPoi:
     (poiId: string) =>
-    (state: StoreState): PoiNode[] => {
+    (state: StoreState): WorldNode[] => {
       const node = state.poiSlice.pois[poiId];
       if (!node) return [];
-
-      return getAllChildPoiIds(node)
-        .map((id) => state.poiSlice.pois[id])
-        .filter(Boolean);
+      return node.childPoiIds.map((id) => state.poiSlice.pois[id]).filter(Boolean);
     },
-  selectNestedChildrenOfPoi:
-    (poiId: string) =>
-    (state: StoreState): PoiNode[] => {
-      const node = state.poiSlice.pois[poiId];
-      if (!node) return [];
 
-      return node.nestedPoiIds.map((id) => state.poiSlice.pois[id]).filter(Boolean);
-    },
-  selectLocalSpotChildrenOfPoi:
-    (poiId: string) =>
-    (state: StoreState): PoiNode[] => {
-      const node = state.poiSlice.pois[poiId];
-      if (!node) return [];
-
-      return node.localSpotIds.map((id) => state.poiSlice.pois[id]).filter(Boolean);
-    },
   selectDiscoveredChildrenOfPoi:
     (poiId: string) =>
-    (state: StoreState): NonCellNode[] => {
+    (state: StoreState): NonCellPoiNode[] => {
       const node = state.poiSlice.pois[poiId];
       if (!node) return [];
-
-      return getAllChildPoiIds(node)
+      return node.childPoiIds
         .map((id) => state.poiSlice.pois[id])
-        .filter((poi): poi is NonCellNode => !!poi && isNonCell(poi) && poi.details.isDiscovered);
+        .filter(
+          (poi): poi is NonCellPoiNode =>
+            !!poi && isNonCellNode(poi) && poi.details.isDiscovered && !poi.pendingRemoval,
+        );
     },
-  selectLocalAreaRootPoiId:
-    (poiId: string) =>
-    (state: StoreState): string =>
-      getLocalAreaRootPoiId(poiId, state),
-  selectLocalPoiIds:
-    (poiId: string) =>
-    (state: StoreState): string[] =>
-      getLocalPoiIds(poiId, state),
-  selectLocalNpcIds:
-    (poiId: string) =>
-    (state: StoreState): string[] =>
-      getLocalNpcIds(poiId, state),
 };
 
-// Draft changes
-
-const getAllChildPoiIds = (node: PoiNode): string[] => {
-  return [...node.nestedPoiIds, ...node.localSpotIds];
-};
-
+// ============================================================================
+// Draft helpers
+// ============================================================================
 const requireCell = (
-  poi: PoiNode | null | undefined,
+  poi: WorldNode | null | undefined,
   errorMessage = 'Invalid cell POI ID',
-): CellPoiNode => {
-  if (!poi || !isCell(poi)) {
+): CellNode => {
+  if (!poi || !isCellNode(poi)) {
     throw new Error(errorMessage);
   }
   return poi;
 };
 
-const shouldLinkAsLocalSpot = (node: PoiNode): boolean => {
-  return node.isLocalSpot === true;
-};
-
-const linkChildToParentDraft = (parent: PoiNode, child: PoiNode) => {
-  if (shouldLinkAsLocalSpot(child)) {
-    if (!parent.localSpotIds.includes(child.id)) {
-      parent.localSpotIds.push(child.id);
-    }
-    child.isLocalSpot = true;
-  } else if (!parent.nestedPoiIds.includes(child.id)) {
-    parent.nestedPoiIds.push(child.id);
-  }
-};
-
-const unlinkChildFromParentDraft = (parent: PoiNode, childId: string) => {
-  parent.nestedPoiIds = parent.nestedPoiIds.filter((id) => id !== childId);
-  parent.localSpotIds = parent.localSpotIds.filter((id) => id !== childId);
-};
-
-const createPoiDraft = ({
-  state,
-  id,
-  poiType,
-  parentId,
-  detailsOverride,
-}: {
-  state: StoreState;
-  id?: string;
-  poiType: string;
-  parentId: string;
-  detailsOverride?: Partial<any>;
-}) => {
-  const parent = state.poiSlice.pois[parentId];
-  if (!parent) {
-    throw new Error(`Cannot create POI: parent ${parentId} does not exist`);
-  }
-
-  const rootCellId = parent.rootCellId;
-
-  // вся логика — в фабрике
-  const node = createPoiFromTemplate({
-    id,
-    poiType,
-    parentId,
-    rootCellId,
-    detailsOverride,
-  });
-
-  state.poiSlice.pois[node.id] = node;
-  linkChildToParentDraft(parent, node);
-};
-
-const removePoiSubtreeDraft = (state: StoreState, poiId: string) => {
-  removePoiWithDependenciesDraft(state, poiId);
+const unlinkChildFromParentDraft = (parent: WorldNode, childId: string) => {
+  parent.childPoiIds = parent.childPoiIds.filter((id) => id !== childId);
 };
 
 const collectPoiSubtreeIdsDraft = (state: StoreState, rootPoiId: string): string[] => {
@@ -229,32 +132,28 @@ const collectPoiSubtreeIdsDraft = (state: StoreState, rootPoiId: string): string
   const stack = [rootPoiId];
 
   while (stack.length > 0) {
-    const currentId = stack.pop()!;
+    const currentId = stack.pop();
+    if (currentId === undefined) continue;
+
     const current = state.poiSlice.pois[currentId];
     if (!current) continue;
 
     ids.push(currentId);
-    stack.push(...getAllChildPoiIds(current));
+    stack.push(...current.childPoiIds);
   }
 
   return ids;
 };
 
-// this should be potentially called from world slice
-// i dont like idea to modify multiple slices from the slice differet then world
+/**
+ * Снимает ссылки на удаляемый POI из других slices.
+ * Удаление обязано быть dependency-aware: иначе инвентарь, occupancy и охрана
+ * останутся с «висячими» ключами.
+ */
 const clearPoiDependenciesDraft = (state: StoreState, poiId: string) => {
-  // Inventory for POI-scoped containers (e.g., generated trader loot)
   delete state.inventory.containers[poiId];
-
-  // Occupancy cleanup for npcId <-> poiId links
-  const occupantNpcId = state.occupancySlice.poiOccupants[poiId];
-  if (occupantNpcId !== undefined) {
-    delete state.occupancySlice.npcLocations[occupantNpcId];
-  }
-  delete state.occupancySlice.poiOccupants[poiId];
-
-  // Guard/combat cleanup by POI id.
-  delete state.guardSlice.guardsByPoiId[poiId];
+  clearPoiOccupancy(state.occupancySlice, poiId);
+  delete state.guardsSlice.guardsByPoiId[poiId];
 };
 
 const clearInteractionIfPoiRemovedDraft = (state: StoreState, removedPoiIds: Set<string>) => {
@@ -267,14 +166,12 @@ const clearInteractionIfPoiRemovedDraft = (state: StoreState, removedPoiIds: Set
   }
 };
 
-// probably this should be done from the world slice
 const removePoiWithDependenciesDraft = (state: StoreState, poiId: string) => {
   const { pois } = state.poiSlice;
   const root = pois[poiId];
   if (!root) return;
 
-  // отсоединяем от родителя
-  if (root.parentId) {
+  if (root.parentId !== null) {
     const parent = pois[root.parentId];
     if (parent) {
       unlinkChildFromParentDraft(parent, poiId);
@@ -282,41 +179,32 @@ const removePoiWithDependenciesDraft = (state: StoreState, poiId: string) => {
   }
 
   const subtreeIds = collectPoiSubtreeIdsDraft(state, poiId);
-  const subtreeSet = new Set(subtreeIds);
 
   for (const id of subtreeIds) {
     clearPoiDependenciesDraft(state, id);
   }
 
-  clearInteractionIfPoiRemovedDraft(state, subtreeSet);
+  clearInteractionIfPoiRemovedDraft(state, new Set(subtreeIds));
 
   for (const id of subtreeIds) {
     delete pois[id];
   }
 };
 
-const modifyCellThreatDraft = (state: StoreState, cellId: string, delta: number) => {
+/** Изменяет raw-значение региона клетки, удерживая его в диапазоне `0..999`. */
+const modifyCellRegionParameterDraft = (
+  state: StoreState,
+  cellId: string,
+  param: RegionParameterKey,
+  delta: number,
+) => {
   const cellNode = requireCell(state.poiSlice.pois[cellId]);
-  const next = Math.max(0, cellNode.details.regionParameters.threat + delta);
-  cellNode.details.regionParameters.threat = next;
-};
+  const next = cellNode.details.regionParameters[param] + delta;
 
-const modifyCellContaminationDraft = (state: StoreState, cellId: string, delta: number) => {
-  const cellNode = requireCell(state.poiSlice.pois[cellId]);
-  const next = Math.max(0, cellNode.details.regionParameters.contamination + delta);
-  cellNode.details.regionParameters.contamination = next;
-};
-
-const modifyCellProsperityDraft = (state: StoreState, cellId: string, delta: number) => {
-  const cellNode = requireCell(state.poiSlice.pois[cellId]);
-  const next = Math.max(0, cellNode.details.regionParameters.prosperity + delta);
-  cellNode.details.regionParameters.prosperity = next;
-};
-
-const modifyCellTechLevelDraft = (state: StoreState, cellId: string, delta: number) => {
-  const cellNode = requireCell(state.poiSlice.pois[cellId]);
-  const next = Math.max(0, cellNode.details.regionParameters.techLevel + delta);
-  cellNode.details.regionParameters.techLevel = next;
+  cellNode.details.regionParameters[param] = Math.min(
+    REGION_RAW_MAX,
+    Math.max(REGION_RAW_MIN, next),
+  );
 };
 
 const exploreCellDraft = (
@@ -327,43 +215,19 @@ const exploreCellDraft = (
 ) => {
   const cellNode = requireCell(state.poiSlice.pois[cellId]);
 
-  cellNode.details.explorationLevel = Math.max(
-    cellNode.details.explorationLevel ?? 0,
-    explorationLevel,
+  cellNode.details.explorationLevel = Math.max(cellNode.details.explorationLevel, explorationLevel);
+  cellNode.details.explorationDaysLeft = Math.max(
+    cellNode.details.explorationDaysLeft ?? 0,
+    explorationDaysLeft,
   );
 
-  const currentDaysLeft = cellNode.details.explorationDaysLeft ?? 0;
-  cellNode.details.explorationDaysLeft = Math.max(currentDaysLeft, explorationDaysLeft);
-
-  // возможно стоит сделать отдельную функцию для исследования POI в ячейке
-  for (const poiId of getAllChildPoiIds(cellNode)) {
+  for (const poiId of cellNode.childPoiIds) {
     const poi = state.poiSlice.pois[poiId];
-    if (!poi || !isNonCell(poi)) continue;
-    const nonCellPoi = poi;
+    if (!poi || !isNonCellNode(poi)) continue;
 
-    if (cellNode.details.explorationLevel >= nonCellPoi.details.explorationThreshold) {
-      nonCellPoi.details.isDiscovered = true;
+    if (poi.details.explorationThreshold <= cellNode.details.explorationLevel) {
+      poi.details.isDiscovered = true;
     }
-  }
-};
-
-const generateCellPoisOnEnterDraft = (state: StoreState, cellId: string, daysPassed: number) => {
-  const cell = state.poiSlice.pois[cellId];
-  if (!cell || !isCell(cell)) return;
-
-  const childrenCount = getAllChildPoiIds(cell).length;
-  if (childrenCount >= MAX_POI_CHILDREN_SOFT_LIMIT) return;
-  if (daysPassed <= 0) return;
-
-  const totalToGenerate = Math.floor(Math.random() * (BASE_POI_ROLL_MAX + 1));
-  const seeds = generatePoiSeedsForCell({ count: totalToGenerate });
-
-  for (const seed of seeds.slice(0, totalToGenerate)) {
-    createPoiDraft({
-      state,
-      poiType: seed.poiType,
-      parentId: cellId,
-    });
   }
 };
 
@@ -375,119 +239,125 @@ export const getDaysSinceLastVisit = (state: StoreState, poiId: string): number 
   return diffCalendarDays(previousVisitTime, state.world.currentTime);
 };
 
-const processPoiExitDraft = (state: StoreState, currentPoiId: string, targetPoiId: string) => {
+/**
+ * Обновляет счётчики посещения при выходе из POI.
+ * `visitedTimes` увеличивается не чаще одного раза за календарный день.
+ */
+const processPoiExitDraft = (state: StoreState, currentPoiId: string) => {
   const currentPoi = state.poiSlice.pois[currentPoiId];
   if (!currentPoi) return;
 
-  const targetPoi = state.poiSlice.pois[targetPoiId];
-  const movedIntoOwnLocalSpot =
-    targetPoi?.isLocalSpot === true && targetPoi.parentId === currentPoiId;
+  const { lastTimeVisited } = currentPoi.details;
+  const isFirstVisitToday =
+    lastTimeVisited === null || diffCalendarDays(lastTimeVisited, state.world.currentTime) > 0;
+
+  if (isFirstVisitToday) {
+    currentPoi.details.visitedTimes += 1;
+  }
 
   currentPoi.details.lastTimeVisited = state.world.currentTime;
-
-  if (!movedIntoOwnLocalSpot) {
-    currentPoi.details.visitedTimes = (currentPoi.details.visitedTimes ?? 0) + 1;
-  }
 };
 
-const processPoiEnterDraft = (state: StoreState, poiId: string, daysPassed: number) => {
-  const poi = state.poiSlice.pois[poiId];
-  if (!poi) return;
+/**
+ * Обработка входа в POI.
+ * Процедурная генерация POI при входе не входит в новый контракт: содержательные
+ * события входа обрабатывает очередь Interceptors. Хук сохранён как точка
+ * расширения мировой логики входа.
+ */
+const processPoiEnterDraft = (): void => {};
 
-  if (isCell(poi)) {
-    generateCellPoisOnEnterDraft(state, poiId, daysPassed);
-  }
-};
-
-const collectDayPassEffectsDraft = (state: StoreState): EffectsMap => {
-  const allEffects: EffectsMap = {};
-
+/**
+ * POI-часть дневного тика: дневные эффекты templates, сроки жизни POI и
+ * мировые счётчики оставшихся дней.
+ * Физическое удаление сюда не входит: истёкшие POI только помечаются,
+ * а общий проход удаления выполняется после квестовых таймеров.
+ */
+const runDayPassDraft = (state: StoreState): void => {
   const partyPoiId = state.party.currentPartyPosition;
   const partyCellId = state.poiSlice.pois[partyPoiId]?.rootCellId;
-  const partyCell = state.poiSlice.pois[partyCellId];
-  const partyCellNode = requireCell(partyCell, 'Party location is invalid');
+  const partyCellNode = requireCell(state.poiSlice.pois[partyCellId], 'Party location is invalid');
 
-  const { pois } = state.poiSlice;
+  runPoiDayPass(state.poiSlice.pois, POI_TEMPLATES);
+  decreaseWorldDayCounters(state.poiSlice.pois);
 
-  for (const poi of Object.values(pois)) {
-    const onDayPass = (
-      poiStrategies as Record<string, (typeof poiStrategies)[keyof typeof poiStrategies]>
-    )[poi.type]?.onDayPass;
-    if (!onDayPass) continue;
-
-    const effects = onDayPass(poi);
-    if (effects) allEffects[poi.id] = effects;
-  }
-
+  // Клетка, в которой находится партия, остаётся разведанной.
   partyCellNode.details.explorationDaysLeft = Math.max(
     DEFAULT_EXPLORATION_DURATION,
-    (partyCellNode.details.explorationDaysLeft ?? 0) + 1,
+    partyCellNode.details.explorationDaysLeft ?? 0,
   );
-
-  return allEffects;
 };
 
-// Expose draft helpers for external systems that operate inside a single `draft` call
+/**
+ * Единый проход физического удаления помеченных POI.
+ * Выполняется один раз в самом конце дня, после остальных дневных систем,
+ * и снимает все ссылки на удаляемые узлы, чтобы не осталось висячих ключей.
+ */
+const sweepPendingRemovalsDraft = (state: StoreState): void => {
+  const { pois } = state.poiSlice;
+  const markedIds = Object.values(pois)
+    .filter((node): node is NonCellPoiNode => isNonCellNode(node) && !!node.pendingRemoval)
+    .map((node) => node.id);
+
+  if (markedIds.length === 0) {
+    return;
+  }
+
+  for (const poiId of markedIds) {
+    const node = pois[poiId];
+    if (!node) continue;
+
+    if (node.parentId !== null) {
+      const parent = pois[node.parentId];
+      if (parent) {
+        unlinkChildFromParentDraft(parent, poiId);
+      }
+    }
+
+    clearPoiDependenciesDraft(state, poiId);
+  }
+
+  clearInteractionIfPoiRemovedDraft(state, new Set(markedIds));
+
+  for (const poiId of markedIds) {
+    delete pois[poiId];
+  }
+};
+
+/** Draft-операции для систем, работающих внутри одного `set`. */
+const initializeWorldDraft = (state: StoreState): void => {
+  state.poiSlice.pois = createInitialWorld(INITIAL_CELLS, INITIAL_POIS_BY_CELL, POI_TEMPLATES);
+};
+
 export const poiDraft = {
-  createPoi: createPoiDraft,
+  initializeWorld: initializeWorldDraft,
   removePoiWithDependencies: removePoiWithDependenciesDraft,
-  removePoiSubtree: removePoiSubtreeDraft,
-  modifyCellThreat: modifyCellThreatDraft,
-  modifyCellContamination: modifyCellContaminationDraft,
-  modifyCellProsperity: modifyCellProsperityDraft,
-  modifyCellTechLevel: modifyCellTechLevelDraft,
+  markPoiForRemoval: (state: StoreState, poiId: string) =>
+    markPoiForRemoval(state.poiSlice.pois, poiId),
+  modifyCellRegionParameter: modifyCellRegionParameterDraft,
   exploreCell: exploreCellDraft,
   processPoiEnter: processPoiEnterDraft,
   processPoiExit: processPoiExitDraft,
-  collectDayPassEffects: collectDayPassEffectsDraft,
+  runDayPass: runDayPassDraft,
+  sweepPendingRemovals: sweepPendingRemovalsDraft,
 };
-
-// Slice
 
 export const createPoiSlice: GameSlice<PoiSlice> = (set) => ({
   pois: {},
 
   actions: {
-    initializePois: (initial) =>
+    initializeWorld: () =>
       set((state) => {
-        state.poiSlice.pois = {};
-
-        for (const entry of initial) {
-          state.poiSlice.pois[entry.id] = createPoiFromDescriptor(entry);
-        }
-
-        for (const entry of initial) {
-          if (!entry.parentId) continue;
-
-          const parent = state.poiSlice.pois[entry.parentId];
-          const child = state.poiSlice.pois[entry.id];
-          if (parent) {
-            if (!child) continue;
-            linkChildToParentDraft(parent, child);
-          }
-        }
+        initializeWorldDraft(state);
       }),
-
-    createPoi: ({ id, poiType, parentId, detailsOverride }) => {
-      set((state) => {
-        createPoiDraft({
-          state,
-          id,
-          poiType,
-          parentId,
-          detailsOverride,
-        });
-      });
-    },
 
     removePoiWithDependencies: (poiId) =>
       set((state) => {
         removePoiWithDependenciesDraft(state, poiId);
       }),
 
-    removePoiSubtree: (poiId) =>
+    markPoiForRemoval: (poiId) =>
       set((state) => {
-        removePoiWithDependenciesDraft(state, poiId);
+        markPoiForRemoval(state.poiSlice.pois, poiId);
       }),
 
     clearAllPois: () =>
@@ -495,51 +365,29 @@ export const createPoiSlice: GameSlice<PoiSlice> = (set) => ({
         state.poiSlice.pois = {};
       }),
 
-    exploreCell: (cellId, explorationLevel, explorationDaysLeft) => {
+    exploreCell: (cellId, explorationLevel, explorationDaysLeft) =>
       set((state) => {
         exploreCellDraft(state, cellId, explorationLevel, explorationDaysLeft);
-      });
-    },
+      }),
 
-    modifyCellThreat: (cellId, delta) => {
+    modifyCellRegionParameter: (cellId, param, delta) =>
       set((state) => {
-        modifyCellThreatDraft(state, cellId, delta);
-      });
-    },
+        modifyCellRegionParameterDraft(state, cellId, param, delta);
+      }),
 
-    modifyCellContamination: (cellId, delta) => {
+    processPoiEnter: () =>
+      set(() => {
+        processPoiEnterDraft();
+      }),
+
+    runDayPass: () =>
       set((state) => {
-        modifyCellContaminationDraft(state, cellId, delta);
-      });
-    },
+        runDayPassDraft(state);
+      }),
 
-    modifyCellProsperity: (cellId, delta) => {
+    sweepPendingRemovals: () =>
       set((state) => {
-        modifyCellProsperityDraft(state, cellId, delta);
-      });
-    },
-
-    modifyCellTechLevel: (cellId, delta) => {
-      set((state) => {
-        modifyCellTechLevelDraft(state, cellId, delta);
-      });
-    },
-
-    processPoiEnter: (poiId: string) => {
-      set((state) => {
-        const daysPassed = getDaysSinceLastVisit(state, poiId);
-        processPoiEnterDraft(state, poiId, daysPassed);
-      });
-    },
-
-    processDayPass: () => {
-      let allEffects: EffectsMap = {};
-
-      set((state) => {
-        allEffects = collectDayPassEffectsDraft(state);
-      });
-
-      return allEffects;
-    },
+        sweepPendingRemovalsDraft(state);
+      }),
   },
 });

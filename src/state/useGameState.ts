@@ -24,6 +24,8 @@ import { createPartySlice, partySelectors } from './gameSlices/party';
 import type { PartySlice } from './gameSlices/party';
 import { createPoiSlice, poiSelectors } from './gameSlices/poi';
 import type { PoiSlice } from './gameSlices/poi';
+import { createQuestSlice, questSelectors } from './gameSlices/quest';
+import type { QuestSlice } from './gameSlices/quest';
 import { createShelterSlice, shelterSelectors } from './gameSlices/shelter';
 import type { ShelterSlice } from './gameSlices/shelter';
 import { createStatsSlice, statsSelectors } from './gameSlices/stats';
@@ -50,6 +52,7 @@ export type StoreState = {
   occupancySlice: OccupancySlice;
   guardSlice: GuardSlice;
   interactionSlice: InteractionSlice;
+  questSlice: QuestSlice;
 };
 
 export const useGameState = create<StoreState>()(
@@ -69,6 +72,7 @@ export const useGameState = create<StoreState>()(
     guardSlice: createGuardSlice(set, get, api),
     interactionSlice: createInteractionSlice(set, get, api),
     inventory: createInventorySlice(set, get, api),
+    questSlice: createQuestSlice(set, get, api),
   })),
 );
 
@@ -87,4 +91,5 @@ export {
   interactionSelectors,
   worldSelectors,
   inventorySelectors,
+  questSelectors,
 };

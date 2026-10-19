@@ -1,10 +1,6 @@
 import { useState } from 'react';
 
 import { Button } from '@/components/Button/Button';
-import { INITIAL_FACTIONS } from '@/data/initialFaction';
-import { INITIAL_NPCS } from '@/data/initialNpc';
-// import { INITIAL_MAP } from '@/data/initialMap';
-import { INITIAL_POI } from '@/data/initialPoi';
 import textData from '@/locales/en.json';
 import { useGameState } from '@/state/useGameState';
 import type { MainStatKey, SkillKey } from '@/types/character.types';
@@ -32,10 +28,7 @@ export const CharacterCreation = () => {
   const characterActions = useGameState((state) => state.characters.actions);
   const traitActions = useGameState((state) => state.traits.actions);
   const goToScreen = useGameState((state) => state.ui.goToScreen);
-  const initializeFactions = useGameState((state) => state.factions.actions.initializeFactions);
-  // const initializeMap = useGameState((state) => state.map.actions.initializeMap);
-  const initializeNpcs = useGameState((state) => state.npcSlice.actions.initializeNpcs);
-  const initializePois = useGameState((state) => state.poiSlice.actions.initializePois);
+  const startNewGame = useGameState((state) => state.world.actions.startNewGame);
 
   const addItem = useGameState((state) => state.inventory.actions.addItem);
   const modifyMoney = useGameState((state) => state.inventory.actions.modifyMoney);
@@ -70,11 +63,6 @@ export const CharacterCreation = () => {
   const handleStart = () => {
     characterActions.finalizeCharacterCreation(protagonistId);
 
-    initializeFactions(INITIAL_FACTIONS);
-    // initializeMap(INITIAL_MAP);
-    initializeNpcs(INITIAL_NPCS);
-    initializePois(INITIAL_POI);
-
     //test
     modifyMoney('protagonist', 1000);
     addItem('protagonist', {
@@ -102,7 +90,8 @@ export const CharacterCreation = () => {
       quantity: 3,
     });
 
-    goToScreen('strategicMap');
+    // Экран собирает только выбор игрока: мир строит и запускает bootstrap.
+    startNewGame();
   };
 
   return (

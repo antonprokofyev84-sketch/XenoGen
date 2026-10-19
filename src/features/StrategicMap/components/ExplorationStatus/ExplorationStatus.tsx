@@ -17,7 +17,8 @@ export const ExplorationStatus = () => {
     if (cellData.visitedTimes === 0) {
       return { text: textData.strategicMap.statusUnexplored, className: 'unexplored' };
     }
-    if (cellData.explorationDaysLeft === Infinity) {
+    // null означает что разведданные не устаревают
+    if (cellData.explorationDaysLeft === null) {
       let statusText = textData.strategicMap.statusPermanent;
       if (cellData.explorationLevel > 0) {
         statusText += ` | ${textData.strategicMap.scoutScoreLabel}: ${cellData.explorationLevel}`;

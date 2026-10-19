@@ -1,7 +1,14 @@
 import { DEFAULT_EXPLORATION_DURATION, STAMINA_RECOVERY_PER_HOUR, START_DATE } from '@/constants';
-import { PoiEffectManager } from '@/systems/effects/poiEffectManager';
+import { applyEffects } from '@/systems/effects/applyEffects';
 import { TraitEffectManager } from '@/systems/effects/traitEffectManager';
+import { clearDailyInteractionMemory } from '@/systems/interaction/dailyMemory';
+import {
+  endInteraction,
+  enterPoiContext,
+  refreshInteractionForTimeSlot,
+} from '@/systems/interaction/interactionState';
 import { TravelManager } from '@/systems/travel/travelManager';
+import { bootstrapNewGame } from '@/systems/world/newGameBootstrap';
 import { resolveScoutExplorationLevel } from '@/systems/world/scouting';
 import { advanceWorldTime } from '@/systems/world/timeProgression';
 import type { CombatResult } from '@/types/combat.types';
@@ -13,16 +20,18 @@ import type { GameSlice } from '../types';
 import { partySelectors } from '../useGameState';
 import type { StoreState } from '../useGameState';
 import { characterDraft } from './characters';
-import { interactionDraft } from './interaction';
 import { occupancyDraft } from './occupancy';
 import { partyDraft } from './party';
 import { getDaysSinceLastVisit, poiDraft } from './poi';
+import { questDraft } from './quest';
 import { traitsDraft } from './traits';
 
 export interface WorldSlice {
   currentTime: number;
   weather: Weather;
   actions: {
+    /** Собирает мир новой игры и запускает её одной транзакцией. */
+    startNewGame: () => void;
     endBattle: (combatResult: CombatResult) => Record<string, EffectLog[]>;
     endDay: () => void;
     changeTime: (minutes: number) => void;
@@ -56,15 +65,37 @@ function scoutCellDraft(
 
 /**
  * Runs a single "day passed" tick on the draft: collects trait + POI day-pass
- * effects and applies them in place. No nested set() — safe to compose inside a
+ * effects and applies them in place. No nested set() – safe to compose inside a
  * larger transaction (e.g. time advance during travel).
+ */
+/**
+ * Один дневной тик на draft.
+ *
+ * Порядок зафиксирован контрактом и выполняется для каждой пересечённой
+ * границы календарного дня:
+ *
+ * 1. дневные эффекты POI и сроки жизни;
+ * 2. квестовые таймеры и собранные ими effects;
+ * 3. единый проход удаления помеченных POI;
+ * 4. очистка дневной памяти Actions и Interceptors.
+ *
+ * Удаление идёт после таймеров намеренно: их effects ещё могут пометить POI.
+ * Вложенных `set` здесь нет — весь тик остаётся одной транзакцией.
  */
 function runDayTickDraft(state: StoreState) {
   const traitEffects = traitsDraft.collectDayPassEffects(state);
-  const poiEffects = poiDraft.collectDayPassEffects(state);
-
   TraitEffectManager.processTraitEffects(traitEffects, { state });
-  PoiEffectManager.processPoiEffects(poiEffects, { state });
+
+  poiDraft.runDayPass(state);
+
+  // Собранные таймерами effects исполняются после обоих проходов сразу целиком
+  // и до прохода удаления: они ещё могут пометить POI.
+  applyEffects(state, questDraft.collectTimerEffects(state));
+
+  poiDraft.sweepPendingRemovals(state);
+
+  // Дневная память очищается целиком, в том числе при активном взаимодействии.
+  clearDailyInteractionMemory(state);
 }
 
 /**
@@ -79,20 +110,98 @@ function advanceTimeDraft(state: StoreState, minutes: number) {
 
   state.world.currentTime = newTime;
 
-  if (oldTimeSlotIndex !== newTimeSlotIndex || daysPassed > 0) {
-    occupancyDraft.refreshOccupancy(state);
-  }
-
   for (let i = 0; i < daysPassed; i++) {
     runDayTickDraft(state);
   }
+
+  // Occupancy разрешается однократно и только для конечного time slot: промежуточные
+  // раскладки игрок не видит, а дневные тики до этого момента могли удалить POI.
+  if (oldTimeSlotIndex !== newTimeSlotIndex || daysPassed > 0) {
+    occupancyDraft.refreshOccupancy(state);
+    refreshInteractionForTimeSlot(state);
+  }
 }
+
+/**
+ * Перемещение партии как единая транзакция: выход → движение → время
+ * (возможны дневные тики и удаление POI) → прибытие.
+ *
+ * `extraMinutes` — отложенное время Action, инициировавшего переход: оно
+ * уходит в то же изменение времени, чтобы один расход не списался дважды.
+ */
+function travelToPoiDraft(state: StoreState, targetPoiId: string, extraMinutes = 0): void {
+  const currentPoiId = state.party.currentPartyPosition;
+  const targetPoi = state.poiSlice.pois[targetPoiId];
+
+  if (!targetPoi) {
+    console.warn(`travelToPoi: POI ${targetPoiId} не существует`);
+    return;
+  }
+
+  const fallbackCellId = targetPoi.parentId !== null ? targetPoi.rootCellId : null;
+  const travel = TravelManager.computeTravel(currentPoiId, targetPoiId, state);
+
+  if (!travel.canTravel) {
+    console.warn(`Can't travel from ${currentPoiId} to ${targetPoiId}`);
+    return;
+  }
+
+  endInteraction(state);
+  poiDraft.processPoiExit(state, currentPoiId);
+
+  // Позиция партии меняется до изменения времени: refreshOccupancy использует её как якорь.
+  partyDraft.moveToPoi(state, targetPoiId, travel.staminaCost);
+
+  advanceTimeDraft(state, travel.timeCost + extraMinutes);
+
+  // Цель перечитывается: последствия времени могли её удалить.
+  const arrivedPoi = state.poiSlice.pois[targetPoiId];
+
+  if (!arrivedPoi) {
+    if (fallbackCellId && state.poiSlice.pois[fallbackCellId]) {
+      state.party.currentPartyPosition = fallbackCellId;
+    }
+    console.error(`Travel target POI was removed during travel: ${targetPoiId}`);
+    state.ui.currentScreen = 'strategicMap';
+    return;
+  }
+
+  const daysPassed = getDaysSinceLastVisit(state, targetPoiId);
+  poiDraft.processPoiEnter();
+
+  const isCellTarget = arrivedPoi.parentId === null;
+
+  //TODO potentially we should scout any poi.
+  if (isCellTarget && daysPassed > 0) {
+    scoutCellDraft(state, targetPoiId);
+  }
+
+  occupancyDraft.ensurePoiOccupancy(state, targetPoiId);
+
+  if (!isCellTarget) {
+    enterPoiContext(state, targetPoiId);
+  }
+
+  state.ui.currentScreen = isCellTarget ? 'strategicMap' : 'poiView';
+}
+
+export const worldDraft = {
+  advanceTime: advanceTimeDraft,
+  travelToPoi: travelToPoiDraft,
+  runDayTick: runDayTickDraft,
+};
 
 export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
   currentTime: START_DATE,
   weather: 'clear',
 
   actions: {
+    startNewGame: () => {
+      set((state) => {
+        bootstrapNewGame(state);
+      });
+    },
+
     endBattle: (combatResult) => {
       const mergedLogs: Record<string, EffectLog[]> = {};
 
@@ -136,63 +245,9 @@ export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
       });
     },
 
-    travelToPoi: (targetPoiId: string) => {
-      const beforeState = get();
-
-      const currentPoiId = beforeState.party.currentPartyPosition;
-      const targetPoi = beforeState.poiSlice.pois[targetPoiId];
-      if (!targetPoi) throw new Error(`Target POI ${targetPoiId} does not exist`);
-
-      const fallbackCellId = targetPoi.type !== 'cell' ? targetPoi.rootCellId : null;
-
-      const travel = TravelManager.computeTravel(currentPoiId, targetPoiId, beforeState);
-
-      if (!travel.canTravel) {
-        console.warn(`cant travel from ${currentPoiId} to ${targetPoiId}`);
-        return;
-      }
-
-      // The whole trip is one atomic transaction: exit -> move -> time passes
-      // (may trigger day ticks / POI removal) -> arrive.
+    travelToPoi: (targetPoiId) => {
       set((state) => {
-        interactionDraft.endInteraction(state);
-
-        poiDraft.processPoiExit(state, currentPoiId, targetPoiId);
-
-        // Party position must move before time advances, because refreshOccupancy
-        // uses the current party position as its anchor.
-        partyDraft.moveToPoi(state, targetPoiId, travel.staminaCost);
-
-        advanceTimeDraft(state, travel.timeCost);
-
-        // Re-read the target: time advance effects may have removed it.
-        const arrivedPoi = state.poiSlice.pois[targetPoiId];
-
-        if (!arrivedPoi) {
-          if (fallbackCellId && state.poiSlice.pois[fallbackCellId]) {
-            state.party.currentPartyPosition = fallbackCellId;
-          }
-
-          console.error(`Travel target POI was removed during travel: ${targetPoiId}`);
-          state.ui.currentScreen = 'strategicMap';
-          return;
-        }
-
-        const daysPassed = getDaysSinceLastVisit(state, targetPoiId);
-        poiDraft.processPoiEnter(state, targetPoiId, daysPassed);
-
-        //TODO potentially we should scout any poi.
-        if (arrivedPoi.type === 'cell' && daysPassed > 0) {
-          scoutCellDraft(state, targetPoiId);
-        }
-
-        occupancyDraft.populatePoiOccupancy(state, targetPoiId);
-
-        if (arrivedPoi.type !== 'cell') {
-          interactionDraft.startInteraction(state, { poiId: targetPoiId });
-        }
-
-        state.ui.currentScreen = arrivedPoi.type === 'cell' ? 'strategicMap' : 'poiView';
+        travelToPoiDraft(state, targetPoiId);
       });
     },
 

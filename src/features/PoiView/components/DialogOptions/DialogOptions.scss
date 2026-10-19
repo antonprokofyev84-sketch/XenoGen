@@ -62,3 +62,23 @@
     opacity: 0.45;
   }
 }
+
+// --- Группы вариантов по источнику ---
+.dialogOptionsGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.dialogOptionsGroupTitle {
+  margin: 0;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.dialogOptionsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}

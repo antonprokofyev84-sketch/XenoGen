@@ -1,18 +1,50 @@
 import { interactionSelectors, poiSelectors, useGameState } from '@/state/useGameState';
-import { isNonCell } from '@/types/poi.types';
+import type { NarrativeBlock } from '@/types/narrativeBlock.types';
+import { isDialogueLine, isThoughtLine } from '@/types/narrativeBlock.types';
+import { isNonCellNode } from '@/types/worldNode.types';
 
 import { DialogOptions } from '../DialogOptions/DialogOptions';
-import { InteractionLogItem } from '../InteractionLogItem/InteractionLogItem';
 
 import './DialogPanel.scss';
 
-export const DialogPanel = () => {
-  const currentInteraction = useGameState(interactionSelectors.selectCurrentInteraction);
-  const interactionLog = currentInteraction?.interactionLog ?? [];
+const renderBlock = (block: NarrativeBlock, key: string) => {
+  if (isDialogueLine(block)) {
+    return (
+      <p className="narrativeBlock narrativeBlock--dialogue" key={key}>
+        {block.text}
+      </p>
+    );
+  }
 
-  const poiId = currentInteraction?.poiId ?? null;
+  if (isThoughtLine(block)) {
+    return (
+      <p className="narrativeBlock narrativeBlock--thought" key={key}>
+        {block.thought}
+      </p>
+    );
+  }
+
+  return (
+    <p className="narrativeBlock" key={key}>
+      {block}
+    </p>
+  );
+};
+
+/**
+ * Лог взаимодействия.
+ *
+ * В логе лежат уже разрешённые narrative-блоки, поэтому последующие изменения
+ * occupancy, знакомства или роли старый текст не меняют.
+ */
+export const DialogPanel = () => {
+  const log = useGameState(interactionSelectors.selectInteractionLog);
+  const poiId = useGameState(
+    (state) => interactionSelectors.selectCurrentInteraction(state)?.poiId ?? null,
+  );
+
   const poi = useGameState((state) => (poiId ? poiSelectors.selectPoiById(poiId)(state) : null));
-  const poiType = poi && isNonCell(poi) ? poi.type : null;
+  const poiType = poi && isNonCellNode(poi) ? poi.templateId : null;
 
   return (
     <div className="dialogPanel">
@@ -20,13 +52,13 @@ export const DialogPanel = () => {
 
       <div className="dialogContainer">
         <div className="scrollableContent">
-          {interactionLog.length > 0 && (
-            <div className="interactionLogList">
-              {interactionLog.map((logItem, index) => (
-                <InteractionLogItem key={`${logItem.action}-${index}`} log={logItem} />
-              ))}
-            </div>
-          )}
+          <div className="interactionLogList">
+            {log.map((entry, entryIndex) =>
+              entry.blocks.map((block, blockIndex) =>
+                renderBlock(block, `${entryIndex}-${blockIndex}`),
+              ),
+            )}
+          </div>
         </div>
 
         <DialogOptions />

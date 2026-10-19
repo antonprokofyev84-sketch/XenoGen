@@ -123,8 +123,8 @@ export const LeftPanel = () => {
                   }}
                   disabled={partyPosition !== selectedCellId}
                 >
-                  {textData.poi[poi.type as keyof typeof textData.poi]?.name ||
-                    poi.type ||
+                  {textData.poi[poi.templateId as keyof typeof textData.poi]?.name ||
+                    poi.templateId ||
                     'Unknown POI'}
                 </button>
               ))

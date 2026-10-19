@@ -42,8 +42,6 @@ interface InitialQuest {
   /** Основная задача квеста. */
   description: LocalizedText;
 
-  category: QuestCategory;
-
   /** Если true, квест не показывается в журнале. */
   isHidden?: boolean;
 
@@ -62,13 +60,9 @@ interface InitialQuestStage {
   /** Тайм-лимит конкретной стадии. */
   timeLimit?: QuestTimeLimit;
 
-  actionIdsByTarget?: Partial<
-    Record<QuestTargetId, ActionId[]>
-  >;
+  actionIdsByTarget?: Partial<Record<QuestTargetId, ActionId[]>>;
 
-  interceptorIdsByTarget?: Partial<
-    Record<QuestTargetId, InterceptorId[]>
-  >;
+  interceptorIdsByTarget?: Partial<Record<QuestTargetId, InterceptorId[]>>;
 }
 ```
 
@@ -83,16 +77,9 @@ interface InitialQuestStage {
 Runtime создаётся сразу для всех initial-квестов, включая ещё не принятые.
 
 ```ts
-type QuestStatus =
-  | 'initial'
-  | 'active'
-  | 'completed'
-  | 'failed';
+type QuestStatus = 'initial' | 'active' | 'completed' | 'failed';
 
-type QuestVarValue =
-  | boolean
-  | number
-  | string;
+type QuestVarValue = boolean | number | string;
 
 interface RunningQuestRuntime {
   status: 'initial' | 'active';
@@ -112,9 +99,7 @@ interface FinishedQuestRuntime {
   journalEntries: ResolvedText[];
 }
 
-type QuestRuntime =
-  | RunningQuestRuntime
-  | FinishedQuestRuntime;
+type QuestRuntime = RunningQuestRuntime | FinishedQuestRuntime;
 ```
 
 При создании новой игры:
@@ -312,7 +297,7 @@ interface DefeatedCondition extends NumericComparison {
 Без `baselineFromVar` проверяется общий накопительный счётчик. С `baselineFromVar` проверяемым значением становится:
 
 ```ts
-currentDefeated - quest.vars[baselineFromVar.key]
+currentDefeated - quest.vars[baselineFromVar.key];
 ```
 
 Пример подтверждённой формы:
@@ -339,14 +324,14 @@ interface QuestVarConditionBase {
 }
 
 type QuestVarCondition =
-  | QuestVarConditionBase & {
+  | (QuestVarConditionBase & {
       equals: QuestVarValue;
       notEquals?: never;
-    }
-  | QuestVarConditionBase & {
+    })
+  | (QuestVarConditionBase & {
       notEquals: QuestVarValue;
       equals?: never;
-    };
+    });
 
 interface QuestStatusCondition {
   type: 'questStatus';
@@ -358,8 +343,8 @@ interface QuestStatusCondition {
 `equals` и `notEquals` взаимоисключающие. Отсутствующая quest var остаётся обычным `undefined` и не преобразуется в `false`:
 
 ```ts
-undefined === true // false
-undefined !== true // true
+undefined === true; // false
+undefined !== true; // true
 ```
 
 Поэтому флаг не требуется заранее инициализировать значением `false`. `notEquals` является оператором сравнения конкретного `QuestVarCondition`, а не общей поддержкой логического NOT для всех conditions.
@@ -375,9 +360,7 @@ undefined !== true // true
 Общие поля Actions и Interceptors:
 
 ```ts
-type ActionNumber =
-  | number
-  | ((context: ActionContext) => number);
+type ActionNumber = number | ((context: ActionContext) => number);
 
 interface ExecutionLimit {
   perDay?: number;
@@ -418,10 +401,7 @@ vars: Record<string, QuestVarValue>;
 ```
 
 ```ts
-type QuestVarValue =
-  | boolean
-  | number
-  | string;
+type QuestVarValue = boolean | number | string;
 ```
 
 Объекты и массивы в первой версии не используются. Отсутствие ключа означает `undefined`, но `undefined` не является допустимым `QuestVarValue`.
@@ -456,8 +436,8 @@ askWitnesses: {
 После разговоров устанавливаются, например:
 
 ```ts
-askedBob: true
-askedLena: true
+askedBob: true;
+askedLena: true;
 ```
 
 `requirements` Action отчёта проверяют, что обе переменные установлены в `true`. Actions Боба и Лены скрываются через `notEquals: true` после установки соответствующей переменной.
@@ -465,12 +445,14 @@ askedLena: true
 Например, Action Боба виден, пока флаг не равен `true`:
 
 ```ts
-conditions: [{
-  type: 'questVar',
-  questId: 'missingCourier',
-  key: 'askedBob',
-  notEquals: true,
-}]
+conditions: [
+  {
+    type: 'questVar',
+    questId: 'missingCourier',
+    key: 'askedBob',
+    notEquals: true,
+  },
+];
 ```
 
 Action отчёта становится доступен после обоих разговоров:
@@ -489,7 +471,7 @@ requirements: [
     key: 'askedLena',
     equals: true,
   },
-]
+];
 ```
 
 Предварительно записывать `askedBob: false` и `askedLena: false` не требуется.
@@ -514,7 +496,7 @@ effects: [
     type: 'completeQuest',
     questId: 'missingCourier',
   },
-]
+];
 ```
 
 После завершения `missingCourier` его vars удаляются, но значение в `undergroundRecruitment` сохраняется. Если исходный квест завершается в том же результате, записывать тот же факт ещё и в его собственные vars не требуется.
@@ -537,8 +519,7 @@ effects: [
 Его семантика:
 
 ```ts
-quest.vars[key] =
-  state.statsSlice.combat.defeated[enemyTypeId] ?? 0;
+quest.vars[key] = state.statsSlice.combat.defeated[enemyTypeId] ?? 0;
 ```
 
 После этого `DefeatedCondition.baselineFromVar` проверяет разницу между текущей статистикой и сохранённым значением. Отдельно увеличивать квестовый счётчик после каждого боя не требуется.
@@ -611,7 +592,7 @@ result: {
 При создании runtime она добавляется первой записью:
 
 ```ts
-journalEntries: [resolveText(definition.description)]
+journalEntries: [resolveText(definition.description)];
 ```
 
 Каждая рабочая стадия может иметь собственное `description`. При переходе на стадию `resolveText()` применяется один раз, после чего разрешённая строка добавляется в runtime-массив квеста.
@@ -628,9 +609,7 @@ journalEntries: [resolveText(definition.description)]
 Записи показываются, только если квест вышел из `initialStage` и его runtime не скрыт:
 
 ```ts
-const visibleInJournal =
-  quest.status !== 'initial' &&
-  !quest.isHidden;
+const visibleInJournal = quest.status !== 'initial' && !quest.isHidden;
 ```
 
 `InitialQuest.isHidden` задаёт начальное значение runtime-поля. Если definition не указывает его, runtime получает `false`.
@@ -745,10 +724,8 @@ interface InitialInterceptorBase extends BaseExecutable {
   priority?: number;
 }
 
-type InitialInterceptor = InitialInterceptorBase & (
-  | { result: InterceptorResult; check?: never }
-  | { check: InterceptorCheck; result?: never }
-);
+type InitialInterceptor = InitialInterceptorBase &
+  ({ result: InterceptorResult; check?: never } | { check: InterceptorCheck; result?: never });
 ```
 
 `check` Interceptor поддерживается и использует обычную форму `onSuccess`/`onFail`. Если проверка не нужна, используется `result`. Отсутствие `transition` означает продолжить очередь после применения результата; единственный переход Interceptor первой версии открывает Frame.
@@ -906,13 +883,9 @@ Maps, массивы, размещение счётчиков и точный с
 interface QuestSlice {
   questsById: Record<QuestId, QuestRuntime>;
 
-  questActionIdsByTarget: Partial<
-    Record<QuestTargetId, ActionId[]>
-  >;
+  questActionIdsByTarget: Partial<Record<QuestTargetId, ActionId[]>>;
 
-  questInterceptorIdsByTarget: Partial<
-    Record<QuestTargetId, InterceptorId[]>
-  >;
+  questInterceptorIdsByTarget: Partial<Record<QuestTargetId, InterceptorId[]>>;
 }
 ```
 
@@ -968,7 +941,7 @@ isHidden?: boolean;
 При создании runtime значение копируется из definition:
 
 ```ts
-isHidden: definition.isHidden ?? false
+isHidden: definition.isHidden ?? false;
 ```
 
 Скрытый квест может:
@@ -998,10 +971,18 @@ Effect не активирует квест и не меняет его стад
 Связанные данные одного квеста можно держать рядом:
 
 ```ts
-export const missingCourierQuest = { /* ... */ };
-export const missingCourierActions = { /* ... */ };
-export const missingCourierInterceptors = { /* ... */ };
-export const missingCourierFrames = { /* ... */ };
+export const missingCourierQuest = {
+  /* ... */
+};
+export const missingCourierActions = {
+  /* ... */
+};
+export const missingCourierInterceptors = {
+  /* ... */
+};
+export const missingCourierFrames = {
+  /* ... */
+};
 ```
 
 Общие registries объединяют эти экспорты.
@@ -1091,8 +1072,7 @@ interface DynamicQuestSource<TParams = unknown> {
   params: TParams;
 }
 
-interface SavedDynamicQuestInstance<TParams = unknown>
-  extends DynamicQuestSource<TParams> {
+interface SavedDynamicQuestInstance<TParams = unknown> extends DynamicQuestSource<TParams> {
   questId: QuestId;
   runtime: QuestRuntime;
 }
@@ -1101,10 +1081,7 @@ interface SavedDynamicQuestInstance<TParams = unknown>
 Альтернативно источники могли бы храниться отдельно:
 
 ```ts
-dynamicQuestSourcesById: Record<
-  QuestId,
-  DynamicQuestSource
->;
+dynamicQuestSourcesById: Record<QuestId, DynamicQuestSource>;
 ```
 
 Тогда при загрузке фабрика по `factoryId` повторно строит неизменяемые definitions из сохранённых `params`, после чего применяется сохранённый runtime и перестраиваются производные индексы.
@@ -1146,3 +1123,4 @@ dynamicQuestSourcesById: Record<
 - смешивание Actions и Interceptors в одном списке;
 - квестовый event bus;
 - фиктивный глобальный target для Interceptors.
+- `category` квеста: журнал первой версии не группирует квесты и ничто это поле не использует. Конкретное использование категории может быть введено в будущих версиях.

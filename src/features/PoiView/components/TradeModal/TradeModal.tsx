@@ -2,6 +2,7 @@ import { useCallback, useMemo, useReducer, useState } from 'react';
 
 import { PROTAGONIST_ID } from '@/constants';
 import { characterSelectors, useGameState } from '@/state/useGameState';
+import { resolveNpcEffectiveRelation } from '@/systems/interaction/effectiveRelation';
 import {
   calculateOfferTotal,
   calculateTradeBaseCost,
@@ -9,6 +10,7 @@ import {
 } from '@/systems/trade/tradeExecution';
 import { buildTradeOfferRule, evaluateTradeNegotiation } from '@/systems/trade/tradeNegotiation';
 import { getBuyMultiplier, getSellMultiplier } from '@/systems/trade/tradePricing';
+import { toNpcSubjectKey } from '@/types/interactionRuntime.types';
 import type { InventoryItem } from '@/types/inventory.types';
 import type { TradeOffer, TradeOfferItem } from '@/types/trade.types';
 
@@ -100,11 +102,22 @@ function tradeReducer(state: TradeState, action: TradeAction): TradeState {
 export const TradeModal = () => {
   const [state, dispatch] = useReducer(tradeReducer, initialTradeState);
   const [lastResult, setLastResult] = useState<'success' | 'fail' | null>(null);
+  const [attempts, setAttempts] = useState(0);
 
   // --- Store selectors ---
   const interaction = useGameState((s) => s.interactionSlice.currentInteraction);
-  const closeTrade = useGameState((s) => s.interactionSlice.actions.closeTrade);
-  const performService = useGameState((s) => s.interactionSlice.actions.performService);
+  const setTrading = useGameState((s) => s.interactionSlice.actions.setTrading);
+  const resolveTradeOffer = useGameState((s) => s.interactionSlice.actions.resolveTradeOffer);
+  const effectiveRelation = useGameState((s) =>
+    interaction?.npcId === undefined
+      ? 0
+      : (resolveNpcEffectiveRelation(s, toNpcSubjectKey(interaction.npcId)) ?? 0),
+  );
+  const tension = useGameState((s) =>
+    interaction?.npcId === undefined
+      ? 0
+      : (s.interactionSlice.dailyMemoryBySubject[toNpcSubjectKey(interaction.npcId)]?.tension ?? 0),
+  );
 
   const playerContainer = useGameState((s) => s.inventory.containers[PROTAGONIST_ID]);
   const traderId = interaction?.poiId ?? '';
@@ -118,10 +131,7 @@ export const TradeModal = () => {
   const removeItemsAction = useGameState((s) => s.inventory.actions.removeItems);
   const modifyMoneyAction = useGameState((s) => s.inventory.actions.modifyMoney);
 
-  if (!interaction || !playerContainer) return null;
-
-  const effectiveRelation = interaction.effectiveRelation;
-  const tension = interaction.tension;
+  const closeTrade = useCallback(() => setTrading(false), [setTrading]);
 
   const buyMultiplier = getBuyMultiplier(effectiveRelation, tension);
   const sellMultiplier = getSellMultiplier(effectiveRelation, tension);
@@ -224,15 +234,11 @@ export const TradeModal = () => {
     if (!hasAnyOffer) return;
 
     setLastResult(null);
+    setAttempts((prev) => prev + 1);
 
-    const rule = buildTradeOfferRule(
-      negotiation.satisfaction,
-      traderTotal,
-      interaction.tradeAttempts,
-    );
-    const outcome = performService('tradeOffer', rule);
+    const isAccepted = resolveTradeOffer(negotiation.satisfaction, traderTotal, attempts);
 
-    if (!outcome?.success) {
+    if (!isAccepted) {
       setLastResult('fail');
       return;
     }
@@ -259,7 +265,9 @@ export const TradeModal = () => {
   }, [
     hasAnyOffer,
     negotiation.satisfaction,
-    performService,
+    attempts,
+    resolveTradeOffer,
+    traderTotal,
     state,
     traderId,
     addItemsAction,
@@ -280,6 +288,10 @@ export const TradeModal = () => {
     dispatch({ type: 'SET_PLAYER_MONEY', value: playerMoney });
     dispatch({ type: 'SET_TRADER_MONEY', value: traderMoney });
   }, []);
+
+  // Ранний выход только после всех хуков: их порядок обязан совпадать
+  // на каждом рендере, иначе закрытие взаимодействия при открытой модалке может привести к ошибкам.
+  if (!interaction || !playerContainer) return null;
 
   return (
     <div className="tradeModalOverlay" onClick={handleCancel}>

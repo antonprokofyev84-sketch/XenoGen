@@ -13,6 +13,8 @@ export const FACTION_PROFILES: Record<string, LoyaltyProfile> = {
   raiders: { personalWeight: 0.9 },
   cult: { personalWeight: 0.2 },
   scavengers: { personalWeight: 0.6 },
+  // Независимые судят об игроке лично: factionWeight получается равным 0.
+  independents: { personalWeight: 1 },
 };
 
 export function getLoyaltyProfile(factionId: string): ResolvedLoyaltyProfile {

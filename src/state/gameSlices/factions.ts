@@ -34,7 +34,12 @@ const changeReputationDraft = (state: StoreState, factionId: string, delta: numb
   return { type: 'modifyReputation', factionId, delta } as const;
 };
 
+const initializeFactionsDraft = (state: StoreState, initialData: Record<string, number>): void => {
+  state.factions.reputationById = initialData;
+};
+
 export const factionsDraft = {
+  initializeFactions: initializeFactionsDraft,
   changeReputation: changeReputationDraft,
 };
 
@@ -65,7 +70,7 @@ export const createFactionsSlice: GameSlice<FactionsSlice> = (set) => ({
   actions: {
     initializeFactions: (initialData: Record<string, number>) =>
       set((state) => {
-        state.factions.reputationById = initialData;
+        initializeFactionsDraft(state, initialData);
       }),
     changeReputation: (factionId, delta) =>
       set((state) => {

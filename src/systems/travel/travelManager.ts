@@ -3,18 +3,18 @@ import {
   CELL_TO_POI_ENTER,
   DIAGONAL_MULTIPLIER,
   INNER_SCENE_MOVE,
-  LOCAL_SPOT_MOVE,
 } from '@/data/travel.rules';
 import type { StoreState } from '@/state/useGameState';
-import { isCell, isNonCell } from '@/types/poi.types';
-import type { CellPoiNode, PoiNode } from '@/types/poi.types';
+import { canEnterPoi } from '@/systems/world/poiEntry';
+import type { CellNode, WorldNode } from '@/types/worldNode.types';
+import { isCellNode } from '@/types/worldNode.types';
 
 type Adjacency = {
   isAdjacent: boolean;
   isDiagonal: boolean;
 };
 
-function getCellAdjacency(firstCell: CellPoiNode, secondCell: CellPoiNode): Adjacency {
+function getCellAdjacency(firstCell: CellNode, secondCell: CellNode): Adjacency {
   const deltaX = Math.abs(firstCell.details.col - secondCell.details.col);
   const deltaY = Math.abs(firstCell.details.row - secondCell.details.row);
 
@@ -34,15 +34,21 @@ export type TravelResult = {
   timeCost: number; // minutes
 };
 
-function getPoiById(state: StoreState, poiId: string): PoiNode | null {
+const BLOCKED_TRAVEL: TravelResult = {
+  canTravel: false,
+  staminaCost: Infinity,
+  timeCost: Infinity,
+};
+
+function getPoiById(state: StoreState, poiId: string): WorldNode | null {
   return state.poiSlice.pois[poiId] ?? null;
 }
 
-function computeCellToCellTravel(currentPoi: CellPoiNode, targetPoi: CellPoiNode): TravelResult {
+function computeCellToCellTravel(currentPoi: CellNode, targetPoi: CellNode): TravelResult {
   const adjacency = getCellAdjacency(currentPoi, targetPoi);
 
   if (!adjacency.isAdjacent) {
-    return { canTravel: false, staminaCost: Infinity, timeCost: Infinity };
+    return BLOCKED_TRAVEL;
   }
 
   const multiplier = adjacency.isDiagonal ? DIAGONAL_MULTIPLIER : 1;
@@ -54,32 +60,34 @@ function computeCellToCellTravel(currentPoi: CellPoiNode, targetPoi: CellPoiNode
   };
 }
 
-function isMovingToDirectChild(currentPoi: PoiNode, targetPoi: PoiNode): boolean {
+function isMovingToDirectChild(currentPoi: WorldNode, targetPoi: WorldNode): boolean {
   return targetPoi.parentId === currentPoi.id;
 }
 
-function isMovingToDirectParent(currentPoi: PoiNode, targetPoi: PoiNode): boolean {
+function isMovingToDirectParent(currentPoi: WorldNode, targetPoi: WorldNode): boolean {
   return currentPoi.parentId === targetPoi.id;
 }
 
-function getTreeEdgeTravelResult(currentPoi: PoiNode, targetPoi: PoiNode): TravelResult {
+function getTreeEdgeTravelResult(
+  state: StoreState,
+  currentPoi: WorldNode,
+  targetPoi: WorldNode,
+): TravelResult {
   const movingToDirectChild = isMovingToDirectChild(currentPoi, targetPoi);
   const movingToDirectParent = isMovingToDirectParent(currentPoi, targetPoi);
 
   if (!movingToDirectChild && !movingToDirectParent) {
-    return { canTravel: false, staminaCost: Infinity, timeCost: Infinity };
+    return BLOCKED_TRAVEL;
   }
 
-  if (movingToDirectChild && isNonCell(targetPoi) && !targetPoi.details.isDiscovered) {
-    return { canTravel: false, staminaCost: Infinity, timeCost: Infinity };
+  // Ограничения входа проверяются только при движении к прямому потомку:
+  // Возврат доступен всегда, иначе игрок может застрять.
+  if (movingToDirectChild && !canEnterPoi(state, targetPoi.id)) {
+    return BLOCKED_TRAVEL;
   }
 
-  if (isCell(currentPoi) || isCell(targetPoi)) {
+  if (isCellNode(currentPoi) || isCellNode(targetPoi)) {
     return { canTravel: true, ...CELL_TO_POI_ENTER };
-  }
-
-  if (currentPoi.isLocalSpot === true || targetPoi.isLocalSpot === true) {
-    return { canTravel: true, ...LOCAL_SPOT_MOVE };
   }
 
   return { canTravel: true, ...INNER_SCENE_MOVE };
@@ -91,14 +99,14 @@ export const TravelManager = {
     const targetPoi = getPoiById(state, targetPoiId);
 
     if (!currentPoi || !targetPoi) {
-      return { canTravel: false, staminaCost: Infinity, timeCost: Infinity };
+      return BLOCKED_TRAVEL;
     }
 
-    if (isCell(currentPoi) && isCell(targetPoi)) {
+    if (isCellNode(currentPoi) && isCellNode(targetPoi)) {
       return computeCellToCellTravel(currentPoi, targetPoi);
     }
 
-    return getTreeEdgeTravelResult(currentPoi, targetPoi);
+    return getTreeEdgeTravelResult(state, currentPoi, targetPoi);
   },
 };
 

@@ -21,5 +21,10 @@ export default defineConfig(({ command }) => {
         },
       },
     },
+    test: {
+      // Доменные и оркестрационные тесты не нуждаются в DOM
+      environment: 'node',
+      include: ['src/**/*.test.ts'],
+    },
   };
 });

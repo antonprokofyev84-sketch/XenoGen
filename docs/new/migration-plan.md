@@ -59,7 +59,7 @@
 3. **Граница occupancy.** Фактические occupants конкретных slots разрешаются и кешируются лениво при первом входе в POI в данном time slot; повторный вход их не перебрасывает. `baseSchedule: 'work'` задаёт рабочее время NPC, а candidate/assignment work slot — возможное рабочее место. Глобальный resolver требует обе части и открытый POI: работающий NPC заранее исключается из `freeTime`/`home`, даже если рабочий POI ещё не посещался. До входа конкретный occupant и chance не разрешаются; не занявший рабочий slot NPC остаётся неразмещённым. Root-cell scope отложен.
 4. **Политика Effects.** Первый каталог закрыт: quest effects; структурные `markCurrentPoiForRemoval`, `changeRegionParameter`, `disablePoiEntryForDays`, `setPoiEntryDisabled`; `modifyTension`; rewards инвентаря протагониста `addMoney`, `addItem`, `removeItem`. Прочие effects добавляются только под конкретный утверждённый сценарий.
 5. **Presentation.** `npcDisplay: 'always'` — контекст-NPC справа, активный speaker временно слева, говорящий контекст-NPC остаётся справа и подсвечивается. Baseline-визуалы через `import.meta.glob`, путь `src/assets/npcs/<npcId>/default.webp`. Log event снимает только resolved narrative blocks. Закрытый POI — disabled-переход с пометкой «Закрыто».
-6. **Test runner.** Vitest добавляется в этой миграции для детерминированных domain/orchestration тестов. Вариант «только typecheck/build» отклонён.
+6. **Test runner.** Vitest добавляется в этой миграции как инфраструктура. Само покрытие тестами вынесено в отдельную задачу после миграции и ни одну фазу не gate-ит.
 7. **Размещение типов.** Плоско в `src/types`, рядом с существующими файлами; отдельная interaction-поддиректория не создаётся.
 8. **Порядок конца дня.** Задан в `migration-decisions.md` (World Time): POI day-effects и общая фаза зарегистрированных world-owned счётчиков → quest-таймеры+эффекты → removal sweep → очистка дневной памяти; затем однократный финальный occupancy, валидация контекста и новая pending queue. `entryDisabledDaysLeft` подключён к общей фазе `onDayEnd`, а не имеет отдельный pipeline.
 
@@ -84,7 +84,8 @@
 3. Инвентаризировать текущие content-записи только для последующего удаления: cells, POIs, templates, local spots, NPCs, services, narrative keys и quest definitions.
 4. Спроектировать новый нейтральный technical fixture set. Он должен быть единственным initial content, необходимым для проверки миграции; старый content не получает mapping и не переносится.
 5. Для открытых пунктов раздела "Статус открытых вопросов" (13–15) зафиксировать решение в `migration-decisions.md` до фазы, которая от него зависит.
-6. Сохранить текущий `npm run build` как baseline и добавить Vitest (решено в migration-decisions.md) с минимальным smoke test для инициализации нового мира.
+6. Сохранить текущий `npm run build` как основной gate миграции и добавить Vitest (решено в migration-decisions.md) как инфраструктуру. Само написание тестов остаётся отдельной задачей.
+7. Ввести единый инъектированный источник случфйности (seedable RNG). Через него обязаны идти все броски: `appearanceChance`, `check.chance`, stat/skill rolls, веса `ActionOutcome[]`, `InitialNpcSlot.chance` и выбор candidate, `onDayPass.chance` и случайное отклонение дневного tension. Это требование архитектуры, а не только тестов: без него невозможны воспроизводимые сценарии и отложенное покрытие тестами.
 
 Критерий завершения: утверждён scope, определён technical fixture set и закрыты решения, необходимые для первой реализуемой вертикали.
 
@@ -111,7 +112,7 @@
 7. Добавить статические fixture quests для `initialStage`, stage transition, quest vars, quest status condition, target indexes, stage/quest timers and terminal state. Их тексты должны быть нейтральными и не задавать production narrative.
 8. Не добавлять fixture combat transition, social effects помимо `modifyTension`, regional trade generation или mechanics из `ideas.md`: они находятся вне утверждённого scope.
 
-Критерий завершения: каждый утверждённый runtime contract имеет как минимум один initial fixture и один deterministic Vitest scenario.
+Критерий завершения: каждый утверждённый runtime contract имеет как минимум один initial fixture. Автоматическое покрытие тестами этих fixture отнесено к отдельной задаче после миграции и не является gate этой фазы.
 
 ## Фаза 2. Cell, POI и region model
 
@@ -210,12 +211,36 @@
 
 ## Проверки и release gates
 
-1. Run `npm run build` after every independently mergeable phase.
-2. Добавить deterministic coverage для: cell-ID parsing; two-pass POI initialization; normalizers; region level resolution; общей регистрации и уменьшения `onDayEnd` counters, включая `entryDisabledDaysLeft`; pending-removal cascade; day-end ordering с quest-timer hook; глобального resolved schedule и lazy occupancy; assignment и occupancy uniqueness; quest index updates; Action prepayment/check/result/world-action ordering без повторного resolver; appearance cache; общей pending queue и delayed system `forceExit`; external transition routing; log/background при смене контекста.
-3. Add authoring validation checks for all explicitly specified data invariants before migrating content at scale.
-4. Run manual vertical scenarios only with technical fixtures: enter open/closed POI; enter occupied slot; return to POI; execute Action success/fail and inventory reward; schedule NPC force exit from `modifyTension`; verify its Frame and fallback to current POI; cross time slot; cross day; expire POI; advance quest and open the existing trade modal. Combat remains outside this migration.
-5. Search active source after cleanup for `InteractionService`, `performService`, `services`, `isLocalSpot`, `localSpotIds`, `nestedPoiIds`, `poi.type`, `lifetimeDays`, `Infinity` as permanent lifetime, old quest-service maps and current narrative resolver imports.
-6. Do not claim save/load compatibility until persistence is designed and validated.
+### Гейты самой миграции
+
+1. Run `npm run build` after every independently mergeable phase. Это основной автоматический gate миграции.
+2. Add authoring validation checks for all explicitly specified data invariants before migrating content at scale (`validation-contract.md`).
+3. Run manual vertical scenarios only with technical fixtures: enter open/closed POI; enter occupied slot; return to POI; execute Action success/fail; schedule; force exit from `modifyTension`; verify its Frame and fallback; cross time slot; cross day; expire POI; advance quest and open the existing trade modal. Combat remains outside this migration.
+4. Search active source after cleanup for `InteractionService`, `performService`, `services`, `isLocalSpot`, `localSpotIds`, `nestedPoiIds`, `poi.type`, `lifetimeDays`, `Infinity` as permanent lifetime, old quest-service maps and current narrative resolver imports.
+5. Do not claim save/load compatibility until persistence is designed and validated.
+
+### Отложено: автоматическое покрытие тестами
+
+Написание тестов вынесено в отдельную задачу после завершения миграции и не является критерием завершения ни одной фазы.
+Инфраструктура для этой задачи готовится в ходе миграции: Vitest подключён, вся случайность идёт через инжектируемый seedable RNG,
+a technical fixtures покрывают каждый утверждённый контракт.
+
+Список ниже сохранён как готовый чек-лист для этой будущей задачи — детерминированное покрытие для:
+
+- cell-ID parsing;
+- two-pass POI initialization;
+- normalizers;
+- region level resolution;
+- remaining-day decrease;
+- pending-removal cascade;
+- day-end ordering;
+- slot assignment;
+- occupancy uniqueness;
+- quest index updates;
+- Action cost/check/result execution;
+- appearance cache;
+- interceptor queue;
+- external transition routing.
 
 ## Dependency order
 
@@ -226,4 +251,5 @@
 5. Phase 6 is the runtime boundary that replaces services; Phase 7 consumes it.
 6. Phase 8 happens only after all active callers have a replacement and the technical fixture set covers every approved contract.
 
-Ни одна фаза не должна молча закрывать открытые пункты 13–15 из раздела «Статус открытых вопросов». Сначала решение добавляется в `migration-decisions.md`.
+No phase should silently fill an open item (13-16 in «Статус открытых вопросов»). Such a decision must be added to
+`migration-decisions.md` first.

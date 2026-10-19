@@ -1,4 +1,5 @@
 import { PROTAGONIST_ID } from '@/constants';
+import { RARITY_ORDER } from '@/types/common.types';
 import type { EquipmentSlot } from '@/types/equipment.types';
 import type { InventoryContainer, InventoryItem, ItemTypeFilter } from '@/types/inventory.types';
 
@@ -77,6 +78,15 @@ export const inventorySelectors = {
   },
 
   selectPlayerMoney: (state: StoreState) => state.inventory.containers[PROTAGONIST_ID]?.money ?? 0,
+
+  /** Суммарное количество предмета у протагониста по всем стопкам. */
+  selectPlayerItemCount:
+    (itemId: string) =>
+    (state: StoreState): number =>
+      (state.inventory.containers[PROTAGONIST_ID]?.items ?? []).reduce(
+        (total, item) => (item.templateId === itemId ? total + item.quantity : total),
+        0,
+      ),
 };
 
 // --- DRAFT HELPERS (operate on immer draft) ---
@@ -106,9 +116,81 @@ function removeItemDraft(container: InventoryContainer, item: InventoryItem): vo
   }
 }
 
+// --- DRAFT HELPERS EXPOSED TO EXTERNAL SYSTEMS ---
+
+/**
+ * Операции над инвентарём для систем, работающих внутри чужой транзакции
+ * (исполнитель effects, дневные тики). Вложенного `set` здесь нет.
+ */
+export const inventoryDraft = {
+  addItem: (state: StoreState, containerId: string, item: InventoryItem): void => {
+    const container = state.inventory.containers[containerId];
+    if (!container) return;
+
+    addItemDraft(container, item);
+  },
+
+  removeItem: (state: StoreState, containerId: string, item: InventoryItem): void => {
+    const container = state.inventory.containers[containerId];
+    if (!container) return;
+
+    removeItemDraft(container, item);
+  },
+
+  /**
+   * Списывает предмет по шаблону, обходя стопки от низшей редкости к высшей.
+   *
+   * Стопка определяется парой `templateId + rarity`, поэтому один предмет
+   * законно лежит в нескольких стопках. Стоимость и эффекты редкость не
+   * задают, а проверка доступности считает по всем стопкам — значит и списание
+   * обязано идти по всем, иначе проверка и оплата разойдутся.
+   *
+   * Возвращает незакрытый остаток; `0` означает полное списание.
+   */
+  removeItemsByTemplate: (
+    state: StoreState,
+    containerId: string,
+    templateId: string,
+    count: number,
+  ): number => {
+    const container = state.inventory.containers[containerId];
+    if (!container || count <= 0) return Math.max(0, count);
+
+    const stacks = container.items
+      .filter((item) => item.templateId === templateId)
+      .sort(
+        (left, right) => RARITY_ORDER.indexOf(left.rarity) - RARITY_ORDER.indexOf(right.rarity),
+      );
+
+    let remaining = count;
+
+    for (const stack of stacks) {
+      if (remaining <= 0) break;
+
+      const taken = Math.min(stack.quantity, remaining);
+      stack.quantity -= taken;
+      remaining -= taken;
+    }
+
+    container.items = container.items.filter((item) => item.quantity > 0);
+
+    return remaining;
+  },
+
+  modifyMoney: (state: StoreState, containerId: string, delta: number): void => {
+    const container = state.inventory.containers[containerId];
+    if (!container) return;
+
+    const newAmount = container.money + delta;
+    if (newAmount < 0) return;
+
+    container.money = newAmount;
+  },
+};
+
 // --- SLICE IMPLEMENTATION ---
 
-export const createInventorySlice: GameSlice<InventorySlice> = (set, _get) => ({
+export const createInventorySlice: GameSlice<InventorySlice> = (set) => ({
   containers: {
     [PROTAGONIST_ID]: {
       items: [],
@@ -116,7 +198,6 @@ export const createInventorySlice: GameSlice<InventorySlice> = (set, _get) => ({
     },
   },
   selectedItem: null,
-
   actions: {
     createContainer: (id, initialData) => {
       set((state) => {

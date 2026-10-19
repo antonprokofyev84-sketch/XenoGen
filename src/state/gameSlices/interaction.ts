@@ -1,601 +1,162 @@
-import { PROTAGONIST_ID } from '@/constants';
-import { SERVICE_RULES, getForcePresetServices, getServicesState } from '@/data/poi.services';
-import { POI_TEMPLATES_DB } from '@/data/poi.templates';
-import { EffectManager } from '@/systems/effects/effectManager';
-import { resolveEffectSummaryItems } from '@/systems/effects/effectSummaryResolver';
+import type { StoreState } from '@/state/useGameState';
 import {
-  computeInitialTension,
-  resolveEffectiveRelation,
-  resolveEntryNarrativeAction,
-  resolveInteractionEffects,
-  shouldAppendLocalSpotIntro,
-} from '@/systems/interaction/interactionRules';
-import { resolveNarrativeBlocks } from '@/systems/narrative/narrativeResolver';
-import { rollStatCheck } from '@/systems/rolls/statRollService';
-import type { ResolvedTriggerRules } from '@/types/effects.types';
+  endInteraction,
+  enterPoiContext,
+  enterSlotContext,
+} from '@/systems/interaction/interactionState';
+import { performAction } from '@/systems/interaction/performAction';
+import { resolveInteractionPresentation } from '@/systems/interaction/presentation';
+import { resolveInteractionOptions } from '@/systems/interaction/resolveOptions';
+import { resolveTradeOffer } from '@/systems/trade/resolveTradeOffer';
 import type {
-  ForceBehavior,
-  InteractionLogEvent,
-  InteractionService,
-  InteractionServiceRule,
-  InteractionServiceState,
-  ServiceOutcome,
-} from '@/types/interaction.types';
-import { isNonCell } from '@/types/poi.types';
-import type { NonCellNode } from '@/types/poi.types';
+  CurrentInteraction,
+  DailyInteractionMemoryBySubject,
+  ExecutionTotalsBySubject,
+  InteractionLogEntry,
+} from '@/types/interactionRuntime.types';
 
 import type { GameSlice } from '../types';
-import type { StoreState } from '../useGameState';
-
-const FORCE_EXIT_TENSION_THRESHOLD = 80;
-
-export interface CurrentInteraction {
-  poiId: string; // poiId
-  poiType?: string;
-  npcId?: string;
-  factionId?: string;
-  hasOwner?: boolean;
-  /** Отношение на момент входа (рассчитывается из репутации) */
-  effectiveRelation: number;
-  /** Напряжение на момент входа */
-  initialTension: number;
-  /** Текущее напряжение */
-  tension: number;
-  /** Number of trade attempts in this interaction (for experience diminishing returns) */
-  tradeAttempts: number;
-  interactionLog: InteractionLogEvent[];
-  services: InteractionServiceState[];
-}
 
 /**
- * Persisted interaction state scoped to the interaction subject (NPC or POI).
+ * Состояние взаимодействия.
  *
- * This keeps volatile relationship pressure across revisits, but leaves
- * location identity and current template services to be rebuilt from the
- * POI the player is entering right now.
+ * Слайс намеренно тонкий: вся логика входов, очереди событий и исполнения
+ * Actions живёт в `@/systems/interaction` и работает на draft, поэтому
+ * вложенных `set` нет. Здесь только хранение и публичные команды.
+ *
+ * Доступные варианты экрана не хранятся: они производные и собираются
+ * резолвером по текущему контексту и состоянию мира.
  */
-export interface InteractionMemory {
-  tension: number;
-  tradeAttempts: number;
-  services: InteractionServiceState[];
-}
-
 export interface InteractionSlice {
   currentInteraction: CurrentInteraction | null;
+
+  /** Очищается целиком в конце игрового дня. */
+  dailyMemoryBySubject: DailyInteractionMemoryBySubject;
+
+  /** Долговременные счётчики: конец дня их не трогает. */
+  executionTotalsBySubject: ExecutionTotalsBySubject;
+
+  /** Цель перехода `trade`; существующее модальное окно сохраняется как есть. */
   isTrading: boolean;
 
-  /** Persisted interaction snapshots, keyed by npcId or poiId. Cleared at end of day. */
-  interactionMemoryById: Record<string, InteractionMemory>;
-
   actions: {
-    startInteraction: (params: {
-      poiId: string;
-      effectiveRelation?: number;
-      initialTension?: number;
-    }) => void;
-    performService: (
-      serviceId: InteractionService,
-      ruleOverride?: Partial<InteractionServiceRule>,
-      characterId?: string,
-    ) => ServiceOutcome | undefined;
-    updateTension: (delta: number) => void;
-    openTrade: () => void;
-    closeTrade: () => void;
+    enterPoiContext: (poiId: string) => void;
+    enterSlotContext: (slotId: string, npcId: string) => void;
+    returnToPoiContext: () => void;
     endInteraction: () => void;
-    clearDailyMemory: () => void;
+    performAction: (actionId: string) => void;
+    setTrading: (isTrading: boolean) => void;
+    /** Торговля сохранена как есть до утверждения её собственного `scope`. */
+    resolveTradeOffer: (satisfaction: number, tradeValue: number, attempts: number) => boolean;
   };
 }
 
-// Draft helpers
-
-const applyForceTensionReactionDraft = (state: StoreState) => {
-  const interaction = state.interactionSlice.currentInteraction;
-  if (!interaction) return;
-  if (interaction.tension > FORCE_EXIT_TENSION_THRESHOLD) {
-    applyForceExitServicesDraft(state);
-  }
-};
-
-const restoreServicesFromMemory = (
-  baseServices: InteractionService[],
-  memoryServices: InteractionServiceState[],
-): InteractionServiceState[] => {
-  const currentServices = getServicesState(baseServices);
-  const memoryById = new Map(memoryServices.map((service) => [service.id, service]));
-
-  return currentServices.map((service) => ({
-    ...service,
-    executedTimes: memoryById.get(service.id)?.executedTimes ?? service.executedTimes,
-  }));
-};
-
-const mergeServicesHistory = (
-  historicalServices: InteractionServiceState[],
-  currentServices: InteractionServiceState[],
-): InteractionServiceState[] => {
-  const merged = new Map(historicalServices.map((service) => [service.id, service]));
-
-  for (const service of currentServices) {
-    merged.set(service.id, {
-      ...(merged.get(service.id) ?? {}),
-      ...service,
-    });
-  }
-
-  return Array.from(merged.values());
-};
-
-const createInteractionLogEvent = (
-  state: StoreState,
-  event: Omit<InteractionLogEvent, 'narrativeBlocks' | 'effectSummaryItems'> & {
-    narrativePoiId: string;
-  },
-): InteractionLogEvent => {
-  const logEvent: InteractionLogEvent = event;
-
-  return {
-    ...logEvent,
-    narrativeBlocks: resolveNarrativeBlocks(state, logEvent),
-    effectSummaryItems: resolveEffectSummaryItems(state, logEvent.effects),
-  };
-};
-
-const buildEntryInteractionLog = (
-  state: StoreState,
-  poiId: string,
-  poi: NonCellNode | undefined,
-  tension: number,
-): InteractionLogEvent[] => {
-  const action = resolveEntryNarrativeAction({
-    poi,
-    previousPartyPosition: state.party.previousPartyPosition,
-  });
-
-  const interactionLog: InteractionLogEvent[] = [
-    createInteractionLogEvent(state, {
-      action,
-      success: true,
-      tension,
-      narrativePoiId: poiId,
-    }),
-  ];
-
-  if (!poi) {
-    return interactionLog;
-  }
-
-  const shouldShowIntro = shouldAppendLocalSpotIntro({
-    lastTimeVisited: poi.details.lastTimeVisited,
-    currentTime: state.world.currentTime,
-  });
-
-  if (!shouldShowIntro) {
-    return interactionLog;
-  }
-
-  for (const localSpotId of poi.localSpotIds) {
-    const localSpot = state.poiSlice.pois[localSpotId];
-    if (!localSpot || !isNonCell(localSpot)) {
-      continue;
-    }
-
-    if (!localSpot.details.isDiscovered) {
-      continue;
-    }
-
-    interactionLog.push(
-      createInteractionLogEvent(state, {
-        action: 'intro',
-        success: true,
-        tension,
-        narrativePoiId: localSpotId,
-      }),
-    );
-  }
-
-  return interactionLog;
-};
-
-const startInteractionDraft = (
-  state: StoreState,
-  params: {
-    poiId: string;
-    effectiveRelation?: number;
-    initialTension?: number;
-  },
-) => {
-  const { poiId, effectiveRelation: providedRelation, initialTension: providedTension } = params;
-  const poi = state.poiSlice.pois[poiId] as NonCellNode | undefined;
-
-  const npcId = state.occupancySlice.poiOccupants[poiId];
-  const poiType = poi?.type !== 'cell' ? poi?.type : undefined;
-  const hasOwner = Boolean(npcId);
-
-  let effectiveRelation = providedRelation;
-  let initialTension = providedTension;
-  let factionId: string | undefined = undefined;
-
-  if (npcId) {
-    // TODO: Получить отношение npc
-    // пока зафиксируем нейтральное
-    factionId = 'neutral'; // заглушка
-  } else {
-    factionId = poi?.details && 'faction' in poi.details ? poi.details.faction : undefined;
-  }
-
-  if (effectiveRelation === undefined) {
-    const factionReputation = factionId ? (state.factions.reputationById[factionId] ?? 0) : 0;
-
-    // TODO: получить личную симпатию от персонажей к владельцу POI или фракции
-    const personalAffection = 0;
-
-    if (factionId) {
-      effectiveRelation = resolveEffectiveRelation({
-        factionId,
-        factionReputation,
-        personalAffection,
-      });
-    } else {
-      // если нет фракции — нейтральное взаимодействие
-      effectiveRelation = 0;
-    }
-  }
-
-  const key = npcId ?? poiId;
-  const memory = state.interactionSlice.interactionMemoryById[key];
-  const template = poiType ? POI_TEMPLATES_DB[poiType] : undefined;
-  const baseServices = [...(template?.services ?? [])];
-
-  // Restore subject-scoped state, but rebuild current location context and services.
-  if (memory) {
-    state.interactionSlice.currentInteraction = {
-      poiId,
-      poiType,
-      npcId,
-      factionId,
-      hasOwner,
-      effectiveRelation,
-      initialTension: memory.tension,
-      tension: memory.tension,
-      tradeAttempts: memory.tradeAttempts,
-      services: restoreServicesFromMemory(baseServices, memory.services),
-      interactionLog: buildEntryInteractionLog(state, poiId, poi, memory.tension),
-    };
-    applyForceTensionReactionDraft(state);
-    return;
-  }
-
-  if (initialTension === undefined) {
-    initialTension = computeInitialTension(effectiveRelation);
-  }
-
-  const services: InteractionServiceState[] = getServicesState(baseServices);
-  const interactionLog = buildEntryInteractionLog(state, poiId, poi, initialTension);
-
-  state.interactionSlice.currentInteraction = {
-    poiId,
-    poiType,
-    npcId,
-    factionId,
-    hasOwner,
-    effectiveRelation,
-    initialTension,
-    tension: initialTension,
-    tradeAttempts: 0,
-    interactionLog,
-    services,
-  };
-
-  applyForceTensionReactionDraft(state);
-};
-
-const applyForceExitServicesDraft = (state: StoreState) => {
-  const currentServices = state.interactionSlice.currentInteraction?.services;
-  const isAttackServiceAvailable = currentServices?.some((service) => service.id === 'attack');
-  let newServices: InteractionService[] = [];
-  let forceAction: ForceBehavior;
-  if (!isAttackServiceAvailable) {
-    forceAction = 'forceLeave';
-    newServices = getForcePresetServices(forceAction);
-  } else {
-    if (Math.random() < 0.5) {
-      forceAction = 'forceAttack';
-      newServices = getForcePresetServices(forceAction);
-    } else {
-      forceAction = 'forceRetreat';
-      newServices = getForcePresetServices(forceAction);
-    }
-  }
-  if (state.interactionSlice.currentInteraction) {
-    const currentInteraction = state.interactionSlice.currentInteraction;
-    const key = currentInteraction.npcId ?? currentInteraction.poiId;
-    const existingMemory = state.interactionSlice.interactionMemoryById[key];
-    const historicalServices = mergeServicesHistory(
-      existingMemory?.services ?? [],
-      currentInteraction.services,
-    );
-
-    state.interactionSlice.interactionMemoryById[key] = {
-      tension: currentInteraction.tension,
-      tradeAttempts: currentInteraction.tradeAttempts,
-      services: historicalServices,
-    };
-
-    currentInteraction.services = getServicesState(newServices);
-
-    if (forceAction) {
-      currentInteraction.interactionLog.push(
-        createInteractionLogEvent(state, {
-          action: forceAction,
-          tension: currentInteraction.tension,
-          narrativePoiId: currentInteraction.poiId,
-        }),
-      );
-    }
-
-    // Close trade modal if force-exit triggers while trading
-    state.interactionSlice.isTrading = false;
-  }
-};
-
-const updateTensionDraft = (state: StoreState, delta: number) => {
-  const interaction = state.interactionSlice.currentInteraction;
-  if (!interaction) return null;
-  interaction.tension += delta;
-  return { type: 'modifyTension', delta } as const;
-};
-
-// Helper functions for service execution
+/** Стабильная пустая ссылка: новый литерал на каждый вызов менял бы снимок. */
+const EMPTY_LOG: readonly InteractionLogEntry[] = [];
 
 /**
- * Resolves a service attempt into a ServiceOutcome.
+ * Мемоизация производного значения по ссылке корня состояния.
  *
- * Resolution order:
- * 1. No rule at all → auto-success
- * 2. autoSuccessRelation defined and relation meets threshold → auto-success
- * 3. checkStat defined → stat roll (uses rule.difficulty if set, else relation-derived difficulty)
- * 4. difficulty defined without checkStat → pure d100 vs difficulty
- * 5. Fallback → auto-success
+ * Зачем вообще: zustand построен на `useSyncExternalStore`, который сравнивает
+ * снимки через `Object.is`. Селектор, собирающий новый объект на каждый вызов,
+ * даёт новый снимок при каждом рендере — React считает состояние бесконечно
+ * меняющимся и уходит в цикл. Поэтому составной производный результат обязан
+ * быть мемоизирован; это общее правило, а не особенность этого экрана.
+ *
+ * Почему кеш по корню, а не по входам: резолверы читают восемь срезов, и при
+ * ручном перечислении (reselect) забытая зависимость даёт не лишний рендер, а
+ * молча протухший UI — худший из возможных исходов. Точное автоотслеживание
+ * (proxy-memoize) здесь не окупается: пока открыт экран взаимодействия,
+ * состояние меняется только от действий игрока, и после действия варианты
+ * почти всегда действительно меняются.
+ *
+ * Immer подменяет ссылку корня только при реальном изменении, поэтому
+ * пересчёт происходит ровно один раз на операцию — ровно та семантика, что
+ * описана контрактом: «после любого завершённого Action заново собираются все
+ * варианты». Кеш общий для всех компонентов, поэтому за один проход рендера
+ * значение считается один раз.
+ *
+ * Следствие, которое стоит знать: от рендера к посторонним изменениям стора
+ * это не защищает. Если такое понадобится, лечится сравнением результата с
+ * предыдущим внутри этой же функции, без правок компонентов.
+ *
+ * Кеш на один элемент и живёт в модуле — безопасно, пока стор один.
  */
-const resolveService = (
-  rule: InteractionServiceRule | undefined,
-  effectiveRelation: number,
-  state: StoreState,
-  characterId: string = PROTAGONIST_ID,
-): ServiceOutcome => {
-  // 1. No rule → auto-success
-  if (!rule) return { success: true };
+function memoizeByState<T>(compute: (state: StoreState) => T): (state: StoreState) => T {
+  let cache: { state: StoreState; result: T } | undefined;
 
-  // 1.5. Cost precondition: insufficient funds → fail
-  if (rule.cost !== undefined) {
-    const money = state.inventory.containers[PROTAGONIST_ID]?.money ?? 0;
-    if (money < rule.cost) {
-      return { success: false };
+  return (state) => {
+    if (cache?.state !== state) {
+      cache = { state, result: compute(state) };
     }
-  }
 
-  // 2. Auto-success by relation threshold
-  if (rule.autoSuccessRelation !== undefined && effectiveRelation >= rule.autoSuccessRelation) {
-    return { success: true };
-  }
-
-  // 3. Stat check
-  if (rule.checkStat) {
-    const difficulty =
-      rule.difficulty ??
-      (rule.autoSuccessRelation !== undefined ? rule.autoSuccessRelation - effectiveRelation : 50);
-
-    const rollDetails = rollStatCheck(state, {
-      characterId,
-      stat: rule.checkStat,
-      difficulty,
-    });
-
-    return {
-      success: rollDetails.success,
-      rollLog: {
-        stat: rule.checkStat,
-        rollValue: rollDetails.roll,
-        targetValue: rollDetails.totalChance,
-        difference: rollDetails.statValue - rollDetails.difficulty,
-      },
-      effects: rollDetails.success ? rule.onSuccess : rule.onFail,
-    };
-  }
-
-  // 4. Pure difficulty check (no stat)
-  if (rule.difficulty !== undefined) {
-    const roll = Math.floor(Math.random() * 100) + 1;
-    const success = roll <= 100 - rule.difficulty;
-    return {
-      success,
-      rollLog: {
-        rollValue: roll,
-        targetValue: 100 - rule.difficulty,
-        difference: 100 - rule.difficulty - roll,
-      },
-      effects: success ? rule.onSuccess : rule.onFail,
-    };
-  }
-
-  // 5. Relation-derived random chance (legacy path: autoSuccessRelation set but no stat/difficulty)
-  if (rule.autoSuccessRelation !== undefined) {
-    const chance = 100 + effectiveRelation - rule.autoSuccessRelation;
-    const roll = Math.floor(Math.random() * 100) + 1;
-    const success = roll <= chance;
-    return {
-      success,
-      effects: success ? rule.onSuccess : rule.onFail,
-    };
-  }
-
-  // 6. No checks defined → auto-success
-  return { success: true, effects: rule.onSuccess };
-};
-
-const endInteractionDraft = (state: StoreState) => {
-  const interaction = state.interactionSlice.currentInteraction;
-  if (!interaction) return;
-
-  const key = interaction.npcId ?? interaction.poiId;
-  const existingMemory = state.interactionSlice.interactionMemoryById[key];
-  state.interactionSlice.interactionMemoryById[key] = {
-    tension: interaction.tension,
-    tradeAttempts: interaction.tradeAttempts,
-    services: mergeServicesHistory(existingMemory?.services ?? [], interaction.services),
+    return cache.result;
   };
-  state.interactionSlice.currentInteraction = null;
+}
+
+export const interactionSelectors = {
+  selectCurrentInteraction: (state: StoreState): CurrentInteraction | null =>
+    state.interactionSlice.currentInteraction,
+
+  selectInteractionLog: (state: StoreState): readonly InteractionLogEntry[] =>
+    state.interactionSlice.currentInteraction?.log ?? EMPTY_LOG,
+
+  selectCurrentBackground: (state: StoreState): string | undefined =>
+    state.interactionSlice.currentInteraction?.currentBackground,
+
+  selectInteractionOptions: memoizeByState(resolveInteractionOptions),
+
+  selectPresentation: memoizeByState(resolveInteractionPresentation),
 };
 
-export const interactionDraft = {
-  startInteraction: startInteractionDraft,
-  applyForceExitServices: applyForceExitServicesDraft,
-  updateTension: updateTensionDraft,
-  endInteraction: endInteractionDraft,
-};
-
-export const createInteractionSlice: GameSlice<InteractionSlice> = (set, get) => ({
+export const createInteractionSlice: GameSlice<InteractionSlice> = (set) => ({
   currentInteraction: null,
+  dailyMemoryBySubject: {},
+  executionTotalsBySubject: {},
   isTrading: false,
-  interactionMemoryById: {},
 
   actions: {
-    startInteraction: (params) => {
+    enterPoiContext: (poiId) =>
       set((state) => {
-        startInteractionDraft(state, params);
-      });
-    },
+        enterPoiContext(state, poiId);
+      }),
 
-    updateTension: (delta) => {
+    enterSlotContext: (slotId, npcId) =>
       set((state) => {
-        updateTensionDraft(state, delta);
-      });
-    },
+        enterSlotContext(state, slotId, npcId);
+      }),
 
-    openTrade: () => {
+    returnToPoiContext: () =>
       set((state) => {
-        state.interactionSlice.isTrading = true;
-      });
-    },
+        const poiId = state.interactionSlice.currentInteraction?.poiId;
+        if (poiId === undefined) return;
 
-    closeTrade: () => {
+        enterPoiContext(state, poiId);
+      }),
+
+    endInteraction: () =>
       set((state) => {
-        state.interactionSlice.isTrading = false;
-      });
-    },
+        endInteraction(state);
+      }),
 
-    // here we can pass completely custom rule which is not defined in SERVICE_RULES, for example for quest-specific services
-    performService: (serviceId, ruleOverride, characterId) => {
-      // Phase 1: Determine outcome and resolve effects (outside draft - read phase)
-      const state = get();
-      const interaction = state.interactionSlice.currentInteraction;
-      if (!interaction) return undefined;
-
-      const staticRule = SERVICE_RULES[serviceId];
-      const rule: InteractionServiceRule | undefined = ruleOverride
-        ? { ...staticRule, ...ruleOverride }
-        : staticRule;
-
-      const outcome = resolveService(rule, interaction.effectiveRelation, state, characterId);
-
-      const effectsToApply = outcome.effects ?? (outcome.success ? rule?.onSuccess : rule?.onFail);
-
-      // Resolve effects in read phase (no draft state needed)
-      let resolvedRules: ResolvedTriggerRules | undefined;
-      if (effectsToApply?.length) {
-        resolvedRules = resolveInteractionEffects(effectsToApply, {
-          initiatorId: 'protagonist',
-          targetCharacterId: interaction.npcId,
-          targetFactionId: interaction.factionId,
-        });
-      }
-
-      // Phase 2: Apply state changes (inside draft - write phase)
-      set((draftState) => {
-        const currentInteraction = draftState.interactionSlice.currentInteraction;
-        if (!currentInteraction) return;
-
-        // Track execution count for registered services; unregistered services (e.g. tradeOffer) skip tracking
-        const service = currentInteraction.services.find((s) => s.id === serviceId);
-        if (service) {
-          service.executedTimes += 1;
-        }
-
-        // Track trade attempts for experience diminishing returns
-        if (serviceId === 'tradeOffer') {
-          currentInteraction.tradeAttempts += 1;
-        }
-
-        // Deduct cost on success
-        if (outcome.success && rule?.cost !== undefined) {
-          const container = draftState.inventory.containers[PROTAGONIST_ID];
-          if (container) {
-            container.money -= rule.cost;
-          }
-        }
-
-        // Apply effects and collect logs if they exist
-        let effectLogs;
-        if (resolvedRules) {
-          effectLogs = EffectManager.processResolvedEffects(draftState, resolvedRules);
-        }
-
-        // Always log the interaction, even without effects
-        currentInteraction.interactionLog.push(
-          createInteractionLogEvent(draftState, {
-            action: serviceId,
-            success: outcome.success,
-            tension: currentInteraction.tension,
-            roll: outcome.rollLog,
-            effects: effectLogs,
-            narrativePoiId: currentInteraction.poiId,
-          }),
-        );
-
-        // Open trade modal on successful trade service
-        if (serviceId === 'trade' && outcome.success) {
-          draftState.interactionSlice.isTrading = true;
-        }
-
-        // Check tension threshold
-        applyForceTensionReactionDraft(draftState);
-      });
-
-      return outcome;
-    },
-
-    applyForceExitServices: () => {
+    performAction: (actionId) =>
       set((state) => {
-        applyForceExitServicesDraft(state);
-      });
-    },
+        performAction(state, actionId);
+      }),
 
-    endInteraction: () => {
+    setTrading: (isTrading) =>
       set((state) => {
-        endInteractionDraft(state);
-      });
-    },
+        state.interactionSlice.isTrading = isTrading;
+      }),
 
-    clearDailyMemory: () => {
+    resolveTradeOffer: (satisfaction, tradeValue, attempts) => {
+      let isAccepted = false;
+
       set((state) => {
-        state.interactionSlice.interactionMemoryById = {};
+        isAccepted = resolveTradeOffer(state, { satisfaction, tradeValue, attempts });
       });
+
+      return isAccepted;
     },
   },
 });
-
-/**
- * Селекторы (по аналогии с inventory).
- */
-export const interactionSelectors = {
-  selectCurrentInteraction: (state: StoreState) => state.interactionSlice.currentInteraction,
-
-  selectCurrentTension: (state: StoreState) =>
-    state.interactionSlice.currentInteraction?.tension ?? null,
-
-  selectInitialTension: (state: StoreState) =>
-    state.interactionSlice.currentInteraction?.initialTension ?? null,
-
-  selectEffectiveRelation: (state: StoreState) =>
-    state.interactionSlice.currentInteraction?.effectiveRelation ?? null,
-};
