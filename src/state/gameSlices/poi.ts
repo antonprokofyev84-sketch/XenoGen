@@ -14,6 +14,7 @@ import { isCellNode, isNonCellNode } from '@/types/worldNode.types';
 import { diffCalendarDays } from '@/utils/diffCalendarDays';
 
 import type { GameSlice } from '../types';
+import { npcDraft } from './npc';
 
 /**
  * Слайс мира: клетки и POI в одном индексе.
@@ -161,6 +162,10 @@ const clearInteractionIfPoiRemovedDraft = (state: StoreState, removedPoiIds: Set
   if (!current) return;
 
   if (removedPoiIds.has(current.poiId)) {
+    if (current.npcId !== undefined) {
+      npcDraft.registerNpcMeeting(state, current.npcId);
+    }
+
     state.interactionSlice.currentInteraction = null;
     state.interactionSlice.isTrading = false;
   }

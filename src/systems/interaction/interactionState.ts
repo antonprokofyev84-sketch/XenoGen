@@ -2,6 +2,7 @@ import { INITIAL_FRAMES } from '@/data/initial/frames';
 import { INITIAL_INTERCEPTORS } from '@/data/initial/interceptors';
 import { INITIAL_NPCS } from '@/data/initial/npcs';
 import { POI_TEMPLATES } from '@/data/initial/poiTemplates';
+import { npcDraft } from '@/state/gameSlices/npc';
 import type { StoreState } from '@/state/useGameState';
 import { applyEffects } from '@/systems/effects/applyEffects';
 import type { Rng } from '@/systems/rolls/rng';
@@ -316,6 +317,11 @@ export function executeForceExit(state: StoreState): void {
 // ================================================================
 
 export function endInteraction(state: StoreState): void {
+  const interaction = state.interactionSlice.currentInteraction;
+  if (interaction && isNpcContext(interaction)) {
+    npcDraft.registerNpcMeeting(state, interaction.npcId);
+  }
+
   state.interactionSlice.currentInteraction = null;
   state.interactionSlice.isTrading = false;
 }
@@ -338,7 +344,20 @@ function enterContext(
     return;
   }
 
-  const previousBackground = state.interactionSlice.currentInteraction?.currentBackground;
+  const previousInteraction = state.interactionSlice.currentInteraction;
+  const previousBackground = previousInteraction?.currentBackground;
+
+  // Встреча завершается при смене контекста, но не при переходах между
+  // Frames или повторном открытии того же NPC-контекста.
+  if (
+    previousInteraction &&
+    isNpcContext(previousInteraction) &&
+    (previousInteraction.poiId !== context.poiId ||
+      previousInteraction.slotId !== context.slotId ||
+      previousInteraction.npcId !== context.npcId)
+  ) {
+    npcDraft.registerNpcMeeting(state, previousInteraction.npcId);
+  }
 
   const interaction: CurrentInteraction = {
     ...context,
