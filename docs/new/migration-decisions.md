@@ -46,8 +46,10 @@ After reaching the final time, resolve final-time-slot occupancy once, validate 
 ## Presentation
 
 - The first migration includes complete Frame presentation.
-- For `npcDisplay: 'always'`, the context NPC stays on the right. A different active speaker appears temporarily on the left. When the context NPC speaks, it stays on the right and is visually highlighted.
+- POI UI now follows `poi-ui-design.md`: one NPC figure on the left. `always` keeps the context NPC or temporarily replaces it with another speaker from the current reading. `speaker` displays a figure only while reading, never from historical log entries.
 - NPC visuals use Vite `import.meta.glob` and the baseline path convention `src/assets/npcs/<npcId>/default.webp`.
+- Separate small portraits use `portrait.webp` or `.png`; the figure resolver also supports PNG.
+- Narrative and Actions alternate in one area. Action cost/check/effects execute once; a nonempty result pauses transition/time until `continueInteraction`. Root returns do not repeat their opening narrative. See `poi-ui-design.md` for the current execution contract and verification status.
 - Interaction log events snapshot only resolved narrative blocks. They do not snapshot the background, visual variant, overlay layout, role, or display name.
 - Switching between a POI root and its slot/NPC context starts a new interaction log but does not reset the current background. The newly opened root Frame applies its own background when present and otherwise inherits the current one. Travel to another POI or ending the interaction resets the background before the first Frame of the new interaction.
 

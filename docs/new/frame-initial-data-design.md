@@ -1,5 +1,7 @@
 # Initial Frame Data Design
 
+> Актуализация от 24 октября 2026. Уточнение POI UI: optional `title`, одна фигура слева, speaker из текущей порции текста; локальный root не повторяет narrative. Более раннее описание двух overlays заменено правилами `poi-ui-design.md`.
+
 ## Статус и область документа
 
 Документ описывает только immutable initial-данные Frames:

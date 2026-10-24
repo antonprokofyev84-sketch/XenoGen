@@ -179,8 +179,11 @@ Master of Raana: статичные изображения мест и ситу�
   сверяй `src/types/gameEffect.types.ts` и соответствующие helpers.
 - Порог force exit в дизайне оставлен балансным вопросом, но текущая константа
   находится в `src/systems/interaction/dailyMemory.ts`. Не дублируй её в контенте.
-- Возврат к root пока может повторять narrative: в `performAction.ts` есть TODO,
-  хотя дизайн предполагает отсутствие повтора. Учитывай это при задачах на presentation.
+- Локальный возврат к root не повторяет вступительный narrative. Актуальный контракт
+  presentation находится в `docs/new/poi-ui-design.md`; он уточняет более ранние
+  migration docs. Один NPC слева, отдельные портреты, текст заменяет Actions.
+  Результат Action читается до transition/time через `continueInteraction`;
+  `CurrentInteraction.reading` хранит текст и единственное продолжение.
 - `.github/copilot-instructions.md` содержит полезные общие соглашения, но также
   устаревшие пути и примеры удалённых legacy-файлов; проверяй их по дереву проекта.
 

@@ -1,5 +1,7 @@
 # Validation Contract — проверки initial-данных
 
+> Актуализация от 24 октября 2026. Уточнение POI UI: validator проверяет `Action.category` по закрытому списку и непустой `Frame.title`, если он задан. Формат и defaults — в `poi-ui-design.md`; поля UI не вводят новые игровые ресурсы.
+
 ## Статус и назначение
 
 Документ консолидирует все проверки ссылочной целостности и авторских инвариантов, ранее разбросанные по initial-data докам (`poi`, `cell`, `npc`, `action`, `frame`, `quest`, `interceptors`, `RegionParameters`, `interaction-runtime-*`).

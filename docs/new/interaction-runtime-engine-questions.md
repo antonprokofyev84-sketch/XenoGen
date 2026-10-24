@@ -1,5 +1,7 @@
 # Interaction Runtime and Engine Design
 
+> Актуализация от 24 октября 2026. Уточнение POI UI: Action разделён на начало и `continueInteraction`; переход и время ждут чтения результата, без повторных effects/RNG. Presentation и отдельные portraits описаны в `poi-ui-design.md` и заменяют прежние варианты размещения NPC.
+
 ## Назначение документа
 
 Документ отделяет runtime, Zustand, execution flow и UI/presentation от initial-структур. Он синхронизирован с `migration-decisions.md`, `interaction-runtime-state-design.md` и `tension-force-exit-and-poi-entry.md`; старые варианты ниже не являются альтернативными контрактами.

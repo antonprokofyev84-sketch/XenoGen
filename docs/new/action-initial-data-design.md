@@ -1,5 +1,7 @@
 # Initial Action Data Design
 
+> Актуализация от 24 октября 2026. Уточнение POI UI: optional `category`, денежный preview и пояснения disabled; непустой результат читается до transition/time. Cost/check/effects выполняются однократно. Полный текущий контракт — `poi-ui-design.md`.
+
 ## Статус и границы
 
 Документ собирает решения по базе Actions. Это описание авторского контента, из которого движок получает правила действий. Счётчики, сохранённые броски, текущий interaction, применение effects и работа Zustand описаны отдельно в `interaction-runtime-engine-questions.md`.

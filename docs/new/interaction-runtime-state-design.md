@@ -1,5 +1,7 @@
 # Interaction runtime: состояние, варианты UI и исполнение Action
 
+> Актуализация от 24 октября 2026. Уточнение POI UI: `CurrentInteraction.reading` хранит режим, текущие blocks и optional ActionCompletion. UI чередует текст и Actions. Текущее состояние и порядок завершения описаны в `poi-ui-design.md`.
+
 ## Статус и границы
 
 Этот документ фиксирует решения по **пунктам 1–3** из `interaction-runtime-open-questions.md`: структуру interaction state, сборку вариантов для UI и исполнение Action. Формы TypeScript — проектируемый контракт, а не описание уже написанного кода.

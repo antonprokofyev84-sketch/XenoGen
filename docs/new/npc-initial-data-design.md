@@ -1,5 +1,7 @@
 # Initial NPC Data Design
 
+> Актуализация от 24 октября 2026. Уточнение POI UI: отдельные `portrait.webp|png` и `default.webp|png` вне NPC state; регистрация встреч вызывается при выходе из NPC-контекста. См. `poi-ui-design.md`.
+
 ## Статус и область документа
 
 Документ фиксирует initial-описание NPC:
