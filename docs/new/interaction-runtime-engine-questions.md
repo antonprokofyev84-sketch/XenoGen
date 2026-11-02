@@ -601,7 +601,7 @@ Assets подключаются средствами Vite:
 
 Asset import возвращает разрешённую Vite строку URL. Сырые пути к папкам не хранятся в runtime NPC state.
 
-Baseline использует `import.meta.glob` и соглашение `src/assets/npcs/<npcId>/default.webp`.
+Baseline использует `import.meta.glob` и соглашение `src/assets/npcs/<npcId>/full-body.webp|png`; портрет — отдельный `portrait.webp|png`. Стандарт размеров и кадрирования — `visual-assets.md`.
 
 В будущем resolver может получать `npcId` и runtime-контекст изображения:
 

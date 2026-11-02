@@ -33,18 +33,18 @@ Master of Raana: статичные изображения мест и ситу�
 
 Карта актуальных документов:
 
-| Область | Документы в `docs/new/` |
-| --- | --- |
-| Решения, границы и этапы миграции | `migration-decisions.md`, `migration-plan.md` |
-| Контракты initial-данных | `cell-initial-data-design.md`, `poi-initial-data-design.md`, `npc-initial-data-design.md` |
-| Frames и Actions | `frame-initial-data-design.md`, `action-initial-data-design.md` |
+| Область                                          | Документы в `docs/new/`                                                                                                   |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| Решения, границы и этапы миграции                | `migration-decisions.md`, `migration-plan.md`                                                                             |
+| Контракты initial-данных                         | `cell-initial-data-design.md`, `poi-initial-data-design.md`, `npc-initial-data-design.md`                                 |
+| Frames и Actions                                 | `frame-initial-data-design.md`, `action-initial-data-design.md`                                                           |
 | Interaction state, исполнение и открытые вопросы | `interaction-runtime-state-design.md`, `interaction-runtime-engine-questions.md`, `interaction-runtime-open-questions.md` |
-| Автоматические события | `interceptors-design.md` |
-| Напряжение, force exit и вход в POI | `tension-force-exit-and-poi-entry.md` |
-| Статические квесты | `quest-system-design.md` |
-| Региональные параметры | `RegionParameters.md` |
-| Валидация контента | `validation-contract.md` |
-| Будущие механики и баланс | `combat-system-concept.md`, `TradeSystem.md`, `ideas.md` |
+| Автоматические события                           | `interceptors-design.md`                                                                                                  |
+| Напряжение, force exit и вход в POI              | `tension-force-exit-and-poi-entry.md`                                                                                     |
+| Статические квесты                               | `quest-system-design.md`                                                                                                  |
+| Региональные параметры                           | `RegionParameters.md`                                                                                                     |
+| Валидация контента                               | `validation-contract.md`                                                                                                  |
+| Будущие механики и баланс                        | `combat-system-concept.md`, `TradeSystem.md`, `ideas.md`                                                                  |
 
 ## Стек и расположение кода
 
@@ -189,22 +189,47 @@ Master of Raana: статичные изображения мест и ситу�
 
 ## Команды, проверка и рабочие соглашения
 
-| Задача | Команда |
-| --- | --- |
-| Установка по lockfile | `npm ci` |
-| Локальный запуск | `npm run dev` |
-| TypeScript + production build | `npm run build` |
-| Просмотр build | `npm run preview` |
-| Vitest | `npm test` / `npm run test:watch` |
-| ESLint | `npm run lint` |
-| Проверка форматирования | `npm run format:check` |
+| Задача                        | Команда                           |
+| ----------------------------- | --------------------------------- |
+| Установка по lockfile         | `npm ci`                          |
+| Локальный запуск              | `npm run dev`                     |
+| TypeScript + production build | `npm run build`                   |
+| Просмотр build                | `npm run preview`                 |
+| Vitest                        | `npm test` / `npm run test:watch` |
+| ESLint                        | `npm run lint`                    |
+| Проверка форматирования       | `npm run format:check`            |
 
 - CI использует Node 20, `npm ci` и `npm run build`; push в `main` запускает
   deployment на GitHub Pages. Production base — `/XenoGen/`; учитывай его для assets.
-- Для нового Frame background предпочитай статический import. Baseline NPC art:
-  `src/assets/npcs/<npcId>/default.webp` (resolver также поддерживает PNG).
-  Существующие public assets находятся в `public/images/`.
+- Новые игровые изображения храни в `src/assets/`, Frame background подключай
+  статическим import. NPC: `<npcId>/full-body.webp` и отдельный `portrait.webp`
+  внутри `src/assets/npcs/` (PNG также поддерживается). Фигура — полный рост,
+  прозрачный фон; в диалогах и на экране персонажа сохраняй относительный масштаб
+  по росту и центрируй саму фигуру в полном холсте. Не подгоняй всех под одинаковую
+  высоту и не выравнивай одиночные фигуры по стопам. Поля ассета должны сохранять
+  этот центр; числовая сетка роста и новый формат холста пока не утверждены.
+  Портрет — отдельный квадрат, экспорт 200×200.
+  В POI полный холст фигуры имеет высоту 1000 px. Контейнер расположен в 0/70,
+  имеет ширину 440 px, центрирует холст по горизонтали и обрезает низ краем сцены;
+  у демонстрационного NPC обрезание примерно на середине икр.
+  Экран персонажа показывает фигуру целиком; портрет POI — 56×56. Стандарт —
+  `docs/new/visual-assets.md`. Сцена 1600×900 не масштабируется, имеет рамку 1 px
+  и прокрутку в меньшем окне. Старые `public/images/` не переноси без отдельной задачи.
+- При отсутствии фигуры используй общие силуэты из `src/assets/characters/fallbacks/`:
+  мужской около 185 см, женский около 170 см. Обязательное `InitialNpc.gender`
+  (`male`/`female`) выбирает вариант; у legacy `Character` поле пока необязательное,
+  без него используется мужская заглушка. Не заменяй отсутствующие картинки внешним URL.
 - Используй `@/` для импортов из `src`, type-only imports и существующий SCSS-подход.
+  Общие панели и палитра заданы в `src/components/GameHud/_theme.scss`,
+  кнопки пользователя — в `_button.scss` рядом. `GameHud`, `GameSystemMenu`
+  и `GameScene` общие для POI и стратегической карты. Углы — нативный
+  `corner-shape: bevel`, панели — обычный border и один полосатый фон.
+  Не возвращай `clip-path`, SVG-контуры, blur и сложные декоративные слои.
+  Кнопки действий/навигации/истории используют общий `game-button`.
+  Portal-корни получают `poiTheme`. Справа портреты и системные иконки —
+  отдельные блоки шириной 272 px; их общая высота с промежутком равна
+  панели действий 800×224 px. Портреты не встраивать в её заголовок.
+  Выход находится рядом с History и доступен только по runtime-навигации.
   Переменные SCSS инжектируются Vite. Форматирование: 2 пробела, single quotes,
   semicolons, trailing commas, print width 100 и сортировка imports из `.prettierrc`.
   Форматируй затронутые файлы, не весь репозиторий ради локальной правки.

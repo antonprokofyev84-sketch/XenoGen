@@ -47,7 +47,7 @@ After reaching the final time, resolve final-time-slot occupancy once, validate 
 
 - The first migration includes complete Frame presentation.
 - POI UI now follows `poi-ui-design.md`: one NPC figure on the left. `always` keeps the context NPC or temporarily replaces it with another speaker from the current reading. `speaker` displays a figure only while reading, never from historical log entries.
-- NPC visuals use Vite `import.meta.glob` and the baseline path convention `src/assets/npcs/<npcId>/default.webp`.
+- NPC visuals use Vite `import.meta.glob` and `src/assets/npcs/<npcId>/full-body.webp|png`, with a separate `portrait.webp|png`. See `visual-assets.md` for full-body framing and dimensions.
 - Separate small portraits use `portrait.webp` or `.png`; the figure resolver also supports PNG.
 - Narrative and Actions alternate in one area. Action cost/check/effects execute once; a nonempty result pauses transition/time until `continueInteraction`. Root returns do not repeat their opening narrative. See `poi-ui-design.md` for the current execution contract and verification status.
 - Interaction log events snapshot only resolved narrative blocks. They do not snapshot the background, visual variant, overlay layout, role, or display name.
