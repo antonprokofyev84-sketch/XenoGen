@@ -34,7 +34,7 @@ interface InventoryPanelProps {
 }
 
 export const InventoryPanel = ({ characterId, onItemRef }: InventoryPanelProps) => {
-  const goToScreen = useGameState((state) => state.ui.goToScreen);
+  const closeCharacterDetails = useGameState((state) => state.ui.closeCharacterDetails);
   const [activeTabKey, setActiveTabKey] = useState('all');
   const { selectedRarities, toggleRarity, ALL_RARITIES } = useRarityFilters();
 
@@ -57,11 +57,7 @@ export const InventoryPanel = ({ characterId, onItemRef }: InventoryPanelProps) 
           ))}
         </div>
 
-        <button
-          className="closeButton"
-          onClick={() => goToScreen('strategicMap')}
-          title="Close Inventory"
-        >
+        <button className="closeButton" onClick={closeCharacterDetails} title="Close Inventory">
           X
         </button>
       </div>

@@ -1,3 +1,5 @@
+import type { FunctionComponent, SVGProps } from 'react';
+
 import { useShallow } from 'zustand/react/shallow';
 
 import ArmorIcon from '@/assets/icons/armor.svg?react';
@@ -8,6 +10,8 @@ import { PROTAGONIST_ID } from '@/constants';
 import { characterSelectors } from '@/state/gameSlices/characters';
 import { equipmentSelectors } from '@/state/gameSlices/equipment';
 import { useGameState } from '@/state/useGameState';
+import { resolveCharacterSilhouette } from '@/systems/characters/characterImageFallback';
+import type { Character } from '@/types/character.types';
 import type { EquipmentSlot } from '@/types/equipment.types';
 import type { InventoryItem } from '@/types/inventory.types';
 import { assetsVersion } from '@/utils/assetsVersion';
@@ -22,13 +26,19 @@ interface CharacterPanelProps {
   onItemRef: (el: HTMLElement | null) => void; // <-- Новый проп
 }
 
-const LEFT_SLOTS: { slot: EquipmentSlot; Icon: any }[] = [
+type SlotIcon = FunctionComponent<SVGProps<SVGSVGElement>>;
+type LegacyVisualCharacter = Character & {
+  faction?: string;
+  appearanceVariation?: string | number;
+};
+
+const LEFT_SLOTS: { slot: EquipmentSlot; Icon: SlotIcon }[] = [
   { slot: 'armor', Icon: ArmorIcon },
   { slot: 'meleePrimary', Icon: MeleeIcon },
   { slot: 'meleeSecondary', Icon: MeleeIcon },
 ];
 
-const RIGHT_SLOTS: { slot: EquipmentSlot; Icon: any }[] = [
+const RIGHT_SLOTS: { slot: EquipmentSlot; Icon: SlotIcon }[] = [
   { slot: 'gadget', Icon: GadgetIcon },
   { slot: 'rangePrimary', Icon: RangeIcon },
   { slot: 'rangeSecondary', Icon: RangeIcon },
@@ -44,7 +54,7 @@ const EquipmentSlotItem = ({
 }: {
   slot: EquipmentSlot;
   item: InventoryItem | null | undefined;
-  Icon: React.FunctionComponent<React.SVGProps<SVGSVGElement>>;
+  Icon: SlotIcon;
   isSelected: boolean;
   onClick: () => void;
   onItemRef: (el: HTMLElement | null) => void;
@@ -101,8 +111,10 @@ export const CharacterPanel = ({
 
   if (!character) return <div className="characterPanel">Character not found</div>;
 
-  const faction = (character as any).faction || 'player';
-  const appearanceVariation = (character as any).appearanceVariation || '0';
+  // Optional legacy filename metadata is separate from immutable NPC definitions.
+  const visualCharacter = character as LegacyVisualCharacter;
+  const faction = visualCharacter.faction || 'player';
+  const appearanceVariation = visualCharacter.appearanceVariation || '0';
 
   const characterImageUrl = assetsVersion(
     `/images/characters/${faction}/${character.templateId}_${appearanceVariation}.png`,
@@ -138,10 +150,11 @@ export const CharacterPanel = ({
         <img
           src={characterImageUrl}
           alt={character.name}
-          onError={(e) =>
-            ((e.target as HTMLImageElement).src =
-              'https://placehold.co/400x800/111/333?text=No+Img')
-          }
+          onError={(event) => {
+            const fallback = resolveCharacterSilhouette(character.gender);
+            if (event.currentTarget.getAttribute('src') !== fallback)
+              event.currentTarget.src = fallback;
+          }}
         />
         <div className="bottomGradient" />
       </div>

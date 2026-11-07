@@ -1,20 +1,327 @@
 .poiView {
-  display: flex;
-  flex-direction: row;
   height: 100%;
   width: 100%;
-  padding: 1rem;
-  gap: 1rem;
-  background-color: #121212; // Соответствует CharacterDetails
-  color: #ffffff;
-  box-sizing: border-box;
   overflow: hidden;
-
-  // Оба компонента занимают равное пространство и выглядят как панели
-  .dialogPanel,
-  .imagePanel {
-    flex: 1;
-    min-width: 0;
-    // Padding убран отсюда, так как он теперь внутри самих панелей (как в StatsPanel)
+}
+.poiBackground {
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-size: cover;
+}
+.poiInteractionPanel {
+  position: absolute;
+  left: 440px;
+  bottom: 24px;
+  width: 800px;
+  height: 224px;
+  padding: 11px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+}
+.poiInteractionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 44px;
+  flex: none;
+  margin-bottom: 8px;
+}
+.poiInteractionHeader h1 {
+  margin: 0;
+  min-width: 0;
+  font-size: 21px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.poiInteractionControls {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.poiInteractionControls > .game-button {
+  padding: 8px 10px;
+  font-size: 15px;
+  white-space: nowrap;
+}
+.poiActionPager {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+.poiActionPager .game-button {
+  width: 32px;
+  padding: 6px;
+  justify-content: center;
+}
+.poiInteractionBody {
+  flex: 1;
+  min-height: 0;
+}
+.poiActions {
+  height: 100%;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 8px;
+}
+.poiAction {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 8px 12px;
+  text-align: left;
+}
+.poiAction span {
+  overflow-wrap: anywhere;
+}
+.poiAction small {
+  font-size: 14px;
+  white-space: nowrap;
+}
+.poiEmptyActions {
+  grid-column: 1 / -1;
+  color: var(--poi-ink-muted);
+  font-size: var(--poi-font-text);
+}
+.poiNarrative {
+  position: relative;
+  height: 100%;
+  padding-bottom: 24px;
+  font-size: var(--poi-font-text);
+  line-height: 1.5;
+  animation: poiAppear 360ms ease both;
+}
+.poiNarrative.isReady {
+  cursor: pointer;
+}
+.poiTextScroll {
+  height: 100%;
+  overflow-y: auto;
+  padding-right: 16px;
+}
+.poiTextScroll p {
+  margin: 0 0 12px;
+}
+.poiThought {
+  font-style: italic;
+  color: var(--poi-ink-muted);
+}
+.poiContinueHint {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  color: var(--poi-ink-muted);
+  font-size: 13px;
+  letter-spacing: 1px;
+  opacity: 0;
+  transition: opacity 180ms;
+  pointer-events: none;
+}
+.poiNarrative.isReady .poiContinueHint {
+  opacity: 1;
+}
+.poiContinueHint span {
+  color: var(--poi-ink);
+  margin-left: 5px;
+}
+.poiNpcFigure {
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  top: 70px;
+  bottom: 0;
+  width: 440px;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  pointer-events: none;
+}
+.poiNpcFigure img {
+  display: block;
+  flex: none;
+  width: auto;
+  max-width: none;
+  height: 1000px;
+}
+.poiPortraitPanel {
+  position: absolute;
+  z-index: 5;
+  right: 24px;
+  bottom: 132px;
+  width: 272px;
+  height: 116px;
+  padding: 8px 11px;
+}
+.poiPortraitPanel header {
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+.poiPortraitPanel h2 {
+  margin: 0;
+  font-size: 14px;
+  line-height: 18px;
+  font-weight: 400;
+  color: var(--poi-ink-muted);
+}
+.poiPortraitPager {
+  display: flex;
+  align-items: center;
+  font-size: 11px;
+  gap: 3px;
+}
+.poiPortraitPager button {
+  width: 18px;
+  height: 18px;
+  border: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  cursor: pointer;
+}
+.poiPortraitPager .poiIcon {
+  width: 12px;
+  height: 12px;
+}
+.poiPortraitGrid {
+  display: flex;
+  gap: 8px;
+}
+.poiPortrait {
+  width: 56px;
+  height: 76px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.poiPortraitVisual {
+  width: 56px;
+  height: 56px;
+  flex: none;
+  padding: 1px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.poiPortrait:where(:hover, :focus-visible):enabled {
+  color: var(--poi-ink-active);
+}
+.poiPortrait:where(:hover, :focus-visible):enabled .poiPortraitVisual,
+.poiPortrait[aria-pressed='true'] .poiPortraitVisual {
+  border-color: #ffe0a1;
+  box-shadow: 0 0 8px #dca04a60;
+}
+.poiPortrait[aria-pressed='true'] {
+  color: var(--poi-ink-active);
+}
+.poiPortrait:focus-visible {
+  outline: 1px solid var(--poi-ink-active);
+  outline-offset: 2px;
+}
+.poiPortraitVisual > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.poiPortraitVisual > .poiIcon {
+  width: 28px;
+  height: 28px;
+  color: var(--poi-ink-muted);
+}
+.poiPortrait > span:last-child:not(.poiPortraitVisual) {
+  width: 100%;
+  height: 16px;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.poiPortrait.isEmpty {
+  opacity: var(--poi-disabled-opacity);
+  cursor: default;
+}
+.poiHistory {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(850px, 88vw);
+  max-height: 80vh;
+  padding: 0;
+  overflow: visible;
+}
+.poiHistory::backdrop {
+  background: rgb(4 6 4 / 72%);
+}
+.poiHistoryBody {
+  padding: 25px 30px;
+}
+.poiHistory header {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  border-bottom: var(--poi-stroke) solid var(--poi-divider);
+  padding-bottom: 16px;
+}
+.poiHistory h2 {
+  margin: 0;
+  font-size: var(--poi-font-text);
+  font-weight: 500;
+}
+.poiHistory button {
+  padding: 8px 14px;
+  white-space: nowrap;
+}
+.poiHistoryScroll {
+  overflow-y: auto;
+  max-height: 58vh;
+  padding: 10px 15px 10px 0;
+  font-size: var(--poi-font-text);
+  line-height: 1.5;
+}
+.poiHistoryScroll section {
+  border-bottom: var(--poi-stroke) solid var(--poi-divider);
+  padding: 7px 0;
+}
+.poiHistory p {
+  margin: 7px 0;
+}
+@keyframes poiAppear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .poiScene .poiNarrative,
+  .poiScene .poiActions {
+    animation-duration: 1ms;
   }
 }

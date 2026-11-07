@@ -9,9 +9,7 @@ import { MapIconDefs } from '../MapIconDefs/MapIconDefs';
 
 import './GridOverlay.scss';
 
-interface GridOverlayProps {}
-
-export const GridOverlay: React.FC<GridOverlayProps> = () => {
+export const GridOverlay = ({ readOnly = false }: { readOnly?: boolean }) => {
   const setSelectedCellId = useMapInteractionStore((state) => state.actions.setFocusedPoiId);
   const mapWidth = GRID_COLS * CELL_SIZE;
   const mapHeight = GRID_ROWS * CELL_SIZE;
@@ -48,7 +46,7 @@ export const GridOverlay: React.FC<GridOverlayProps> = () => {
           <GridCell key={`${row}-${col}`} row={row} col={col} cellSize={CELL_SIZE} />
         )),
       )}
-      <CellSelection cellSize={CELL_SIZE} />
+      <CellSelection cellSize={CELL_SIZE} readOnly={readOnly} />
     </svg>
   );
 };

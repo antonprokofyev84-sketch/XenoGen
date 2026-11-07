@@ -3,9 +3,10 @@ import { useMapInteractionStore } from '@/state/useMapInteractionStore';
 
 interface CellSelectionProps {
   cellSize: number;
+  readOnly?: boolean;
 }
 
-export const CellSelection = ({ cellSize }: CellSelectionProps) => {
+export const CellSelection = ({ cellSize, readOnly = false }: CellSelectionProps) => {
   const focusedCellId = useMapInteractionStore((state) => state.focusedPoiId);
   const travelToPoi = useGameState((state) => state.world.actions.travelToPoi);
 
@@ -24,12 +25,12 @@ export const CellSelection = ({ cellSize }: CellSelectionProps) => {
   //TODO add canMove logic
   return (
     <rect
-      className={'selectionFrame canMove'}
+      className={`selectionFrame${readOnly ? '' : ' canMove'}`}
       x={x}
       y={y}
       width={cellSize}
       height={cellSize}
-      onClick={handleCellSelectionClick}
+      onClick={readOnly ? undefined : handleCellSelectionClick}
     />
   );
 };

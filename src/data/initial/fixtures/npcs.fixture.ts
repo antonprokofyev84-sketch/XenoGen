@@ -47,17 +47,19 @@ const HIDDEN_SCHEDULE: NpcBaseSchedule = {
 export const FIXTURE_NPCS: InitialNpcMap = {
   /** Работник hub: занимает work slot, пока POI открыт. */
   fixtureKeeper: {
-    name: 'Fixture Keeper',
+    name: 'Bob',
+    gender: 'male',
     faction: 'independents',
     affection: 10,
     baseSchedule: WORKER_SCHEDULE,
-    actionIds: ['fixture:askKeeperAboutSite'],
+    actionIds: ['fixture:oneTimeGift'],
     interceptorIds: ['fixture:keeperIntro'],
   },
 
   /** Первый кандидат на freeTime slot. */
   fixtureVisitorA: {
     name: 'Fixture Visitor A',
+    gender: 'male',
     faction: 'independents',
     baseSchedule: VISITOR_SCHEDULE,
   },
@@ -65,6 +67,7 @@ export const FIXTURE_NPCS: InitialNpcMap = {
   /** Второй кандидат на тот же slot: проверяет случайный выбор из нескольких. */
   fixtureVisitorB: {
     name: 'Fixture Visitor B',
+    gender: 'female',
     faction: 'independents',
     affection: -20,
     baseSchedule: VISITOR_SCHEDULE,
@@ -73,6 +76,7 @@ export const FIXTURE_NPCS: InitialNpcMap = {
   /** Житель: занимает home slot. */
   fixtureResident: {
     name: 'Fixture Resident',
+    gender: 'female',
     faction: 'independents',
     baseSchedule: RESIDENT_SCHEDULE,
   },
@@ -80,6 +84,7 @@ export const FIXTURE_NPCS: InitialNpcMap = {
   /** Чужая фракция и нулевой `timesMet` для проверки репутации и знакомства. */
   fixtureStranger: {
     name: 'Fixture Stranger',
+    gender: 'male',
     faction: 'scavengers',
     affection: -10,
     baseSchedule: VISITOR_SCHEDULE,
@@ -88,6 +93,7 @@ export const FIXTURE_NPCS: InitialNpcMap = {
   /** Никогда не размещается: проверяет состояние `hidden`. */
   fixtureGhost: {
     name: 'Fixture Ghost',
+    gender: 'female',
     faction: 'independents',
     timesMet: 2,
     baseSchedule: HIDDEN_SCHEDULE,
