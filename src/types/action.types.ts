@@ -50,6 +50,9 @@ export interface ActionContext {
  */
 export type ActionNumber = number | ((context: ActionContext) => number);
 
+export const ACTION_CATEGORIES = ['dialogue', 'quest', 'trade', 'rest', 'interaction'] as const;
+export type ActionCategory = (typeof ACTION_CATEGORIES)[number];
+
 // ============================================================
 // Limits and cost
 // ============================================================
@@ -141,6 +144,7 @@ export type ActionCheck = ActionCheckRule & {
 
 export interface InitialActionBase {
   label: LocalizedText;
+  category?: ActionCategory;
 
   /** Все условия должны выполняться, иначе Action скрыт. */
   conditions?: ActionCondition[];

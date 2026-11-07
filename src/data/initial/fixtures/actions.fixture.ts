@@ -27,56 +27,57 @@ export const FIXTURE_ACTIONS: InitialActionMap = {
   // -----------------------------------------------------------
 
   'fixture:lookAround': {
-    label: 'Осмотреться',
+    label: 'Look around',
     result: {
-      narrative: ['Ничего нового.'],
+      narrative: ['Nothing new.'],
     },
   },
 
   'fixture:openInnerFrame': {
-    label: 'Заглянуть внутрь',
+    label: 'Step inside',
     result: {
       transition: { type: 'frame', frameId: 'fixtureHub:inner' },
     },
   },
 
   'fixture:openKeeperInner': {
-    label: 'Перейти к деталям',
+    label: 'Discuss the details',
     result: {
       transition: { type: 'frame', frameId: 'fixtureHub/keeper:inner' },
     },
   },
 
   'fixture:backToRoot': {
-    label: 'Вернуться',
+    label: 'Go back',
     result: {
       transition: { type: 'root' },
     },
   },
 
   'fixture:leaveSlot': {
-    label: 'Отойти',
+    label: 'Step away',
     result: {
       transition: { type: 'currentPoi' },
     },
   },
 
   'fixture:leaveSite': {
-    label: 'Уйти',
+    label: 'Leave',
     result: {
       transition: { type: 'parentPoi' },
     },
   },
 
   'fixture:jumpToOpenSite': {
-    label: 'Сразу перейти на площадку',
+    label: 'Go straight to the yard',
     result: {
       transition: { type: 'poi', poiId: 'fixtureOpenSite' },
     },
   },
 
   'fixture:openTrade': {
-    label: 'Торговать',
+    category: 'trade',
+    label: 'Trade',
     result: {
       transition: { type: 'trade' },
     },
@@ -88,26 +89,28 @@ export const FIXTURE_ACTIONS: InitialActionMap = {
 
   /** Отдых задаётся явным эффектом: `cost.time` сам stamina не восстанавливает. */
   'fixture:restAtHub': {
-    label: 'Отдохнуть',
+    category: 'rest',
+    label: 'Rest',
     cost: { money: 10, time: 120 },
     result: {
-      narrative: ['Несколько часов отдыха.'],
+      narrative: ['You spend a few hours resting.'],
       effects: [{ type: 'modifyPartyStamina', delta: 40 }],
     },
   },
 
   /** Динамическая стоимость и расход личной stamina протагониста. */
   'fixture:buyDrink': {
-    label: 'Купить выпивку',
+    category: 'rest',
+    label: 'Buy a drink',
     cost: { money: resolveDrinkPrice, stamina: 2, time: 15 },
     result: {
-      narrative: ['Выпивка обжигает горло.'],
+      narrative: ['The drink burns your throat.'],
     },
   },
 
-  /** Предметная стоимость: предметы проверяются и списываются одним `cost`. */
+  /** Itemная стоимость: предметы проверяются и списываются одним `cost`. */
   'fixture:payWithScrap': {
-    label: 'Расплатиться хламом',
+    label: 'Pay with scrap',
     cost: { items: [{ itemId: 'scrap', count: 3 }] },
     result: {
       effects: [{ type: 'addMoney', amount: 15 }],
@@ -119,23 +122,25 @@ export const FIXTURE_ACTIONS: InitialActionMap = {
   // -----------------------------------------------------------
 
   'fixture:statCheckPersuade': {
-    label: 'Надавить',
+    category: 'dialogue',
+    label: 'Apply pressure',
     check: {
       type: 'stat',
       statId: 'will',
       difficulty: 40,
       onSuccess: {
-        narrative: [{ speakerId: '$npc', text: 'Ладно, твоя взяла.' }],
+        narrative: [{ speakerId: '$npc', text: 'Fine. You win.' }],
       },
       onFail: {
-        narrative: [{ speakerId: '$npc', text: 'Не выйдет.' }],
+        narrative: [{ speakerId: '$npc', text: 'That will not work.' }],
         effects: [{ type: 'modifyTension', delta: 15 }],
       },
     },
   },
 
   'fixture:skillCheckBarter': {
-    label: 'Поторговаться',
+    category: 'trade',
+    label: 'Bargain',
     check: {
       type: 'skill',
       skillId: 'trade',
@@ -149,17 +154,18 @@ export const FIXTURE_ACTIONS: InitialActionMap = {
   },
 
   'fixture:chanceCheckAsk': {
-    label: 'Попросить об услуге',
+    category: 'dialogue',
+    label: 'Ask a favor',
     executionLimit: { perDay: 1 },
     check: {
       type: 'chance',
       chance: resolvePersuasionChance,
       onSuccess: {
-        narrative: [{ speakerId: '$npc', text: 'Помогу.' }],
+        narrative: [{ speakerId: '$npc', text: 'I can help.' }],
         effects: [{ type: 'addItem', itemId: 'food', count: 1 }],
       },
       onFail: {
-        narrative: [{ speakerId: '$npc', text: 'Нет.' }],
+        narrative: [{ speakerId: '$npc', text: 'No.' }],
       },
     },
   },
@@ -169,19 +175,19 @@ export const FIXTURE_ACTIONS: InitialActionMap = {
   // -----------------------------------------------------------
 
   'fixture:weightedSearch': {
-    label: 'Обыскать углы',
+    label: 'Search the corners',
     cost: { time: 20 },
     result: [
       {
         weight: 3,
         result: {
-          narrative: ['Ничего интересного.'],
+          narrative: ['Nothing of interest.'],
         },
       },
       {
         weight: 1,
         result: {
-          narrative: ['Между досками нашлась монета.'],
+          narrative: ['You find a coin between the boards.'],
           effects: [{ type: 'addMoney', amount: 1 }],
         },
       },
@@ -194,16 +200,16 @@ export const FIXTURE_ACTIONS: InitialActionMap = {
 
   /** Виден только в достаточно богатом регионе. */
   'fixture:conditionalRegionTalk': {
-    label: 'Обсудить дела региона',
+    label: 'Ask about the region',
     conditions: [{ type: 'regionLevel', param: 'prosperity', min: 3 }],
     result: {
-      narrative: [{ speakerId: '$npc', text: 'Торговля идёт неплохо.' }],
+      narrative: [{ speakerId: '$npc', text: 'Trade has been good.' }],
     },
   },
 
   /** Виден всегда, но disabled без предметов: требование не расходует их. */
   'fixture:requiresScrap': {
-    label: 'Показать находку',
+    label: 'Show your find',
     requirements: [{ type: 'item', itemId: 'scrap', min: 1 }],
     result: {
       effects: [{ type: 'modifyTension', delta: -5 }],
@@ -212,16 +218,17 @@ export const FIXTURE_ACTIONS: InitialActionMap = {
 
   /** Дневной лимит: одна попытка за игровой день. */
   'fixture:dailyRumor': {
-    label: 'Спросить о слухах',
+    category: 'dialogue',
+    label: 'Ask about rumors',
     executionLimit: { perDay: 1 },
     result: {
-      narrative: [{ speakerId: '$npc', text: 'У восточных руин снова видели чужаков.' }],
+      narrative: [{ speakerId: '$npc', text: 'Strangers were seen near the eastern ruins again.' }],
     },
   },
 
   /** Общий лимит: один раз за игру. */
   'fixture:oneTimeGift': {
-    label: 'Принять подарок',
+    label: 'Accept the gift',
     executionLimit: { total: 1 },
     result: {
       effects: [{ type: 'addItem', itemId: 'food', count: 2 }],
@@ -230,10 +237,10 @@ export const FIXTURE_ACTIONS: InitialActionMap = {
 
   /** Случайная дневная видимость: результат броска сохраняется до конца дня. */
   'fixture:rareOffer': {
-    label: 'Выслушать редкое предложение',
+    label: 'Hear a special offer',
     appearanceChance: 0.3,
     result: {
-      narrative: [{ speakerId: '$npc', text: 'Сегодня есть кое-что особенное.' }],
+      narrative: [{ speakerId: '$npc', text: 'There is something special today.' }],
     },
   },
 
@@ -242,24 +249,24 @@ export const FIXTURE_ACTIONS: InitialActionMap = {
   // -----------------------------------------------------------
 
   'fixture:chatWithVisitor': {
-    label: 'Поговорить',
+    label: 'Chat',
     result: {
-      narrative: [{ speakerId: '$npc', text: 'Да всё как обычно.' }],
+      narrative: [{ speakerId: '$npc', text: 'Same as always.' }],
     },
   },
 
   /** Превышает порог forceExit за одно применение. */
   'fixture:provokeVisitor': {
-    label: 'Нагрубить',
+    label: 'Be rude',
     result: {
-      narrative: [{ thought: 'Пожалуй, это было лишним.' }],
+      narrative: [{ thought: 'Perhaps that went too far.' }],
       effects: [{ type: 'modifyTension', delta: 90 }],
     },
   },
 
   /** Действие reserved forceExit-Frame: закрывает вход в POI до конца дня. */
   'fixture:forcedLeaveWithBan': {
-    label: 'Уйти',
+    label: 'Leave',
     result: {
       effects: [{ type: 'disablePoiEntryForDays', poiId: '$currentPoi', days: 1 }],
       transition: { type: 'parentPoi' },
@@ -272,9 +279,9 @@ export const FIXTURE_ACTIONS: InitialActionMap = {
 
   /** Завершает временный POI: пометка на удаление плюс обычный выход. */
   'fixture:lootAndLeave': {
-    label: 'Забрать всё и уйти',
+    label: 'Take everything and leave',
     result: {
-      narrative: ['Стоянка опустела.'],
+      narrative: ['The camp is empty now.'],
       effects: [
         { type: 'addItem', itemId: 'scrap', count: 2 },
         { type: 'markCurrentPoiForRemoval' },
@@ -285,7 +292,7 @@ export const FIXTURE_ACTIONS: InitialActionMap = {
 
   /** Снимает постоянную блокировку входа другого POI. */
   'fixture:unlockBlockedSite': {
-    label: 'Договориться о доступе',
+    label: 'Arrange access',
     result: {
       effects: [{ type: 'setPoiEntryDisabled', poiId: 'fixtureBlockedSite', isDisabled: false }],
     },
@@ -296,7 +303,8 @@ export const FIXTURE_ACTIONS: InitialActionMap = {
   // -----------------------------------------------------------
 
   'fixture:askKeeperForWork': {
-    label: 'Спросить о работе',
+    category: 'quest',
+    label: 'Ask about work',
     conditions: [{ type: 'questStatus', questId: 'fixtureQuest', status: 'initial' }],
     result: {
       transition: { type: 'frame', frameId: 'fixtureHub/keeper:questOffer' },
@@ -304,7 +312,8 @@ export const FIXTURE_ACTIONS: InitialActionMap = {
   },
 
   'fixture:acceptQuest': {
-    label: 'Взяться',
+    category: 'quest',
+    label: 'Accept',
     result: {
       effects: [
         {
@@ -320,7 +329,7 @@ export const FIXTURE_ACTIONS: InitialActionMap = {
   },
 
   'fixture:declineQuest': {
-    label: 'Отказаться',
+    label: 'Decline',
     result: {
       transition: { type: 'root' },
     },
@@ -328,7 +337,7 @@ export const FIXTURE_ACTIONS: InitialActionMap = {
 
   /** Отмечает осмотр места квестовой переменной. */
   'fixture:askKeeperAboutSite': {
-    label: 'Спросить о площадке',
+    label: 'Ask about the yard',
     conditions: [
       { type: 'questVar', questId: 'fixtureQuest', key: 'askedKeeper', notEquals: true },
     ],
@@ -339,7 +348,7 @@ export const FIXTURE_ACTIONS: InitialActionMap = {
 
   /** Доступен после осмотра и достаточного числа побед. */
   'fixture:reportQuest': {
-    label: 'Отчитаться',
+    label: 'Report back',
     requirements: [
       { type: 'questVar', questId: 'fixtureQuest', key: 'askedKeeper', equals: true },
       {

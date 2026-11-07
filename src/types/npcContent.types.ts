@@ -1,5 +1,6 @@
 import type { TimeOfDayId } from '@/constants';
 
+import type { CharacterGender } from './character.types';
 import type { ActionId, FactionId, InterceptorId } from './ids.types';
 
 /**
@@ -28,6 +29,8 @@ export const INDEPENDENTS_FACTION_ID: FactionId = 'independents';
 
 export interface InitialNpc {
   name: string;
+  /** Пол NPC; также выбирает силуэт. Immutable, не копируется в runtime. */
+  gender: CharacterGender;
 
   /**
    * Обязательна: состояния «фракции нет» у NPC не существует.

@@ -1,0 +1,61 @@
+.poiTheme {
+  --poi-ink: #d8bd95;
+  --poi-ink-muted: #9f8d71;
+  --poi-ink-active: #ffe2aa;
+  --poi-edge: #9d7a48;
+  --poi-divider: #635337;
+  --poi-stroke: 1px;
+  --poi-disabled-opacity: 0.42;
+  --poi-font-title: 21px;
+  --poi-font-text: 18px;
+  --poi-font-control: 17px;
+  --poi-font-small: 14px;
+  color: var(--poi-ink);
+  font-family: 'Bahnschrift', 'Arial Narrow', 'Segoe UI', sans-serif;
+
+  :where(button) {
+    font: inherit;
+    color: inherit;
+  }
+
+  :where(button:disabled, [aria-disabled='true']) {
+    opacity: var(--poi-disabled-opacity);
+    cursor: not-allowed;
+  }
+
+  [tabindex]:focus-visible {
+    outline: 1px solid var(--poi-ink);
+    outline-offset: 3px;
+  }
+
+  .poiIcon {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+  }
+}
+
+.poiMetalPanel,
+.poiTooltip,
+.poiHistory,
+.poiPortraitVisual {
+  position: relative;
+  border: 1px solid var(--poi-edge);
+  border-radius: 8px;
+  corner-shape: bevel;
+  background: repeating-linear-gradient(0deg, #00000015 0 1px, transparent 1px 3px), #161a13ed;
+  box-shadow:
+    0 0 4px #dca04a26,
+    0 0 10px #dca04a12;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    pointer-events: none;
+    border: 1px solid #9c783326;
+    border-radius: 5px;
+    corner-shape: bevel;
+    box-shadow: inset 0 1px #c18d3512;
+  }
+}

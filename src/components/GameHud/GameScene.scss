@@ -1,0 +1,29 @@
+@use './theme';
+@use './button';
+
+.poiViewport {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background: #080907;
+}
+.poiScene {
+  position: relative;
+  flex: 0 0 1600px;
+  margin: auto;
+  width: 1600px;
+  height: 900px;
+  box-sizing: border-box;
+  border: var(--poi-stroke) solid var(--poi-edge);
+  overflow: hidden;
+  isolation: isolate;
+  background: #181914;
+  text-align: left;
+}
+.poiTheme,
+.poiTheme * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--poi-edge) #11140f;
+}

@@ -1,4 +1,5 @@
 import { TIME_OF_DAY_IDS } from '@/constants';
+import { ACTION_CATEGORIES } from '@/types/action.types';
 import type {
   ActionCost,
   ActionOutcome,
@@ -406,6 +407,9 @@ function validateActionCost(
 function validateActions(bundle: InitialDataBundle, issues: ValidationIssue[]): void {
   for (const [actionId, definition] of Object.entries(bundle.actions)) {
     const path = `INITIAL_ACTIONS.${actionId}`;
+    if (definition.category !== undefined && !ACTION_CATEGORIES.includes(definition.category)) {
+      issues.push({ path: `${path}.category`, message: 'Неизвестная категория Action' });
+    }
 
     const hasResult = definition.result !== undefined;
     const hasCheck = definition.check !== undefined;
@@ -567,6 +571,12 @@ function validateInterceptors(bundle: InitialDataBundle, issues: ValidationIssue
 function validateFrames(bundle: InitialDataBundle, issues: ValidationIssue[]): void {
   for (const [frameId, frame] of Object.entries<InitialFrame>(bundle.frames)) {
     const path = `INITIAL_FRAMES.${frameId}`;
+    if (
+      frame.title !== undefined &&
+      (typeof frame.title !== 'string' || frame.title.trim().length === 0)
+    ) {
+      issues.push({ path: `${path}.title`, message: 'title должен быть непустым текстом' });
+    }
     const grammarError = validateFrameId(frameId);
 
     if (grammarError) {
@@ -973,6 +983,10 @@ function validateNpcs(bundle: InitialDataBundle, issues: ValidationIssue[]): voi
   for (const [npcId, npc] of Object.entries(bundle.npcs)) {
     const path = `INITIAL_NPCS.${npcId}`;
 
+    if (npc.gender !== 'male' && npc.gender !== 'female') {
+      issues.push({ path: `${path}.gender`, message: 'Обязательное поле: male или female' });
+    }
+
     if (!bundle.references.factionIds.has(npc.faction)) {
       issues.push({ path: `${path}.faction`, message: `Неизвестная фракция "${npc.faction}"` });
     }
@@ -1022,7 +1036,49 @@ function validateNpcs(bundle: InitialDataBundle, issues: ValidationIssue[]): voi
  * нарушением не является: это разные контексты.
  */
 function validateSourceUniqueness(bundle: InitialDataBundle, issues: ValidationIssue[]): void {
-  const questInterceptorsByTarget = collectQuestInterceptorsByTarget(bundle);
+  const questInterceptorsByTarget = collectQuestExecutablesByTarget(
+    bundle,
+    'interceptorIdsByTarget',
+  );
+  const questActionsByTarget = collectQuestExecutablesByTarget(bundle, 'actionIdsByTarget');
+
+  const validateActionSources = (
+    contextLabel: string,
+    targetId: string,
+    baseSources: { ids: readonly string[] | undefined; path: string }[],
+  ): void => {
+    const refsById = new Map<string, ExecutableSourceRef[]>();
+    const registerAction = (id: string, ref: ExecutableSourceRef): void => {
+      const refs = refsById.get(id) ?? [];
+      refs.push(ref);
+      refsById.set(id, refs);
+    };
+    for (const { ids, path } of baseSources) {
+      ids?.forEach((id) => registerAction(id, { source: path }));
+    }
+    for (const { id, ...ref } of questActionsByTarget.get(targetId) ?? []) {
+      registerAction(id, ref);
+    }
+    for (const [actionId, refs] of refsById) {
+      // Different stages of one quest cannot contribute Actions simultaneously.
+      const hasConflict = refs.some((left, index) =>
+        refs
+          .slice(index + 1)
+          .some(
+            (right) =>
+              left.questId === undefined ||
+              left.questId !== right.questId ||
+              left.stageId === right.stageId,
+          ),
+      );
+      if (hasConflict) {
+        issues.push({
+          path: contextLabel,
+          message: `Action "${actionId}" приходит из нескольких источников: ${refs.map((ref) => ref.source).join(', ')}`,
+        });
+      }
+    }
+  };
 
   const reportDuplicates = (contextLabel: string, sourcesById: Map<string, string[]>): void => {
     for (const [interceptorId, sources] of sourcesById) {
@@ -1054,6 +1110,13 @@ function validateSourceUniqueness(bundle: InitialDataBundle, issues: ValidationI
       }
 
       // POI-контекст.
+      validateActionSources(`POI-контекст "${poi.id}"`, poi.id, [
+        {
+          ids: bundle.frames[poi.templateId]?.actionIds,
+          path: `INITIAL_FRAMES.${poi.templateId}.actionIds`,
+        },
+        { ids: template.actionIds, path: `POI_TEMPLATES.${poi.templateId}.actionIds` },
+      ]);
       const poiSources = new Map<string, string[]>();
 
       template.interceptorIds?.forEach((id) =>
@@ -1069,6 +1132,22 @@ function validateSourceUniqueness(bundle: InitialDataBundle, issues: ValidationI
       for (const [, slots] of listSlotGroups(template.npcSlots)) {
         for (const slot of slots) {
           for (const npcId of slot.candidateNpcIds) {
+            const rootFrameId = `${poi.templateId}/${slot.id}`;
+            validateActionSources(
+              `slot-контекст "${poi.id}/${slot.id}" @ occupant "${npcId}"`,
+              npcId,
+              [
+                {
+                  ids: bundle.frames[rootFrameId]?.actionIds,
+                  path: `INITIAL_FRAMES.${rootFrameId}.actionIds`,
+                },
+                {
+                  ids: slot.actionIds,
+                  path: `POI_TEMPLATES.${poi.templateId}.npcSlots.${slot.id}.actionIds`,
+                },
+                { ids: bundle.npcs[npcId]?.actionIds, path: `INITIAL_NPCS.${npcId}.actionIds` },
+              ],
+            );
             const slotSources = new Map<string, string[]>();
 
             slot.interceptorIds?.forEach((id) =>
@@ -1096,28 +1175,35 @@ function validateSourceUniqueness(bundle: InitialDataBundle, issues: ValidationI
   }
 }
 
-interface QuestInterceptorRef {
-  id: string;
+interface ExecutableSourceRef {
   source: string;
+  questId?: string;
+  stageId?: string;
 }
 
-/** Строит индекс `QuestTargetId → квестовые Interceptors` по всем стадиям. */
-function collectQuestInterceptorsByTarget(
+interface QuestExecutableRef extends ExecutableSourceRef {
+  id: string;
+}
+
+/** Индекс авторских привязок; stageId сохраняется для проверки совместимости источников. */
+function collectQuestExecutablesByTarget(
   bundle: InitialDataBundle,
-): Map<string, QuestInterceptorRef[]> {
-  const byTarget = new Map<string, QuestInterceptorRef[]>();
+  field: 'actionIdsByTarget' | 'interceptorIdsByTarget',
+): Map<string, QuestExecutableRef[]> {
+  const byTarget = new Map<string, QuestExecutableRef[]>();
 
   for (const [questId, quest] of Object.entries(bundle.quests)) {
     for (const [stageId, stage] of Object.entries(quest.stages)) {
-      for (const [targetId, ids] of Object.entries(stage.interceptorIdsByTarget ?? {})) {
+      for (const [targetId, ids] of Object.entries(stage[field] ?? {})) {
         for (const id of ids ?? []) {
-          const source = `INITIAL_QUESTS.${questId}.stages.${stageId}.interceptorIdsByTarget.${targetId}`;
+          const source = `INITIAL_QUESTS.${questId}.stages.${stageId}.${field}.${targetId}`;
+          const ref = { id, source, questId, stageId };
           const existing = byTarget.get(targetId);
 
           if (existing) {
-            existing.push({ id, source });
+            existing.push(ref);
           } else {
-            byTarget.set(targetId, [{ id, source }]);
+            byTarget.set(targetId, [ref]);
           }
         }
       }

@@ -45,7 +45,7 @@ export const FIXTURE_INTERCEPTORS: InitialInterceptorMap = {
     executionLimit: { total: 1 },
     conditions: [{ type: 'timesMet', npcId: 'fixtureKeeper', exact: 0 }],
     result: {
-      narrative: [{ speakerId: '$npc', text: 'Раньше тебя здесь не видел.' }],
+      narrative: [{ speakerId: '$npc', text: 'Have not seen you around before.' }],
     },
   },
 
@@ -57,10 +57,10 @@ export const FIXTURE_INTERCEPTORS: InitialInterceptorMap = {
       type: 'chance',
       chance: 0.5,
       onSuccess: {
-        narrative: [{ speakerId: '$npc', text: 'Смена выдалась спокойная.' }],
+        narrative: [{ speakerId: '$npc', text: 'It has been a quiet shift.' }],
       },
       onFail: {
-        narrative: [{ speakerId: '$npc', text: 'Тяжёлый день.' }],
+        narrative: [{ speakerId: '$npc', text: 'A rough day.' }],
         effects: [{ type: 'modifyTension', delta: 5 }],
       },
     },

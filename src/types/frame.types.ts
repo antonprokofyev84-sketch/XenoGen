@@ -1,3 +1,4 @@
+import type { LocalizedText } from './common.types';
 import type { ActionId } from './ids.types';
 import type { NarrativeBlock } from './narrativeBlock.types';
 
@@ -29,6 +30,7 @@ export const RESERVED_FRAME_NAMES = {
 } as const;
 
 export interface InitialFrame {
+  title?: LocalizedText;
   /**
    * Разрешённый Vite URL изображения.
    * Отсутствие означает не менять текущий background.

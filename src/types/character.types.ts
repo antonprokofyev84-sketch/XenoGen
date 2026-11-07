@@ -1,3 +1,5 @@
+export type CharacterGender = 'male' | 'female';
+
 export type MainStatKey = 'str' | 'dex' | 'con' | 'per' | 'int' | 'will' | 'bty';
 export type MainStats = Record<MainStatKey, number>;
 
@@ -54,6 +56,8 @@ export interface Character {
   id: string;
   templateId: string;
   name: string;
+  /** Используется для выбора силуэта, если индивидуальное изображение отсутствует. */
+  gender?: CharacterGender;
   hp: number;
   stamina: number;
   baseStats: BaseStats;

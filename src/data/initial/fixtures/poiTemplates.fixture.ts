@@ -35,12 +35,7 @@ export const FIXTURE_POI_TEMPLATES: PoiTemplateMap = {
 
     schedule: ALWAYS_OPEN,
 
-    actionIds: [
-      'fixture:lookAround',
-      'fixture:restAtHub',
-      'fixture:openTrade',
-      'fixture:leaveSite',
-    ],
+    actionIds: ['fixture:lookAround', 'fixture:restAtHub', 'fixture:openTrade'],
 
     // `fixture:hubEvent` намеренно приходит только от квестовой стадии:
     // один Interceptor не должен поступать в контекст из двух источников.
@@ -50,9 +45,9 @@ export const FIXTURE_POI_TEMPLATES: PoiTemplateMap = {
       work: [
         {
           id: 'keeper',
-          role: 'keeper',
+          role: 'Innkeeper',
           candidateNpcIds: ['fixtureKeeper'],
-          actionIds: ['fixture:askKeeperForWork'],
+          actionIds: ['fixture:buyDrink'],
           interceptorIds: ['fixture:keeperShiftGreeting'],
         },
       ],
@@ -60,17 +55,16 @@ export const FIXTURE_POI_TEMPLATES: PoiTemplateMap = {
       freeTime: [
         {
           id: 'visitor',
-          role: 'visitor',
+          role: 'Visitor',
           candidateNpcIds: ['fixtureVisitorA', 'fixtureVisitorB', 'fixtureStranger'],
           chance: 0.7,
-          actionIds: ['fixture:chatWithVisitor', 'fixture:provokeVisitor'],
         },
       ],
 
       home: [
         {
           id: 'resident',
-          role: 'resident',
+          role: 'Resident',
           candidateNpcIds: ['fixtureResident'],
           actionIds: ['fixture:chatWithVisitor'],
         },

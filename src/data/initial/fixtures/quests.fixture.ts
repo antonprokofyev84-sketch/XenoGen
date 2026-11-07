@@ -11,8 +11,8 @@ import type { InitialQuestMap } from '@/types/questContent.types';
  */
 export const FIXTURE_QUESTS: InitialQuestMap = {
   fixtureQuest: {
-    name: 'Техническое поручение',
-    description: 'Выполнить проверочное поручение смотрителя.',
+    name: 'A small errand',
+    description: 'Complete an errand for the keeper.',
 
     timeLimit: {
       days: 10,
@@ -22,15 +22,15 @@ export const FIXTURE_QUESTS: InitialQuestMap = {
 
     stages: {
       initialStage: {
-        description: 'Смотритель может предложить работу.',
+        description: 'The keeper may have work for you.',
         actionIdsByTarget: {
           fixtureKeeper: ['fixture:askKeeperForWork'],
         },
       },
 
       investigate: {
-        title: 'Осмотр',
-        description: 'Осмотреть площадку и расспросить смотрителя.',
+        title: 'Investigation',
+        description: 'Inspect the yard and question the keeper.',
 
         timeLimit: {
           days: 3,
@@ -49,8 +49,8 @@ export const FIXTURE_QUESTS: InitialQuestMap = {
         },
       },
       report: {
-        title: 'Отчёт',
-        description: 'Вернуться к смотрителю.',
+        title: 'Report',
+        description: 'Return to the keeper.',
         actionIdsByTarget: {
           fixtureKeeper: ['fixture:reportQuest'],
         },
@@ -59,13 +59,13 @@ export const FIXTURE_QUESTS: InitialQuestMap = {
   },
   /** Скрытый квест: хранит факты мира, но не показывается в журнале. */
   fixtureHiddenQuest: {
-    name: 'Техническое наблюдение',
-    description: 'Скрытый квест для проверки видимости журнала.',
+    name: 'Observation',
+    description: 'A hidden quest for checking journal visibility.',
     isHidden: true,
 
     stages: {
       initialStage: {
-        description: 'Наблюдение ещё не начато.',
+        description: 'Observation has not started yet.',
       },
     },
   },

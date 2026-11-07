@@ -1,3 +1,4 @@
+import tavernBackground from '@/assets/backgrounds/poi-demo/tavern.png';
 import type { InitialFrameMap } from '@/types/frame.types';
 
 /**
@@ -8,8 +9,8 @@ import type { InitialFrameMap } from '@/types/frame.types';
  * reserved `forceExit` Frame. У slot `visitor` forceExit-Frame намеренно
  * отсутствует: это проверяет тихий fallback.
  *
- * Background задан строкой-плейсхолдером: реальные assets подключаются
- * статическим import вместе с настоящим контентом.
+ * Таверна — техническая визуальная демонстрация POI UI. Background подключён
+ * статическим import; это не утверждённый production-сюжет или баланс.
  */
 export const FIXTURE_FRAMES: InitialFrameMap = {
   // ------------------------------------------------------------
@@ -17,25 +18,29 @@ export const FIXTURE_FRAMES: InitialFrameMap = {
   // ------------------------------------------------------------
 
   fixtureHub: {
-    background: '/images/poi/fixture-hub.webp',
+    title: 'The Red Boar',
+    background: tavernBackground,
     npcDisplay: 'none',
-    narrative: ['Технический хаб. Нейтральная площадка для проверки контрактов.'],
-    actionIds: ['fixture:openInnerFrame', 'fixture:jumpToOpenSite'],
+    narrative: [
+      'Beyond the heavy door, the air smells of smoke, old wood and hot metal. Pipes hum overhead. Behind the counter, the innkeeper wipes a glass and watches everyone who enters.',
+    ],
+    actionIds: ['fixture:openInnerFrame'],
   },
 
   'fixtureHub:inner': {
+    title: 'The back room',
     // background отсутствует → наследуется фон hub.
     npcDisplay: 'none',
     narrative: [
-      'Внутренний кадр хаба.',
-      { thought: 'Отсюда доступны только собственные действия кадра.' },
+      'You step into the back room.',
+      { thought: 'Only the actions of this scene are available here.' },
     ],
     actionIds: ['fixture:weightedSearch', 'fixture:backToRoot'],
   },
 
   'fixtureHub:event': {
     npcDisplay: 'none',
-    narrative: ['Сработало автоматическое событие входа.'],
+    narrative: ['An unexpected event interrupts your visit.'],
     actionIds: ['fixture:backToRoot'],
   },
 
@@ -45,16 +50,12 @@ export const FIXTURE_FRAMES: InitialFrameMap = {
 
   'fixtureHub/keeper': {
     npcDisplay: 'always',
-    narrative: [
-      '{$npc} отрывается от работы.',
-      { speakerId: '$npc', text: 'Нужно что-то по делу?' },
-    ],
+    narrative: ['{$npc} looks up from work.', { speakerId: '$npc', text: 'Need something?' }],
     actionIds: [
       'fixture:statCheckPersuade',
       'fixture:skillCheckBarter',
       'fixture:chanceCheckAsk',
       'fixture:dailyRumor',
-      'fixture:oneTimeGift',
       'fixture:rareOffer',
       'fixture:conditionalRegionTalk',
       'fixture:requiresScrap',
@@ -64,28 +65,29 @@ export const FIXTURE_FRAMES: InitialFrameMap = {
   },
 
   'fixtureHub/keeper:inner': {
+    title: 'Business matters',
     npcDisplay: 'always',
-    narrative: [{ speakerId: '$npc', text: 'Слушаю.' }],
+    narrative: [{ speakerId: '$npc', text: 'You have my attention.' }],
     actionIds: ['fixture:backToRoot'],
   },
 
   /** Reserved Frame принудительного выхода slot/NPC-контекста. */
   'fixtureHub/keeper:forceExit': {
     npcDisplay: 'always',
-    narrative: [{ speakerId: '$npc', text: 'Разговор окончен. Уходи.' }],
+    narrative: [{ speakerId: '$npc', text: 'We are done. Leave.' }],
     actionIds: ['fixture:forcedLeaveWithBan'],
   },
 
   /** forceExit Frame намеренно отсутствует: проверка тихого fallback. */
   'fixtureHub/visitor': {
     npcDisplay: 'speaker',
-    narrative: [{ speakerId: '$npc', text: 'Привет.' }],
+    narrative: [{ speakerId: '$npc', text: 'Hello.' }],
     actionIds: ['fixture:chatWithVisitor', 'fixture:provokeVisitor', 'fixture:leaveSlot'],
   },
 
   'fixtureHub/resident': {
-    npcDisplay: 'speaker',
-    narrative: ['{$npc} занят своими делами.'],
+    npcDisplay: 'always',
+    narrative: ['{$npc} turns to you.'],
     actionIds: ['fixture:leaveSlot'],
   },
 
@@ -94,34 +96,40 @@ export const FIXTURE_FRAMES: InitialFrameMap = {
   // ------------------------------------------------------------
 
   fixtureOpenSite: {
-    background: '/images/poi/fixture-open-site.webp',
+    title: 'Tavern yard',
+    background: tavernBackground,
     npcDisplay: 'none',
-    narrative: ['Открытая площадка.'],
+    narrative: ['An open yard behind the tavern.'],
   },
 
   fixtureClosedSite: {
+    title: 'Workshop',
     npcDisplay: 'none',
-    narrative: ['Площадка, доступная не в любое время суток.'],
+    narrative: ['The workshop is only open at certain times.'],
   },
 
   fixtureHiddenSite: {
+    title: 'Hidden passage',
     npcDisplay: 'none',
-    narrative: ['Место, которое нужно сначала найти.'],
+    narrative: ['A place that must be discovered first.'],
   },
 
   fixtureTempSite: {
+    title: 'Temporary camp',
     npcDisplay: 'none',
-    narrative: ['Временная стоянка. Скоро её здесь не будет.'],
+    narrative: ['A temporary camp. It will be gone soon.'],
   },
 
   fixtureBlockedSite: {
+    title: 'Private quarters',
     npcDisplay: 'none',
-    narrative: ['Внутрь пока не пускают.'],
+    narrative: ['You are not allowed inside yet.'],
   },
 
   fixtureDecaySite: {
+    title: 'Abandoned sector',
     npcDisplay: 'none',
-    narrative: ['Заражение здесь растёт день ото дня.'],
+    narrative: ['Contamination grows here each day.'],
   },
 
   // ------------------------------------------------------------
@@ -130,7 +138,7 @@ export const FIXTURE_FRAMES: InitialFrameMap = {
 
   'fixtureHub/keeper:questOffer': {
     npcDisplay: 'always',
-    narrative: [{ speakerId: '$npc', text: 'Есть поручение. Возьмёшься?' }],
+    narrative: [{ speakerId: '$npc', text: 'There is a job to do. Interested?' }],
     actionIds: ['fixture:acceptQuest', 'fixture:declineQuest'],
   },
 };
