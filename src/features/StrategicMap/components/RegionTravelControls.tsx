@@ -1,0 +1,79 @@
+import { useShallow } from 'zustand/react/shallow';
+
+import { DEFAULT_EXPLORATION_DURATION } from '@/constants';
+import textData from '@/locales/en.json';
+import { partySelectors, poiSelectors, useGameState } from '@/state/useGameState';
+import { useMapInteractionStore } from '@/state/useMapInteractionStore';
+import { TravelManager } from '@/systems/travel/travelManager';
+
+const SCOUT_BONUS_DURATION = 2;
+const SCOUT_BONUS_SCORE = 20;
+const BLOCKED_TRAVEL_COST = { canTravel: false, staminaCost: Infinity, timeCost: Infinity };
+
+export const RegionTravelControls = () => {
+  const focusedPoiId = useMapInteractionStore((state) => state.focusedPoiId);
+  const currentPartyPosition = useGameState((state) => state.party.currentPartyPosition);
+  const selectedCellId = focusedPoiId ?? currentPartyPosition;
+
+  const selectedCell = useGameState(useShallow(poiSelectors.selectPoiById(selectedCellId)));
+  const partyPerception = useGameState((state) =>
+    partySelectors.selectHighestEffectiveMainStat('per')(state),
+  );
+  const isFatigued = useGameState((state) => partySelectors.selectIsPartyFatigued(state));
+
+  const travelToPoi = useGameState((state) => state.world.actions.travelToPoi);
+  const scoutCell = useGameState((state) => state.world.actions.scoutCell);
+
+  const travelCost = useGameState(
+    useShallow((state) => {
+      if (!selectedCellId || !selectedCell || selectedCell.parentId !== null) {
+        return BLOCKED_TRAVEL_COST;
+      }
+
+      return TravelManager.computeTravel(currentPartyPosition, selectedCellId, state);
+    }),
+  );
+
+  if (!selectedCell || selectedCell.parentId !== null) {
+    return null;
+  }
+
+  const canScout = currentPartyPosition === selectedCellId;
+  const canMove = currentPartyPosition !== selectedCellId && travelCost.canTravel;
+
+  const handleMoveClick = () => {
+    travelToPoi(selectedCellId);
+  };
+
+  const handleScoutClick = () => {
+    scoutCell(
+      selectedCellId,
+      partyPerception,
+      SCOUT_BONUS_SCORE,
+      DEFAULT_EXPLORATION_DURATION + SCOUT_BONUS_DURATION,
+    );
+  };
+
+  return (
+    <div className="panelFooter">
+      {isFatigued && <div className="fatigueWarning">Party is fatigued!</div>}
+
+      {canScout && (
+        <button type="button" className="game-button" onClick={handleScoutClick}>
+          {textData.strategicMap.scoutSector}
+        </button>
+      )}
+
+      {canMove && (
+        <button type="button" className="game-button" onClick={handleMoveClick}>
+          <span>
+            {textData.strategicMap.travelTo} ({selectedCellId})
+          </span>
+          <span className="costInfo">
+            ({travelCost.timeCost} min / {travelCost.staminaCost} Stamina)
+          </span>
+        </button>
+      )}
+    </div>
+  );
+};

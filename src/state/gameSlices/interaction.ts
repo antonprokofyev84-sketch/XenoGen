@@ -4,7 +4,7 @@ import {
   enterPoiContext,
   enterSlotContext,
 } from '@/systems/interaction/interactionState';
-import { performAction } from '@/systems/interaction/performAction';
+import { continueInteraction, performAction } from '@/systems/interaction/performAction';
 import { resolveInteractionPresentation } from '@/systems/interaction/presentation';
 import { resolveInteractionOptions } from '@/systems/interaction/resolveOptions';
 import { resolveTradeOffer } from '@/systems/trade/resolveTradeOffer';
@@ -45,6 +45,7 @@ export interface InteractionSlice {
     returnToPoiContext: () => void;
     endInteraction: () => void;
     performAction: (actionId: string) => void;
+    continueInteraction: () => void;
     setTrading: (isTrading: boolean) => void;
     /** Торговля сохранена как есть до утверждения её собственного `scope`. */
     resolveTradeOffer: (satisfaction: number, tradeValue: number, attempts: number) => boolean;
@@ -142,6 +143,11 @@ export const createInteractionSlice: GameSlice<InteractionSlice> = (set) => ({
     performAction: (actionId) =>
       set((state) => {
         performAction(state, actionId);
+      }),
+
+    continueInteraction: () =>
+      set((state) => {
+        continueInteraction(state);
       }),
 
     setTrading: (isTrading) =>

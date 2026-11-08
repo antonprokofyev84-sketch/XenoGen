@@ -307,6 +307,13 @@ const sweepPendingRemovalsDraft = (state: StoreState): void => {
     return;
   }
 
+  const markedSet = new Set(markedIds);
+  let partyFallback = pois[state.party.currentPartyPosition];
+  const partyWasRemoved = markedSet.has(state.party.currentPartyPosition);
+  while (partyFallback && markedSet.has(partyFallback.id) && partyFallback.parentId !== null) {
+    partyFallback = pois[partyFallback.parentId];
+  }
+
   for (const poiId of markedIds) {
     const node = pois[poiId];
     if (!node) continue;
@@ -325,6 +332,11 @@ const sweepPendingRemovalsDraft = (state: StoreState): void => {
 
   for (const poiId of markedIds) {
     delete pois[poiId];
+  }
+  if (partyWasRemoved && partyFallback) {
+    state.party.previousPartyPosition = null;
+    state.party.currentPartyPosition = partyFallback.id;
+    state.ui.currentScreen = isCellNode(partyFallback) ? 'strategicMap' : 'poiView';
   }
 };
 

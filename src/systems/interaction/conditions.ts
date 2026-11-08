@@ -43,7 +43,7 @@ function resolveSubjectFactionId(state: StoreState, context: ActionContext): str
   return poi && isNonCellNode(poi) ? poi.details.faction : undefined;
 }
 
-function evaluateCondition(
+export function evaluateCondition(
   state: StoreState,
   condition: ActionCondition,
   context: ActionContext,

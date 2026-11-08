@@ -98,6 +98,7 @@ function runDayTickDraft(state: StoreState) {
  * and running one day tick per crossed day boundary. Fully atomic.
  */
 function advanceTimeDraft(state: StoreState, minutes: number) {
+  const previousPosition = state.party.currentPartyPosition;
   const { newTime, daysPassed, oldTimeSlotIndex, newTimeSlotIndex } = advanceWorldTime(
     state.world.currentTime,
     minutes,
@@ -112,7 +113,22 @@ function advanceTimeDraft(state: StoreState, minutes: number) {
   // Occupancy разрешается однократно и только для конечного time slot: промежуточные
   // раскладки игрок не видит, а дневные тики до этого момента могли удалить POI.
   if (oldTimeSlotIndex !== newTimeSlotIndex || daysPassed > 0) {
-    occupancyDraft.refreshOccupancy(state);
+    refreshWorldContext(state, state.party.currentPartyPosition !== previousPosition);
+  }
+}
+
+function refreshWorldContext(state: StoreState, restoreAfterRemoval = false) {
+  occupancyDraft.refreshOccupancy(state);
+  const position = state.poiSlice.pois[state.party.currentPartyPosition];
+  if (
+    restoreAfterRemoval &&
+    state.ui.currentScreen === 'poiView' &&
+    !state.interactionSlice.currentInteraction &&
+    position?.parentId !== null &&
+    position
+  ) {
+    enterPoiContext(state, position.id);
+  } else {
     refreshInteractionForTimeSlot(state);
   }
 }
@@ -153,6 +169,11 @@ function travelToPoiDraft(state: StoreState, targetPoiId: string, extraMinutes =
   const arrivedPoi = state.poiSlice.pois[targetPoiId];
 
   if (!arrivedPoi) {
+    const survivingParent = state.poiSlice.pois[state.party.currentPartyPosition];
+    if (survivingParent && survivingParent.id !== targetPoiId) {
+      state.ui.currentScreen = survivingParent.parentId === null ? 'strategicMap' : 'poiView';
+      return;
+    }
     if (fallbackCellId && state.poiSlice.pois[fallbackCellId]) {
       state.party.currentPartyPosition = fallbackCellId;
     }
@@ -225,6 +246,7 @@ export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
     endDay: () => {
       set((state) => {
         runDayTickDraft(state);
+        refreshWorldContext(state, true);
       });
     },
 

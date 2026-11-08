@@ -97,7 +97,7 @@ export function rollVisibleAppearanceChances(state: StoreState, rng: Rng = defau
   const sources = listActionSources(state, interaction);
   for (const actionId of Object.values(sources).flat()) {
     const action = INITIAL_ACTIONS[actionId];
-    if (!action?.appearanceChance) continue;
+    if (!action || action.appearanceChance === undefined) continue;
 
     // Пока условия не выполнены, броска нет.
     if (!evaluateConditions(state, action.conditions, context)) continue;

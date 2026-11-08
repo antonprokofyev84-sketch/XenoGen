@@ -57,16 +57,22 @@ export function resolveActionCost(
 
 /** Время здесь не проверяется: оно всегда доступно и списывается позже. */
 export function canAffordCost(state: StoreState, cost: ResolvedActionCost): boolean {
-  if ((state.inventory.containers[PROTAGONIST_ID]?.money ?? 0) < cost.money) return false;
+  return resolveCostShortages(state, cost).length === 0;
+}
 
-  if (cost.stamina > 0) {
-    const stamina = characterSelectors.selectCharacterById(PROTAGONIST_ID)(state)?.stamina ?? 0;
-    if (stamina < cost.stamina) return false;
+/** Та же проверка ресурсов даёт объяснения UI, без отдельной формулы доступности. */
+export function resolveCostShortages(state: StoreState, cost: ResolvedActionCost): string[] {
+  const shortages: string[] = [];
+  const money = state.inventory.containers[PROTAGONIST_ID]?.money ?? 0;
+  const stamina = characterSelectors.selectCharacterById(PROTAGONIST_ID)(state)?.stamina ?? 0;
+  if (money < cost.money) shortages.push(`Not enough money: ${money} of ${cost.money}`);
+  if (cost.stamina > 0 && stamina < cost.stamina)
+    shortages.push(`Not enough stamina: ${stamina} of ${cost.stamina}`);
+  for (const item of cost.items) {
+    const count = inventorySelectors.selectPlayerItemCount(item.itemId)(state);
+    if (count < item.count) shortages.push(`Not enough ${item.itemId}: ${count} of ${item.count}`);
   }
-
-  return cost.items.every(
-    (item) => inventorySelectors.selectPlayerItemCount(item.itemId)(state) >= item.count,
-  );
+  return shortages;
 }
 
 /**
