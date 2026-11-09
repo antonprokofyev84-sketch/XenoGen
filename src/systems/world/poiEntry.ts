@@ -18,13 +18,13 @@ import { resolveTimeOfDay } from '@/utils/timeOfDay';
 export type PoiEntryBlockReason = 'closed' | 'entryDisabled' | 'entryRefused';
 
 export const POI_ENTRY_BLOCK_LABELS: Readonly<Record<PoiEntryBlockReason, string>> = {
-  closed: 'Закрыто',
-  entryDisabled: 'Вход недоступен',
-  entryRefused: 'Вас сюда не пускают',
+  closed: 'Closed',
+  entryDisabled: 'Entry unavailable',
+  entryRefused: 'Entry refused',
 };
 
 export function resolvePoiEntryBlock(
-  state: StoreState,
+  state: Pick<StoreState, 'poiSlice' | 'world'>,
   poiId: PoiId,
 ): PoiEntryBlockReason | undefined {
   const poi = state.poiSlice.pois[poiId];
