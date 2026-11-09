@@ -4,8 +4,10 @@ import { useGameState } from '@/state/useGameState';
 
 const getState = () => useGameState.getState();
 const keeper = () => getState().npcSlice.byId.fixtureKeeper;
-const enterKeeper = () =>
+const enterKeeper = () => {
   getState().interactionSlice.actions.enterSlotContext('keeper', 'fixtureKeeper');
+  getState().interactionSlice.actions.continueInteraction();
+};
 
 describe('NPC meetings at interaction boundaries', () => {
   beforeEach(() => {
@@ -14,6 +16,7 @@ describe('NPC meetings at interaction boundaries', () => {
     getState().world.actions.startNewGame();
     getState().occupancySlice.actions.assignNpcToSlot('fixtureHub', 'visitor', 'fixtureVisitorA');
     getState().world.actions.travelToPoi('fixtureHub');
+    getState().interactionSlice.actions.continueInteraction();
   });
 
   it('counts a meeting on return to the POI, not on entry or local Frame changes', () => {
@@ -21,6 +24,7 @@ describe('NPC meetings at interaction boundaries', () => {
     expect(keeper().timesMet).toBe(0);
 
     getState().interactionSlice.actions.performAction('fixture:openKeeperInner');
+    getState().interactionSlice.actions.continueInteraction();
     getState().interactionSlice.actions.performAction('fixture:backToRoot');
     expect(keeper().timesMet).toBe(0);
 
@@ -75,7 +79,9 @@ describe('NPC meetings at interaction boundaries', () => {
 
   it('counts a meeting when force exit returns the visitor to the POI', () => {
     getState().interactionSlice.actions.enterSlotContext('visitor', 'fixtureVisitorA');
+    getState().interactionSlice.actions.continueInteraction();
     getState().interactionSlice.actions.performAction('fixture:provokeVisitor');
+    getState().interactionSlice.actions.continueInteraction();
     expect(getState().interactionSlice.currentInteraction?.npcId).toBeUndefined();
     expect(getState().npcSlice.byId.fixtureVisitorA.timesMet).toBe(1);
   });
