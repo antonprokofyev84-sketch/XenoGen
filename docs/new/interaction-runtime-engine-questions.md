@@ -1,6 +1,6 @@
 # Interaction Runtime and Engine Design
 
-> Актуализация от 24 октября 2026. Уточнение POI UI: Action разделён на начало и `continueInteraction`; переход и время ждут чтения результата, без повторных effects/RNG. Presentation и отдельные portraits описаны в `poi-ui-design.md` и заменяют прежние варианты размещения NPC.
+> Уточнение от 14 ноября 2026: cost.time проходит до результата; только transition со своей time ждёт продолжения. UI хранит курсор лога, runtime — pendingTransition. Полный текущий контракт в poi-ui-design.md заменяет прежние варианты отложенного времени и размещения NPC ниже.
 
 ## Назначение документа
 

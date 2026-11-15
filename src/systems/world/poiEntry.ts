@@ -17,12 +17,6 @@ import { resolveTimeOfDay } from '@/utils/timeOfDay';
 /** Причина, по которой переход показывается, но недоступен. */
 export type PoiEntryBlockReason = 'closed' | 'entryDisabled' | 'entryRefused';
 
-export const POI_ENTRY_BLOCK_LABELS: Readonly<Record<PoiEntryBlockReason, string>> = {
-  closed: 'Closed',
-  entryDisabled: 'Entry unavailable',
-  entryRefused: 'Entry refused',
-};
-
 export function resolvePoiEntryBlock(
   state: Pick<StoreState, 'poiSlice' | 'world'>,
   poiId: PoiId,

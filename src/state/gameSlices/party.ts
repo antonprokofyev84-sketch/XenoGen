@@ -5,7 +5,7 @@ import type { Captive } from '@/types/party.types';
 import type { MovementMode } from '@/types/travel.types';
 
 import type { GameSlice } from '../types';
-import { characterSelectors } from './characters';
+import { characterDraft, characterSelectors } from './characters';
 
 // const MAX_ROSTER_SIZE = 5;
 const BASE_CAPTIVES_NUMBER = 2;
@@ -114,10 +114,7 @@ const changeStaminaDraft = (state: StoreState, delta: number) => {
   const allMemberIds = partySelectors.selectAllMemberIds(state);
 
   for (const memberId of allMemberIds) {
-    console.log('[changeStaminaDraft]', memberId, delta);
-    // тут должен быть вызов драфт функции из characters.ts
-    // но нужно пересмотреть архитектуру characters.ts
-    // state.characters.actions.changeStamina(memberId, delta); //set внутри сета
+    characterDraft.changeStamina(state, memberId, delta);
   }
 };
 
@@ -137,7 +134,7 @@ export const partyDraft = {
 
 // Slice
 
-export const createPartySlice: GameSlice<PartySlice> = (set, _get) => ({
+export const createPartySlice: GameSlice<PartySlice> = (set) => ({
   activeIds: ['protagonist'], // Начинаем только с протагониста
   leaderId: 'protagonist',
   reserveIds: [],

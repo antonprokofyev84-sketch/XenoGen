@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { GameTooltip } from '@/components/GameHud/GameTooltip';
+import text from '@/locales/en.json';
 import { useGameState } from '@/state/useGameState';
 import type { NpcOverlay } from '@/systems/interaction/presentation';
 import type { ResolvedInteractionOptions, UiNpcSlot } from '@/systems/interaction/resolveOptions';
@@ -48,14 +49,14 @@ export function NpcPortraitGrid({
   const pages = Math.max(1, Math.ceil(slots.length / 4));
   const page = Math.min(requestedPage, pages - 1);
   return (
-    <aside className="poiPortraitPanel poiMetalPanel" aria-label="Available characters">
+    <aside className="poiPortraitPanel poiMetalPanel" aria-label={text.interactionUi.characters}>
       <header>
-        <h2>Available characters</h2>
+        <h2>{text.interactionUi.characters}</h2>
         {pages > 1 && (
           <div className="poiPortraitPager">
             <button
               type="button"
-              aria-label="Previous characters"
+              aria-label={text.interactionUi.previousCharacters}
               disabled={page === 0}
               onClick={() => setPage(page - 1)}
             >
@@ -66,7 +67,7 @@ export function NpcPortraitGrid({
             </span>
             <button
               type="button"
-              aria-label="Next characters"
+              aria-label={text.interactionUi.nextCharacters}
               disabled={page === pages - 1}
               onClick={() => setPage(page + 1)}
             >
@@ -126,8 +127,8 @@ export function PoiNavigation({
   const routes = navigation.poiTransitions.filter((route) => route.direction === 'child');
   if (!routes.length) return null;
   return (
-    <aside className="poiNavigation poiMetalPanel" aria-label="Destinations">
-      <h2>Destinations</h2>
+    <aside className="poiNavigation poiMetalPanel" aria-label={text.interactionUi.destinations}>
+      <h2>{text.interactionUi.destinations}</h2>
       <div className="poiRoutes">
         {routes.map((route) => (
           <GameTooltip

@@ -1,5 +1,10 @@
 # Validation Contract — проверки initial-данных
 
+> Уточнение 14 ноября 2026: optional ActionTransition.time задаёт полную
+> длительность перехода в минутах. Допустимо конечное число >= 0; validator
+> проверяет прямые, взвешенные результаты и обе ветки check. Поле не меняет
+> контракт InterceptorTransition. Текущий порядок исполнения — poi-ui-design.md.
+
 > Актуализация от 24 октября 2026. Уточнение POI UI: validator проверяет `Action.category` по закрытому списку и непустой `Frame.title`, если он задан. Формат и defaults — в `poi-ui-design.md`; поля UI не вводят новые игровые ресурсы.
 
 > `InitialNpc.gender` обязателен и допускает только `male` и `female`.

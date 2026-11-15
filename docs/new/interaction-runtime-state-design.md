@@ -1,6 +1,6 @@
 # Interaction runtime: состояние, варианты UI и исполнение Action
 
-> Актуализация от 24 октября 2026. Уточнение POI UI: `CurrentInteraction.reading` хранит режим, текущие blocks и optional ActionCompletion. UI чередует текст и Actions. Текущее состояние и порядок завершения описаны в `poi-ui-design.md`.
+> Уточнение от 14 ноября 2026: CurrentInteraction не хранит reading. UI использует interactionLogCursor, runtime — pendingTransition с исходными context IDs. cost.time проходит до чтения; transition.time — при исполнении перехода. Раздел исполнения ниже исторический в части отложенного cost.time; текущий порядок задан в poi-ui-design.md.
 
 ## Статус и границы
 

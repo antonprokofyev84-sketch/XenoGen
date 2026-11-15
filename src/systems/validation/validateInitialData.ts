@@ -500,6 +500,15 @@ function validateActions(bundle: InitialDataBundle, issues: ValidationIssue[]): 
         : [outcome.transition];
 
       transitions.forEach((transition, transitionIndex) => {
+        if (
+          transition?.time !== undefined &&
+          (!Number.isFinite(transition.time) || transition.time < 0)
+        ) {
+          issues.push({
+            path: `${outcomePath}[${transitionIndex}].transition.time`,
+            message: 'Длительность перехода должна быть конечным неотрицательным числом минут',
+          });
+        }
         if (transition?.type === 'frame' && !(transition.frameId in bundle.frames)) {
           issues.push({
             path: `${outcomePath}[${transitionIndex}].transition`,

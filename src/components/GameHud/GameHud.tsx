@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react';
 
 import { START_DATE } from '@/constants';
+import text from '@/locales/en.json';
 import { useGameState } from '@/state/useGameState';
+import { formatText } from '@/systems/text/formatText';
 import { resolveLocationPresentation } from '@/systems/world/locationPresentation';
 import { diffCalendarDays } from '@/utils/diffCalendarDays';
 import { resolveTimeOfDay } from '@/utils/timeOfDay';
@@ -11,20 +13,7 @@ import { GameTooltip } from './GameTooltip';
 
 import './GameHud.scss';
 
-const TIME_LABELS = {
-  late_night: 'Late night',
-  early_morning: 'Early morning',
-  morning: 'Morning',
-  afternoon: 'Afternoon',
-  evening: 'Evening',
-  night: 'Night',
-};
-const PARAMETERS = [
-  ['prosperity', 'Prosperity'],
-  ['techLevel', 'Technology'],
-  ['contamination', 'Contamination'],
-  ['threat', 'Threat'],
-] as const;
+const PARAMETERS = ['prosperity', 'techLevel', 'contamination', 'threat'] as const;
 
 export function GameHud({ locationId, children }: { locationId: string; children?: ReactNode }) {
   const poiSlice = useGameState((state) => state.poiSlice);
@@ -38,14 +27,14 @@ export function GameHud({ locationId, children }: { locationId: string; children
     <div className="gameHudStack">
       <aside
         className={`gameLocation poiMetalPanel${collapsed ? ' isCollapsed' : ''}`}
-        aria-label="Current location and region information"
+        aria-label={text.gameHud.locationInformation}
       >
         <header>
           <h2>{location.title}</h2>
           <button
             type="button"
             className="game-button gameLocationToggle"
-            aria-label={collapsed ? 'Expand location details' : 'Collapse location details'}
+            aria-label={collapsed ? text.gameHud.expand : text.gameHud.collapse}
             aria-expanded={!collapsed}
             aria-controls="game-location-details"
             onClick={toggleLocationHud}
@@ -56,13 +45,16 @@ export function GameHud({ locationId, children }: { locationId: string; children
         <div id="game-location-details" hidden={collapsed}>
           {location.parentTitle && <p className="gameLocationParent">{location.parentTitle}</p>}
           <p className="gameLocationStatus">{location.status}</p>
-          <div className="gameRegionStats" aria-label="Region parameters">
-            {PARAMETERS.map(([key, label]) => (
-              <GameTooltip key={key} label={`${label}: ${location.levels?.[key] ?? 'Unknown'}`}>
+          <div className="gameRegionStats" aria-label={text.gameHud.regionParameters}>
+            {PARAMETERS.map((key) => (
+              <GameTooltip
+                key={key}
+                label={`${text.gameHud.parameters[key]}: ${location.levels?.[key] ?? text.gameHud.unknown}`}
+              >
                 <span
                   className="gameRegionStat"
                   tabIndex={0}
-                  aria-label={`${label}: ${location.levels?.[key] ?? 'Unknown'}`}
+                  aria-label={`${text.gameHud.parameters[key]}: ${location.levels?.[key] ?? text.gameHud.unknown}`}
                 >
                   <GameIcon name={key} />
                   <span>{location.levels?.[key] ?? '—'}</span>
@@ -74,16 +66,19 @@ export function GameHud({ locationId, children }: { locationId: string; children
         <div className="gameLocationSummary">
           <div className="gameTime">
             <span>
-              Day {diffCalendarDays(START_DATE, time) + 1}
-              <span className="gameTimeOfDay"> · {TIME_LABELS[resolveTimeOfDay(time)]}</span>
+              {formatText(text.gameHud.day, { day: diffCalendarDays(START_DATE, time) + 1 })}
+              <span className="gameTimeOfDay">
+                {' '}
+                · {text.gameHud.timeOfDay[resolveTimeOfDay(time)]}
+              </span>
             </span>
             <span>{clock}</span>
           </div>
-          <GameTooltip label="Expedition points are not implemented yet">
+          <GameTooltip label={text.gameHud.expeditionUnavailable}>
             <div className="gameExpedition">
               <span>
                 <GameIcon name="cube" />
-                <span className="gameExpeditionLabel">Expedition points</span>
+                <span className="gameExpeditionLabel">{text.gameHud.expeditionPoints}</span>
               </span>
               <span>—</span>
             </div>
@@ -100,11 +95,19 @@ export function GameSystemMenu() {
   const goToScreen = useGameState((state) => state.ui.goToScreen);
   const screen = useGameState((state) => state.ui.currentScreen);
   return (
-    <nav className="gameSystemMenu poiMetalPanel" aria-label="System menu">
+    <nav className="gameSystemMenu poiMetalPanel" aria-label={text.gameHud.systemMenu}>
       {(['bag', 'map', 'party', 'settings'] as const).map((icon, index) => {
-        const label = ['Inventory', 'Map', 'Party', 'Settings'][index];
+        const label = [
+          text.gameHud.inventory,
+          text.gameHud.map,
+          text.gameHud.party,
+          text.gameHud.settings,
+        ][index];
         return (
-          <GameTooltip key={icon} label={index < 2 ? label : `${label} · coming later`}>
+          <GameTooltip
+            key={icon}
+            label={index < 2 ? label : formatText(text.gameHud.comingLater, { label })}
+          >
             <button
               type="button"
               className="game-button"

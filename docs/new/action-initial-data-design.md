@@ -1,6 +1,6 @@
 # Initial Action Data Design
 
-> Актуализация от 24 октября 2026. Уточнение POI UI: optional `category`, денежный preview и пояснения disabled; непустой результат читается до transition/time. Cost/check/effects выполняются однократно. Полный текущий контракт — `poi-ui-design.md`.
+> Уточнение от 14 ноября 2026: cost.time проходит до показа результата; transition.time задаёт полную длительность последующего перехода (для POI заменяет время пути). Непустой результат читается перед transition, без повторных cost/check/effects. Текущий контракт — poi-ui-design.md; прежний порядок отложенного cost.time ниже им заменён.
 
 ## Статус и границы
 

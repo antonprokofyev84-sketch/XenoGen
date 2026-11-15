@@ -80,7 +80,7 @@ export interface ActionCost {
   money?: ActionNumber;
   /** Личная stamina протагониста, а не партийный пул. */
   stamina?: ActionNumber;
-  /** Минуты игрового времени. Сами по себе stamina не восстанавливают. */
+  /** Минуты попытки: проходят до показа результата, независимо от transition. */
   time?: ActionNumber;
   items?: ActionItemCost[];
 }
@@ -89,14 +89,18 @@ export interface ActionCost {
 // Transitions
 // ============================================================
 
-export type ActionTransition =
+export type ActionTransition = (
   | { type: 'frame'; frameId: FrameId }
   | { type: 'root' }
   | { type: 'currentPoi' }
   | { type: 'parentPoi' }
   | { type: 'poi'; poiId: PoiId }
   | { type: 'trade' }
-  | { type: 'combat' };
+  | { type: 'combat' }
+) & {
+  /** Полная длительность перехода в минутах; для POI заменяет время пути. */
+  time?: number;
+};
 
 // ============================================================
 // Results

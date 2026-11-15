@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
+import text from '@/locales/en.json';
 import type { NarrativeBlock } from '@/types/narrativeBlock.types';
 import { isDialogueLine, isThoughtLine } from '@/types/narrativeBlock.types';
 
@@ -63,11 +64,11 @@ export function NarrativeView({
         onContinue();
       }}
     >
-      <div className="poiTextScroll" tabIndex={0} aria-label="Interaction text">
+      <div className="poiTextScroll" tabIndex={0} aria-label={text.interactionUi.interactionText}>
         <NarrativeBlocks blocks={blocks} />
       </div>
       <span className="poiContinueHint" aria-hidden="true">
-        [ CLICK / SPACE <span>▶</span> ]
+        [ {text.interactionUi.continueHint} <span>▶</span> ]
       </span>
     </div>
   );

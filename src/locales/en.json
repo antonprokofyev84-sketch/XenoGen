@@ -1,4 +1,98 @@
 {
+  "interactionUi": {
+    "interaction": "Interaction",
+    "actionPages": "Action pages",
+    "previousActions": "Previous actions",
+    "nextActions": "Next actions",
+    "history": "History",
+    "historyTitle": "Interaction history",
+    "close": "Close",
+    "emptyHistory": "No history yet.",
+    "endTalk": "End talk",
+    "leave": "Leave",
+    "availableActions": "Available actions",
+    "emptyActions": "No actions available here right now.",
+    "interactionText": "Interaction text",
+    "continueHint": "CLICK / SPACE",
+    "coins": "{amount} coins",
+    "characters": "Available characters",
+    "previousCharacters": "Previous characters",
+    "nextCharacters": "Next characters",
+    "destinations": "Destinations"
+  },
+  "interactionText": {
+    "questRequirement": "Quest requirement",
+    "required": "Required: {requirement}",
+    "items": "Items: {items}",
+    "stamina": "Personal stamina: {amount}",
+    "limitReached": "Attempt limit reached",
+    "dailyAttempts": "Attempts left today: {amount}",
+    "totalAttempts": "Total attempts left: {amount}",
+    "insufficientMoney": "Not enough money: {available} of {required}",
+    "insufficientStamina": "Not enough stamina: {available} of {required}",
+    "insufficientItem": "Not enough {item}: {available} of {required}",
+    "requirementLabels": {
+      "stat": "Stat",
+      "skill": "Skill",
+      "item": "Item",
+      "defeated": "Victories",
+      "affection": "Relation",
+      "reputation": "Reputation",
+      "timesMet": "Meetings",
+      "regionLevel": "Region level"
+    }
+  },
+  "gameHud": {
+    "locationInformation": "Current location and region information",
+    "expand": "Expand location details",
+    "collapse": "Collapse location details",
+    "regionParameters": "Region parameters",
+    "unknown": "Unknown",
+    "day": "Day {day}",
+    "expeditionPoints": "Expedition points",
+    "expeditionUnavailable": "Expedition points are not implemented yet",
+    "systemMenu": "System menu",
+    "inventory": "Inventory",
+    "map": "Map",
+    "party": "Party",
+    "settings": "Settings",
+    "comingLater": "{label} · coming later",
+    "parameters": {
+      "prosperity": "Prosperity",
+      "techLevel": "Technology",
+      "contamination": "Contamination",
+      "threat": "Threat"
+    },
+    "timeOfDay": {
+      "late_night": "Late night",
+      "early_morning": "Early morning",
+      "morning": "Morning",
+      "afternoon": "Afternoon",
+      "evening": "Evening",
+      "night": "Night"
+    }
+  },
+  "worldUi": {
+    "unknownLocation": "Unknown location",
+    "noInformation": "No information available",
+    "region": "Region",
+    "pendingRemoval": "Pending removal",
+    "open": "Open",
+    "entryBlocks": {
+      "closed": "Closed",
+      "entryDisabled": "Entry unavailable",
+      "entryRefused": "Entry refused"
+    }
+  },
+  "mapUi": {
+    "pointsOfInterest": "Points of interest",
+    "emptyPois": "No points of interest discovered.",
+    "regionCommands": "Region commands",
+    "returnToLocation": "Return to location",
+    "restHour": "Rest (1 hour)",
+    "restMorning": "Rest until morning",
+    "fatigued": "Party is fatigued!"
+  },
   "characterCreation": {
     "title": "Character Creation",
     "mainStatsTitle": "Main Stats",
