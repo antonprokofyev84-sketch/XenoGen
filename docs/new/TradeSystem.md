@@ -1,6 +1,4 @@
-# Trade System
-
-> **Document status:** this is a collection of trade-system ideas and candidate balance rules. The regional input contract and canonical field names are aligned with the other design documents; formulas, coefficients, probability tables, and caps marked as suggested or exemplary are not yet final balance decisions.
+# Trade System — концепция
 
 ## Purpose
 
@@ -10,38 +8,7 @@ The trade system combines final regional levels, trader profiles, item definitio
 
 ## Regional Inputs
 
-```text
-prosperity   → how many goods are available
-techLevel    → which goods can appear
-contamination → infected goods and demand for protection
-threat       → combat demand and local danger
-```
-
-`techLevel` is the canonical technology-access field throughout the trade model.
-
-Trade works only with final integer levels in the range `0..9`:
-
-```ts
-type TradeContext = {
-  prosperity: number;
-  threat: number;
-  contamination: number;
-  techLevel: number;
-};
-```
-
-The values are resolved before stock generation by the canonical region resolver:
-
-```ts
-const tradeContext: TradeContext = resolvePoiRegionLevels(
-  rootCell.details.regionParameters,
-  poiTemplate,
-);
-```
-
-The resolver converts raw root-cell values, applies the current POI template override or modifier, and returns final integer levels `0..9`. Trade does not perform its own conversion, clamping, or POI inheritance logic.
-
----
+Stock generation receives the final POI levels from [the canonical region resolver](RegionParameters.md#локальные-уровни-poi).
 
 ## Trade Item Definition
 

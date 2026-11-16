@@ -1,133 +1,102 @@
-# Validation Contract — проверки initial-данных
+# Валидация initial-данных
 
-> Уточнение 14 ноября 2026: optional ActionTransition.time задаёт полную
-> длительность перехода в минутах. Допустимо конечное число >= 0; validator
-> проверяет прямые, взвешенные результаты и обе ветки check. Поле не меняет
-> контракт InterceptorTransition. Текущий порядок исполнения — poi-ui-design.md.
+Реализация: [validateInitialData.ts](../../src/systems/validation/validateInitialData.ts).
+`createInitialDataBundle()` собирает канонические реестры.
+`validateInitialData(bundle)` возвращает issues с путём и сообщением;
+`assertValidInitialData(bundle)` выбрасывает ошибку при наличии issues.
+Dev entry point выводит их в консоль; для автоматической проверки используй assert.
 
-> Актуализация от 24 октября 2026. Уточнение POI UI: validator проверяет `Action.category` по закрытому списку и непустой `Frame.title`, если он задан. Формат и defaults — в `poi-ui-design.md`; поля UI не вводят новые игровые ресурсы.
+## Контракт проверок
 
-> `InitialNpc.gender` обязателен и допускает только `male` и `female`.
-> Отсутствующий или неизвестный пол — ошибка; выбор изображения — `visual-assets.md`.
+Таблица задаёт обязательные инварианты authoring-данных. Это требования к
+валидации; фактическое покрытие текущей реализации указано ниже отдельно.
+Форму типизированных definitions дополнительно ограничивает TypeScript.
 
-## Статус и назначение
+| Группа         | Проверки                                                                                                                     |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Ссылки         | Frames, Actions, Interceptors, templates, родители POI, NPC, предметы, фракции, квесты и стадии                              |
+| Структура      | Полнота расписаний и региональных параметров, обязательные `gender` и initialStage, ровно одно result/check, обе ветки check |
+| Топология      | Корректность Cell ID, существующие родители, ацикличность дерева и принадлежность root cell                                  |
+| Идентификаторы | Грамматика Frame IDs, уникальность slot IDs и ссылок внутри списков                                                          |
+| Числа          | Конечность, вероятности, положительные сроки/лимиты, допустимые расходы и веса                                               |
+| Регионы        | Диапазоны raw/уровней и целые modifiers                                                                                      |
+| Контент        | Категории Actions, непустой заданный Frame title, форма narrative и effects                                                  |
+| Квесты         | Валидные targets, стадии и vars, один lifecycle-effect на квест в одном effects-блоке                                        |
+| Источники      | Дубли Actions/Interceptors внутри одного root-контекста и несколько статических работ у NPC                                  |
 
-Документ консолидирует все проверки ссылочной целостности и авторских инвариантов, ранее разбросанные по initial-data докам (`poi`, `cell`, `npc`, `action`, `frame`, `quest`, `interceptors`, `RegionParameters`, `interaction-runtime-*`).
+Разные стадии одного квеста считаются взаимоисключающими и могут повторять привязку.
+Привязки разных квестов могут работать одновременно: их конфликт проверяется.
 
-Валидатор работает только на этапе разработки/тестов (dev-time): при сборке контента и в Vitest. Он **не** является частью игрового рантайма и не влияет на производительность игры. Runtime полагается на то, что валидатор уже отсёк ошибки: он не дедуплицирует списки, не округляет числа и не «чинит» данные молча.
+Числовые правила следуют профильным типам и документам:
+[Actions](action-initial-data-design.md), [POI](poi-initial-data-design.md),
+[клетки](cell-initial-data-design.md), [квесты](quest-system-design.md),
+[регионы](RegionParameters.md). `ActionTransition.time` проверяется как конечное
+неотрицательное число в прямых, взвешенных результатах и обеих ветках check.
 
-При ошибке — явный fail с указанием конкретного ID/пути, а не тихий fallback на `false`/дефолт.
+### Числа и начальные состояния
 
----
+Все authored numbers должны быть конечными. Дополнительно:
 
-## 1. Ссылочная целостность (cross-references)
+| Поля                                                                                 | Требование                                                                   |
+| ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| `cost.money`, `cost.stamina`, `cost.time`, `transition.time`                         | Неотрицательные числа                                                        |
+| `cost.items[*].count`                                                                | Положительное целое                                                          |
+| `appearanceChance`, `check.chance`, slot/day-effect `chance`                         | `0..1`                                                                       |
+| `weight`                                                                             | Неотрицательный, суммарный вес набора положителен                            |
+| `executionLimit.perDay/total`, quest `timeLimit.days`, `disablePoiEntryForDays.days` | Положительные целые                                                          |
+| POI `lifetimeDaysLeft`                                                               | `null` или положительное целое; `0` возникает только при истечении в runtime |
+| Cell `explorationDaysLeft`                                                           | `null` или неотрицательное целое                                             |
+| `entryDisabledDaysLeft`                                                              | При наличии положительное целое; при нуле поле удаляется                     |
+| `addMoney.amount`, `addItem.count`, `removeItem.count`                               | Положительные конечные числа                                                 |
 
-Любая ссылка по ID обязана разрешаться в соответствующем реестре.
+`isDiscovered` в placement и `isEntryDisabled` задаются только как `true`;
+обычное начальное состояние выражается отсутствием поля.
+Региональные числа проверяются по [единицам и диапазонам региона](RegionParameters.md).
 
-- `Frame.actionIds[*]` → `INITIAL_ACTIONS`
-- `ActionTransition { type: 'frame'; frameId }` → `INITIAL_FRAMES`
-- `ActionTransition { type: 'poi'; poiId }` → существующий POI instance id
-- `poi.actionIds`, `slot.actionIds`, `npc.actionIds` → `INITIAL_ACTIONS`
-- `poi.interceptorIds`, `slot.interceptorIds`, `npc.interceptorIds` → `INITIAL_INTERCEPTORS`
-- `InterceptorResult.transition.frameId` (и в обеих ветках `check`) → `INITIAL_FRAMES`
-- `slot.candidateNpcIds[*]` → `INITIAL_NPCS`
-- `InitialPoi.templateId` → `POI_TEMPLATES`
-- `InitialPoi.parentId` → существующая клетка или POI
-- `questStage.actionIdsByTarget`: ключи (`QuestTargetId`) → существующий `npcId` или `poiId`; значения → `INITIAL_ACTIONS`
-- `questStage.interceptorIdsByTarget`: ключи → `npcId`/`poiId`; значения → `INITIAL_INTERCEPTORS`
-- Quest effects: `setQuestStage.{questId,stageId}`, `setQuestVar.questId`, `snapshotDefeatedCount.{questId,enemyTypeId}`, `setQuestJournalVisibility.questId`, `completeQuest/failQuest.questId` → соответствующие реестры
-- Structural effects: явный `poiId` в `disablePoiEntryForDays` / `setPoiEntryDisabled` → существующий POI; `'$currentPoi'` допустим только в контексте с текущим POI; `changeRegionParameter.cellParam` → `RegionParameterKey`
-- Условия: `affection.npcId`, `reputation.factionId`, `timesMet.npcId`, `defeated.enemyTypeId`, `questVar/questStatus.questId`, `baselineFromVar.questId` → соответствующие реестры
-- `cost.items[*].itemId`, `ItemCondition.itemId`, `addItem.itemId`, `removeItem.itemId` → реестр предметов
-- `InitialNpc.faction`, `InitialPoi.details.faction`, фракции в slot/quest → реестр фракций (включая явно созданный `independents`)
+### Контекстные ссылки
 
----
+Conditions с неявным субъектом и effects с текущей целью должны размещаться
+там, где эта цель разрешима. Например, `affection` без `npcId` требует
+NPC-контекст, а глобальный quest timer использует явный POI ID. Поля целей
+описаны в [контракте Actions](action-initial-data-design.md#transitions-и-цели-effects).
+Личность NPC определяется runtime-контекстом, а не префиксом Frame ID.
 
-## 2. Структурная полнота
+## Фактическое покрытие и runtime
 
-- `InitialNpc.baseSchedule` содержит все шесть `TimeOfDay`; каждое значение входит в `work | freeTime | home | hidden`.
-- `PoiSchedule`, если задан, содержит все шесть `TimeOfDay`.
-- `InitialCell.details.regionParameters` содержит все четыре ключа (`prosperity`, `techLevel`, `contamination`, `threat`).
-- Каждый квест содержит стадию `initialStage`.
-- Action имеет ровно одно из `result` / `check` (не оба и не ни одного). Interceptor — аналогично.
-- `check` содержит обе ветки `onSuccess` / `onFail`; пустая по смыслу ветка записывается явно как `{}`.
-- `WeightedActionResult[]` непустой, и у каждого элемента задан `weight`.
-- Все effect descriptors используют discriminator `type`. В v1 union входят только утверждённые quest effects; structural `markCurrentPoiForRemoval`, `changeRegionParameter`, `disablePoiEntryForDays`, `setPoiEntryDisabled`; `modifyTension`; protagonist-inventory effects `addMoney`, `addItem`, `removeItem`.
-- `FrameId` соответствует грамматике `contextId[:framePath]`, где slot context имеет вид `templateId/slotId`. Символы `/` и `:` не встречаются внутри `templateId`, `slotId` и отдельных сегментов `framePath`; имена `closed` и `forceExit` зарезервированы для системных Frames контекста.
-- Дерево POI ациклично; `parentId` существует, `rootCellId` согласован с цепочкой родителей, а `childPoiIds` после сборки содержат только непосредственных детей.
-- `slotId` уникален внутри template; `actionIds`, `interceptorIds` и `candidateNpcIds` не содержат повторов в одном списке.
+`validateInitialData` уже проверяет основные ссылки definitions, наличие
+time slots, категории Actions, gender и фракцию NPC, грамматику Frame ID,
+quest targets/lifecycle-effects, ряд диапазонов, root-дубли и static work candidates.
+`ActionTransition.time` проверяется в прямых и взвешенных результатах и обеих ветках.
 
----
+Покрытие контракта остаётся частичным. Подтверждённые расхождения:
 
-## 3. Числовые инварианты
+- Для статического cost проверяются item IDs, но не числовые значения расходов;
+  общая проверка конечности всех effect arguments также не реализована.
+- У Interceptors проверяется `appearanceChance`, но нет симметричной Actions
+  проверки чисел `executionLimit` и `check.chance`.
+- Проверяется существование parent ID, но не вся топология: циклы и соответствие
+  root cell цепочке родителей. Наличие time slots ещё не проверяет все допустимые
+  значения расписания; полная фиксированная сетка также не проверяется.
+- `ActionNumber`-функции не исполняются initial-валидатором, а текущие
+  `resolveActionNumber` / `resolveActionCost` не проверяют диапазоны и конечность
+  вычисленного результата. Проверка наличия ресурсов перед оплатой не заменяет
+  такую проверку.
 
-- `regionLevelOverrides[*]` — целое `0..9`.
-- `regionLevelModifiers[*]` — целое (дельта уровня), не дробное.
-- `regionParameters[*]` (raw клетки) — `0..999`; дробные допустимы.
-- `lifetimeDaysLeft` в initial placement/template — `null` либо положительное целое. Значения `0`, отрицательные и дробные отклоняются, чтобы истёкший POI не успел выполнить лишний `onDayPass`.
-- `explorationDaysLeft` в initial — `null` либо неотрицательное целое.
-- `entryDisabledDaysLeft` в initial/runtime при наличии — положительное целое; нулевое состояние представлено отсутствием поля.
-- `disablePoiEntryForDays.days`, `QuestTimeLimit.days`, `executionLimit.perDay` и `executionLimit.total` — положительные целые.
-- Статические `appearanceChance` и `check.chance` — в `0..1`.
-- Веса `ActionOutcome[]` неотрицательны, суммарный вес положителен.
-- `InitialNpcSlot.chance` — `0..1`.
-- `isEntryDisabled` при наличии имеет только значение `true`; разблокированный POI хранит `undefined`, а не `false`.
-- Все статические authored numbers конечны (`Number.isFinite`). В частности, `changeRegionParameter.delta` и `modifyTension.delta` не допускают `NaN`/`Infinity`.
-- Статические `cost.money`, `cost.stamina`, `cost.time` неотрицательны; `cost.items[*].count` — положительное целое. Те же ограничения проверяются после разрешения динамического `ActionNumber`.
-- `addMoney.amount`, `addItem.count` и `removeItem.count` — положительные конечные числа; `addItem/removeItem.itemId` разрешаются в item registry.
+Для вычисляемых значений действуют те же числовые ограничения контракта.
+Доведение этих проверок до полного покрытия — задача реализации, а не уже
+гарантированное свойство executor.
 
----
+`$npc`, `{$npc}` и `npcDisplay: always` требуют фактического NPC-контекста;
+открытие некорректного контента вызывает явную ошибку.
+Полного reachability-анализа переиспользуемых Frames в initial-валидаторе нет.
+Существующая проверка для `$npc` в speaker и `always` использует `/` в Frame ID
+как признак slot-контекста. Это более узкое ограничение реализации, чем
+[контракт именования Frames](frame-initial-data-design.md#идентификаторы),
+допускающий контентные IDs по NPC или квесту. Фактический контекст проверяют runtime guards.
 
-## 4. Уникальность и запрет дублей
+Назначения `poiId + slotId → npcId`, совместимость schedule и единственное
+текущее размещение относятся к [occupancy](npc-initial-data-design.md#расписания-и-occupancy),
+а не к immutable initial-набору.
 
-- `QuestId` уникальны в `INITIAL_QUESTS`.
-- Один `InterceptorId` не приходит в снимок из нескольких источников одного контекста — runtime не дедуплицирует.
-- Один `ActionId` не попадает в несколько групп одного экрана (`frame` / `poi` / `slot` / `personal` / `quest`), иначе кнопка раздвоится.
-- Один `ActionId` не приходит из нескольких источников root-контента. Повторное использование Action во внутренних `Frames` само по себе не запрещено.
-- Validator проверяет сочетания Frame/template/quest для POI root и
-  Frame/slot/personal/quest для каждого кандидата NPC. Разные стадии одного
-  квеста взаимоисключающие и могут повторно привязывать Action; привязки из
-  разных квестов могут действовать одновременно и считаются конфликтом.
-- `SlotId` уникальны внутри `template`, включая разные группы `work` / `freeTime` / `home`.
-- Авторский `candidateNpcIds` указывает NPC максимум в одном `work slot` мира: глобальный resolved schedule резервирует работающего NPC за конкретным рабочим местом, и вторая работа сделала бы выбор зависимым от порядка обхода данных. Персональные назначения игрока этим правилом не ограничены.
-- `CellId` уникальны; набор клеток фиксированной сетки полон и в границах.
-
----
-
-## 5. Контекст и placeholders
-
-- Условия с дефолтом «текущий субъект» (`affection` / `reputation` без явного id) размещаются там, где текущий субъект разрешим:
-  - `affection` без `npcId` — только в slot/NPC-контексте;
-  - `reputation` без `factionId` — у текущего субъекта (сначала NPC, затем POI) должна быть фракция; проверяется репутация игрока с этой фракцией;
-  - неразрешимый текущий субъект — ошибка, а не `false`.
-- `markCurrentPoiForRemoval`, `changeRegionParameter` и effects с `poiId: '$currentPoi'` размещаются только там, где runtime однозначно предоставляет текущий POI. Для `onDayPass` текущим считается POI-владелец; глобальный quest timer сам по себе такого контекста не создаёт.
-- `modifyTension` размещается только в NPC-bearing interaction-контексте, где однозначно разрешается текущий NPC subject.
-
-Полный reachability-анализ от root context до переиспользуемых Frames и Actions в первой версии валидатора не выполняется. Поэтому `$npc` и `npcDisplay: 'always'` проверяются runtime guard при фактическом входе в Frame; при отсутствии NPC runtime выбрасывает явную ошибку initial content.
-
----
-
-## 6. Квестовые инварианты
-
-- В одном блоке `effects` для одного квеста — не более одного lifecycle-эффекта (`setQuestStage` | `completeQuest` | `failQuest`). Правило одинаково для `ActionResult.effects`, `InterceptorResult.effects` и `QuestTimeLimit.onExpire`.
-- `questVar` condition: ровно одно из `equals` / `notEquals`.
-- Числовое comparison-condition задаёт хотя бы одно ограничение. `exact` не сочетается с `min`/`max`; при паре `min` + `max` выполняется `min <= max`. Это правило распространяется и на `regionLevel`.
-- `setQuestStage` / `setQuestVar` / `snapshotDefeatedCount` не адресуются `completed` / `failed` квесту (авторский инвариант данных; рантайм дополнительно защищается от этого же случая).
-- `CellId` имеет формат `{col}-{row}` с неотрицательными координатами (иначе `parseCellId` бросает исключение).
-
----
-
-## 7. Runtime guards, не относящиеся к initial-данным
-
-- `RuntimeSlotAssignment.assignedNpcId` обязан разрешаться в `INITIAL_NPCS`, а ключ assignment — в существующие `poiId + slotId`. Это проверяется при создании/изменении assignment, а не initial-data validator.
-- Фактический occupant должен соответствовать глобальному resolved schedule, быть свободен и занимать не более одного slot. Для work slot дополнительно обязательны `baseSchedule[currentTimeOfDay] === 'work'`, candidate/assignment связь и открытый POI. Это инвариант occupancy resolver.
-- Один NPC не может иметь две работы: static `candidateNpcIds` допускают NPC максимум в одном `work` slot; runtime work assignment supersedes static work membership, а один NPC допускается максимум в одном runtime work assignment.
-- Динамическое число после разрешения проверяется на конечность и по диапазону своего поля; authoring-функция не может обойти ограничения chance, веса или cost.
-
----
-
-## 8. Чего валидатор не делает
-
-- Не проверяет загруженный save — save/load вне скоупа миграции.
-- Не валидирует, что NPC реально занимает указанный slot: это рантайм-инвариант occupancy, а не initial-данных.
-- Не правит, не округляет и не дополняет данные — только отклоняет с конкретной ошибкой.
+Повреждённые авторские данные исправляются в definitions. Runtime сохраняет
+однозначность данных вместо дедупликации повторяющихся источников.

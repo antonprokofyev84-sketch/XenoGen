@@ -4,7 +4,6 @@ Generated with the built-in ImageGen tool using the user's attached POI screensh
 as a visual reference. These are separate illustrative assets; all UI is React/SCSS.
 
 - `backgrounds/poi-demo/tavern.png`: widescreen interior, no interface or foreground NPC.
-- `npcs/fixtureKeeper/default.png`: previous cropped reference, no longer loaded by the resolver.
 - `npcs/fixtureKeeper/full-body.png`: full-body RGBA figure, 948×1659 (4:7), used by the resolver.
 - `npcs/fixtureKeeper/portrait.webp`: 200×200 runtime portrait, approximately 11 KB.
 - `npcs/fixtureKeeper/portrait.source.png`: original 1254×1254 portrait, excluded from the resolver and build.
@@ -28,9 +27,7 @@ floor, no shadow plane, no text or UI. Keep hands near waist rather than wide
 extended pose. Render ONLY the full-body bartender.”
 
 Inputs: existing `default.png` and `public/images/characters/player/protagonist_0.png`.
-The tool returned a larger 948×1659 image with the requested 4:7 ratio. POI displays
-the full canvas at 1000 CSS px high, horizontally centered in a 440 px wide container
-at x=0, y=70, with the bottom clipped at the scene edge. Asset standards: `docs/new/visual-assets.md`.
+The full-body output is 948×1659 px. Preparation and display rules: [visual assets](../../docs/new/visual-assets.md).
 
 Background: “Use case: stylized-concept. Asset type: widescreen 16:9 game scene background.
 Reference image is the visual style and interior composition reference only. Create the

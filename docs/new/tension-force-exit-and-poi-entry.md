@@ -1,168 +1,76 @@
-# Tension, force exit и доступ к POI
+# Tension, force exit и вход в POI
 
-## Статус
+Исполнение: [interactionState.ts](../../src/systems/interaction/interactionState.ts),
+[dailyMemory.ts](../../src/systems/interaction/dailyMemory.ts),
+[poiEntry.ts](../../src/systems/world/poiEntry.ts).
 
-Документ фиксирует принятое поведение дневного `tension`, принудительного завершения взаимодействия с NPC и блокировки входа в POI.
+## Дневной tension
 
-## Дневной tension NPC
-
-- `tension` по умолчанию принадлежит конкретному NPC, а не POI.
-- При первом взаимодействии с NPC в течение дня начальный `tension` рассчитывается из актуального эффективного отношения и одного случайного целого отклонения в диапазоне `[-20, 20]`.
-- Эффективное отношение учитывает личное отношение NPC, репутацию игрока у его фракции и loyalty-профиль NPC.
-- Полученное значение сохраняется в дневной памяти NPC и используется при всех повторных взаимодействиях с ним в тот же день.
-- В конце дня дневная запись удаляется. При первом взаимодействии следующего дня начальный `tension` рассчитывается заново из уже актуальных отношений.
-- Постоянные последствия конфликта должны отдельно изменять личное отношение, репутацию, квестовое состояние или состояние POI. Сам дневной `tension` таких последствий не создаёт.
-
-За базу берётся формула из текущей реализации с исправленным знаком и ограничением итогового диапазона:
-
-```ts
-const randomOffset = Math.floor(random() * 41) - 20;
-const initialTension = clamp(-effectiveRelation + randomOffset, 0, 100);
-```
-
-`effectiveRelation` сохраняет формулу текущего `resolveEffectiveRelation`:
-
-```ts
-const factionWeight = 1 - personalWeight;
-const effectiveRelation = personalAffection * personalWeight + factionReputation * factionWeight;
-```
-
-`personalWeight` берётся из loyalty-профиля фракции NPC и находится в `0..1`. В текущем `computeInitialTension` использовалось `effectiveRelation + randomOffset`, из-за чего хорошее отношение ошибочно повышало напряжение, а результат не ограничивался ожидаемым диапазоном. Поэтому знак инвертируется и добавляется `clamp`.
-
-Текущий `startInteractionDraft` пока получает фракцию NPC и affection через временные заглушки (`neutral` и `0`). Эти заглушки не являются частью формулы и не переносятся: новый runtime читает фактические `npc.faction`, affection NPC и репутацию игрока у этой фракции. Для NPC без фракции используется чисто личное отношение (`personalWeight = 1`, faction contribution `0`), без вымышленного faction ID. Конкретный числовой порог `forceExit` остаётся отдельной балансной константой.
-
-## Force exit из взаимодействия с NPC
-
-`forceExit` представлен системным элементом той же pending-очереди, в которой исполняются authored Interceptors, но сам не является записью `INITIAL_INTERCEPTORS`. Runtime проверяет порог после первого расчёта или восстановления дневного tension при входе, а также после полного применения результата Action/Interceptor, содержащего `modifyTension`. Проверка не вклинивается между отдельными effects одного результата. При достижении порога runtime идемпотентно заменяет оставшуюся authored-очередь единственным system `forceExit` item. Открытый внутренний Frame не прерывается: системный элемент исполняется только после возврата в root актуального контекста.
-
-Базовый исход при достижении порога `tension`:
+Tension принадлежит конкретному NPC. При первом взаимодействии за день берётся
+эффективное отношение к игроку и один целый случайный offset `[-20, 20]`:
 
 ```text
-slot/NPC context → currentPoi
+effectiveRelation = affection × personalWeight + factionReputation × (1 - personalWeight)
+tension = clamp(-effectiveRelation + randomOffset, 0, 100)
 ```
 
-Игрок прекращает разговор и возвращается в root текущего POI. Остальные возможности POI автоматически не блокируются.
+`personalWeight` берётся из loyalty-профиля фракции. Значение сохраняется в дневной
+памяти NPC и используется при повторных подходах; следующий день создаёт новый baseline.
+`modifyTension` меняет это дневное значение.
+Хорошее отношение снижает исходное напряжение. Постоянные последствия конфликта
+задаются отдельно состоянием отношений, квеста или POI: дневной tension
+сбросится и сам по себе их не сохраняет.
 
-Если для slot/NPC-контекста существует reserved Frame `<templateId>/<slotId>:forceExit`, system item открывает его. Обычные Actions этого Frame определяют дальнейший исход. Поэтому контент может явно задать более сильный вариант:
+## Force exit
 
-```text
-slot/NPC context → parentPoi
-```
+Порог задаёт `FORCE_EXIT_TENSION_THRESHOLD` в dailyMemory. Он проверяется при
+инициализации/восстановлении tension и после полного результата Action/Interceptor
+с `modifyTension`.
 
-Например, хозяин дома может выставить игрока за дверь. Action внутри force-exit Frame применяет эффект блокировки входа и выполняет переход в родителя.
+При достижении порога authored-остаток [очереди Interceptors](interceptors-design.md)
+заменяется единственным системным item `forceExit`. Планирование идемпотентно.
+Item переживает refresh time slot и ждёт root; текущий внутренний Frame продолжается.
+При новом подходе к NPC того же дня проверка выполняется снова: пока tension
+остаётся на пороге, force exit снова планируется. Смена/утрата актуальности
+NPC-контекста очищает прежний системный item.
 
-Если reserved Frame отсутствует, используется системный fallback без authored result: slot/NPC context возвращается в `currentPoi`. POI-context force exit в этой миграции не используется. Переход в `currentPoi` или `parentPoi` внутри существующего force-exit Frame остаётся обычным Action transition. Блокировка POI остаётся отдельным effect.
+В root система открывает reserved Frame `templateId/slotId:forceExit`.
+Если такого Frame нет, возвращает из NPC-контекста к текущему POI.
+Дальнейший исход reserved Frame задают его обычные Actions: например,
+блокировка входа и переход `parentPoi`, когда хозяин выставляет игрока за дверь.
+Обычный конфликт завершает только разговор: роль NPC сама по себе не блокирует
+остальные возможности места.
 
-## Состояние доступа к POI
-
-Доступность входа принадлежит runtime-состоянию самого POI. Родительский POI строит навигацию по состоянию своих дочерних POI и не читает для этого interaction memory.
+Например, Action в reserved Frame бармена может выгнать игрока до конца дня:
 
 ```ts
-interface PoiDetails {
-  /**
-   * Постоянная блокировка нового входа.
-   * Отсутствие поля означает false.
-   */
-  isEntryDisabled?: true;
-
-  /**
-   * Временная блокировка нового входа.
-   * Значение 1 означает блокировку до ближайшего конца дня.
-   */
-  entryDisabledDaysLeft?: number;
+result: {
+  effects: [{ type: 'disablePoiEntryForDays', poiId: '$currentPoi', days: 1 }],
+  transition: { type: 'parentPoi' },
 }
 ```
 
-`isEntryDisabled` хранится только в состоянии `true`. Разрешение входа удаляет поле, поэтому `undefined` корректно означает `false` и не требует явного начального значения для каждого POI.
+## Вход в POI
 
-`entryDisabledDaysLeft` использует ту же семантику оставшихся дней, что и другие дневные счётчики мира:
+| Состояние                          | Навигация                         |
+| ---------------------------------- | --------------------------------- |
+| Не обнаружен либо `pendingRemoval` | Переход скрыт                     |
+| Закрыт по schedule                 | Disabled, причина `closed`        |
+| `isEntryDisabled`                  | Disabled, причина `entryDisabled` |
+| `entryDisabledDaysLeft > 0`        | Disabled, причина `entryRefused`  |
+| Остальные случаи                   | Доступен                          |
 
-```text
-поле отсутствует → временной блокировки нет
-1                 → вход запрещён до ближайшего конца дня
-2                 → остаток текущего дня и весь следующий день
-```
+Проверки причин идут в указанном порядке. И UI-навигация, и world travel используют
+общее правило `canEnterPoi`. Ограничение относится к новому входу; выход доступен,
+уже открытый Frame и дневная симуляция продолжаются.
+Блокировка не очищает occupancy, не выгоняет NPC и не распространяется
+рекурсивно на дочерние узлы. Сцена фейсконтроля после допустимого входа и
+запрет самого входа решают разные задачи.
 
-При общем `onDayEnd` обрабатываются все зарегистрированные дневные счётчики мира, включая `entryDisabledDaysLeft`. Значение уменьшается на один, а при достижении нуля поле удаляется. Для добавления нового счётчика не создаётся отдельный дневной pipeline: он подключается к той же общей фазе со своим правилом нулевого состояния.
+`isEntryDisabled` хранится как optional `true`. Effect `setPoiEntryDisabled`
+с `isDisabled: false` удаляет это поле; с `true` устанавливает его.
 
-Структурные effects доступа первой версии:
-
-```ts
-interface DisablePoiEntryForDaysEffect {
-  type: 'disablePoiEntryForDays';
-  poiId: PoiId | '$currentPoi';
-  days: number;
-}
-
-interface SetPoiEntryDisabledEffect {
-  type: 'setPoiEntryDisabled';
-  poiId: PoiId | '$currentPoi';
-  disabled: boolean;
-}
-```
-
-`days` является положительным целым числом. `setPoiEntryDisabled(..., false)` удаляет optional-поле `isEntryDisabled`, а не сохраняет `false`.
-
-## Разрешение навигации
-
-Для обнаруженного дочернего POI переход остаётся видимым, но становится disabled, если выполняется хотя бы одно из условий:
-
-- `isEntryDisabled === true`;
-- `entryDisabledDaysLeft > 0`;
-- POI закрыт по текущему `schedule`.
-
-`pendingRemoval` сохраняет отдельную ранее принятую семантику: такой POI не предлагается для нового входа, а не отображается как обычный disabled-переход.
-
-Причина disabled определяется runtime resolver:
-
-```text
-schedule closed              → «Закрыто»
-isEntryDisabled              → «Вход недоступен»
-entryDisabledDaysLeft > 0    → «Вас сюда не пускают»
-```
-
-Блокировка входа:
-
-- действует только на новый переход в POI;
-- не прерывает уже выполняющийся Action или внутренний Frame;
-- не запрещает выход из POI;
-- не очищает occupancy;
-- не выгоняет работников и других NPC;
-- не останавливает `onDayPass`;
-- не удаляет POI и не блокирует рекурсивно его дочерние POI.
-
-## Типовые сценарии
-
-### Обычный конфликт с NPC
-
-```text
-reserved force-exit Frame отсутствует
-→ system fallback: currentPoi
-```
-
-### Хозяин выставляет игрока из дома
-
-```text
-Action в <contextId>:forceExit:
-  effects: отсутствуют
-  transition: parentPoi
-```
-
-### Бармен выгоняет игрока до конца дня
-
-```text
-Action в <contextId>:forceExit:
-  effects:
-    { type: 'disablePoiEntryForDays', poiId: '$currentPoi', days: 1 }
-  transition:
-    parentPoi
-```
-
-### Дом мэра известен, но пока закрыт для игрока
-
-```text
-isDiscovered: true
-isEntryDisabled: true
-```
-
-Квестовый или мировой effect позже выполняет `{ type: 'setPoiEntryDisabled', poiId: 'mayorHouse', disabled: false }` и тем самым удаляет `isEntryDisabled` и разрешает вход.
+`disablePoiEntryForDays` задаёт положительное `entryDisabledDaysLeft`:
+1 — до ближайшего конца дня, 2 — остаток текущего и весь следующий день.
+Счётчик уменьшается общей дневной фазой и удаляется при нуле.
+Оба effects принимают `poiId` конкретного экземпляра либо `$currentPoi`.
