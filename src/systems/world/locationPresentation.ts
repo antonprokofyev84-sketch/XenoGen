@@ -6,7 +6,8 @@ import { resolveText } from '@/systems/text/resolveText';
 import type { ResolvedRegionLevels } from '@/types/region.types';
 import { isCellNode } from '@/types/worldNode.types';
 
-import { POI_ENTRY_BLOCK_LABELS, resolvePoiEntryBlock } from './poiEntry';
+import { resolvePoiEntryBlock } from './poiEntry';
+import type { PoiEntryBlockReason } from './poiEntry';
 import { resolveCellRegionLevels, resolvePoiRegionLevels } from './regionLevels';
 
 export interface LocationPresentation {
@@ -17,6 +18,8 @@ export interface LocationPresentation {
 }
 
 type LocationState = Pick<StoreState, 'poiSlice' | 'world'>;
+export const POI_ENTRY_BLOCK_LABELS: Readonly<Record<PoiEntryBlockReason, string>> =
+  textData.worldUi.entryBlocks;
 
 /** One title rule for the HUD, navigation and interaction panel. */
 export function resolvePoiDisplayName(templateId: string): string {
@@ -40,25 +43,28 @@ export function resolveLocationPresentation(
   id: string,
 ): LocationPresentation {
   const node = state.poiSlice.pois[id];
-  if (!node) return { title: 'Unknown location', status: 'No information available' };
+  if (!node)
+    return { title: textData.worldUi.unknownLocation, status: textData.worldUi.noInformation };
   const root = state.poiSlice.pois[node.rootCellId];
   const cell = root && isCellNode(root) ? root : undefined;
   const known = cell !== undefined && cell.details.visitedTimes > 0;
   if (isCellNode(node))
     return {
       title: resolveWorldNodeTitle(state, id),
-      status: 'Region',
+      status: textData.worldUi.region,
       levels: known ? resolveCellRegionLevels(node.details.regionParameters) : undefined,
     };
   const block = resolvePoiEntryBlock(state, id);
+  let status = textData.worldUi.open;
+  if (node.pendingRemoval) {
+    status = textData.worldUi.pendingRemoval;
+  } else if (block) {
+    status = POI_ENTRY_BLOCK_LABELS[block];
+  }
   return {
     title: resolveWorldNodeTitle(state, id),
     parentTitle: resolveWorldNodeTitle(state, node.parentId),
-    status: node.pendingRemoval
-      ? 'Pending removal'
-      : block
-        ? POI_ENTRY_BLOCK_LABELS[block]
-        : 'Open',
+    status,
     levels:
       known && cell
         ? resolvePoiRegionLevels(

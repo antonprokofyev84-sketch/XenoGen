@@ -38,6 +38,12 @@ export const DamageFloatStagger = ({
         const isMiss = item.type === 'miss';
         const isCrit = item.type === 'crit';
         const label = isMiss ? 'MISS' : item.damage;
+        let damageClass = 'hit';
+        if (isMiss) {
+          damageClass = 'miss';
+        } else if (isCrit) {
+          damageClass = 'crit';
+        }
 
         // небольшой разброс по X, чтобы не слипались
         const offsetXPercent = ((index * 7) % 16) - 8; // детерминированно, без Math.random
@@ -45,7 +51,7 @@ export const DamageFloatStagger = ({
         return (
           <div
             key={index}
-            className={`damageFloat ${isMiss ? 'miss' : isCrit ? 'crit' : 'hit'}`}
+            className={`damageFloat ${damageClass}`}
             style={{
               animationDelay: `${index * delayBetweenMs}ms`,
               animationDuration: `${lifeMs}ms`,

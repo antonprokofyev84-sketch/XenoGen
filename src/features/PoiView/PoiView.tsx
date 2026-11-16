@@ -18,7 +18,7 @@ export const PoiView = () => {
   const options = useGameState(interactionSelectors.selectInteractionOptions);
   const enterSlot = useGameState((state) => state.interactionSlice.actions.enterSlotContext);
   const isTradeOpen = useGameState((state) => state.interactionSlice.isTrading);
-  const isReading = interaction?.reading.mode === 'narrative';
+  const isReading = presentation.reading.mode === 'narrative';
   const actions = [
     ...options.actions.frame,
     ...options.actions.poi,
@@ -42,7 +42,7 @@ export const PoiView = () => {
           <PoiNavigation navigation={options.navigation} disabled={isReading} />
         </GameHud>
         <PoiInteractionPanel
-          key={`${interaction.poiId}/${interaction.npcId ?? ''}/${interaction.activeFrameId}/${interaction.reading.mode}`}
+          key={`${interaction.poiId}/${interaction.npcId ?? ''}/${interaction.activeFrameId}/${presentation.reading.mode}`}
           interaction={interaction}
           presentation={presentation}
           actions={actions}

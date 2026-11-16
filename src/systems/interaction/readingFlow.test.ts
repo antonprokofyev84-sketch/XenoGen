@@ -14,6 +14,7 @@ import { resolveInteractionOptions } from './resolveOptions';
 
 const state = () => useGameState.getState();
 const read = () => state().interactionSlice.actions.continueInteraction();
+const reading = () => resolveInteractionPresentation(state()).reading;
 const count = (id: string) =>
   state()
     .inventory.containers.protagonist.items.filter((item) => item.templateId === id)
@@ -24,7 +25,7 @@ const install = (action: InitialAction) => {
 };
 const act = () => state().interactionSlice.actions.performAction(testId);
 
-describe('POI reading and deferred Action completion', () => {
+describe('Immediate Action costs and deferred transitions', () => {
   beforeEach(() => {
     useGameState.setState(useGameState.getInitialState(), true);
     state().characters.actions.resetProtagonist();
@@ -49,10 +50,10 @@ describe('POI reading and deferred Action completion', () => {
     expect(state().inventory.containers.protagonist.money).toBe(100);
     expect(state().world.currentTime).toBe(time);
     read();
-    expect(state().interactionSlice.currentInteraction?.reading.mode).toBe('actions');
+    expect(reading().mode).toBe('actions');
   });
 
-  it('pays, rolls, applies effects once, then moves and spends time only after continue', () => {
+  it('pays all costs once before reading, then spends transition time on continue', () => {
     read();
     const cost = vi.fn(() => 7);
     const rng = vi.fn(() => 0.1);
@@ -66,7 +67,7 @@ describe('POI reading and deferred Action completion', () => {
         onSuccess: {
           narrative: ['Результат'],
           effects: [{ type: 'addItem', itemId: 'food', count: 1 }],
-          transition: { type: 'frame', frameId: 'fixtureHub:inner' },
+          transition: { type: 'frame', frameId: 'fixtureHub:inner', time: 30 },
         },
         onFail: { narrative: ['Провал'] },
       },
@@ -87,20 +88,21 @@ describe('POI reading and deferred Action completion', () => {
     expect(count('scrap')).toBe(3);
     expect(count('food')).toBe(before.food + 1);
     expect(state().characters.byId.protagonist.stamina).toBe(before.stamina - 2);
-    expect(state().world.currentTime).toBe(before.time);
+    expect(state().world.currentTime).toBe(before.time + 15 * 60000);
     expect(state().interactionSlice.currentInteraction?.activeFrameId).toBe('fixtureHub');
     act();
     expect(state().inventory.containers.protagonist.money).toBe(93);
     useGameState.setState(
       produce(state(), (draft) => {
+        draft.ui.interactionLogCursor = draft.interactionSlice.currentInteraction!.log.length;
         continueInteraction(draft, rng);
       }),
     );
-    expect(state().world.currentTime).toBe(before.time + 15 * 60000);
+    expect(state().world.currentTime).toBe(before.time + 45 * 60000);
     expect(state().interactionSlice.currentInteraction?.activeFrameId).toBe('fixtureHub:inner');
     read();
     read();
-    expect(state().world.currentTime).toBe(before.time + 15 * 60000);
+    expect(state().world.currentTime).toBe(before.time + 45 * 60000);
     expect(cost).toHaveBeenCalledTimes(1);
     expect(rng).toHaveBeenCalledTimes(1);
     expect(
@@ -120,9 +122,10 @@ describe('POI reading and deferred Action completion', () => {
         onFail: { narrative: ['Не получилось.'] },
       },
     });
+    const before = state().world.currentTime;
     act();
     expect(state().inventory.containers.protagonist.money).toBe(91);
-    const before = state().world.currentTime;
+    expect(state().world.currentTime).toBe(before + 5 * 60000);
     read();
     read();
     expect(state().world.currentTime).toBe(before + 5 * 60000);
@@ -135,7 +138,7 @@ describe('POI reading and deferred Action completion', () => {
     const before = state().world.currentTime;
     act();
     expect(state().world.currentTime).toBe(before + 3 * 60000);
-    expect(state().interactionSlice.currentInteraction?.reading.mode).toBe('actions');
+    expect(reading().mode).toBe('actions');
   });
 
   it('does not repeat root narrative when returning from an internal Frame', () => {
@@ -145,7 +148,7 @@ describe('POI reading and deferred Action completion', () => {
     const length = state().interactionSlice.currentInteraction?.log.length;
     state().interactionSlice.actions.performAction('fixture:backToRoot');
     expect(state().interactionSlice.currentInteraction?.log.length).toBe(length);
-    expect(state().interactionSlice.currentInteraction?.reading.mode).toBe('actions');
+    expect(reading().mode).toBe('actions');
   });
 
   it('keeps the original POI and result until deferred travel, with one reward', () => {
@@ -195,28 +198,41 @@ describe('POI reading and deferred Action completion', () => {
     );
   });
 
-  it('preserves reading and pending completion through inventory and does not spend time', () => {
+  it('preserves reading through inventory after the full Rest cost has already been paid', () => {
     read();
-    state().interactionSlice.actions.performAction('fixture:restAtHub');
-    const before = state().interactionSlice.currentInteraction;
     const time = state().world.currentTime;
+    state().characters.actions.changeStamina('protagonist', -40);
+    const stamina = state().characters.byId.protagonist.stamina;
+    const snapshots: { time: number; stamina: number }[] = [];
+    const unsubscribe = useGameState.subscribe((next) =>
+      snapshots.push({
+        time: next.world.currentTime,
+        stamina: next.characters.byId.protagonist.stamina,
+      }),
+    );
+    state().interactionSlice.actions.performAction('fixture:restAtHub');
+    unsubscribe();
+    expect(snapshots).toEqual([{ time: time + 120 * 60000, stamina: stamina + 40 }]);
+    const before = state().interactionSlice.currentInteraction;
+    expect(state().world.currentTime).toBe(time + 120 * 60000);
+    expect(state().characters.byId.protagonist.stamina).toBe(stamina + 40);
     state().ui.openCharacterDetails();
     state().ui.closeCharacterDetails();
     expect(state().ui.currentScreen).toBe('poiView');
     expect(state().interactionSlice.currentInteraction).toBe(before);
-    expect(state().world.currentTime).toBe(time);
+    expect(state().world.currentTime).toBe(time + 120 * 60000);
     read();
     expect(state().world.currentTime).toBe(time + 120 * 60000);
   });
 
-  it('does not carry a cleared completion into a different context', () => {
+  it('cannot avoid a paid time cost by ending the interaction before reading', () => {
     read();
-    state().interactionSlice.actions.performAction('fixture:restAtHub');
     const time = state().world.currentTime;
+    state().interactionSlice.actions.performAction('fixture:restAtHub');
     state().interactionSlice.actions.endInteraction();
     state().interactionSlice.actions.enterPoiContext('fixtureOpenSite');
     read();
-    expect(state().world.currentTime).toBe(time);
+    expect(state().world.currentTime).toBe(time + 120 * 60000);
   });
 
   it('uses current reading for the speaker and removes speaker-only figures in actions mode', () => {
@@ -247,11 +263,11 @@ describe('POI reading and deferred Action completion', () => {
     const before = state().world.currentTime;
     state().interactionSlice.actions.performAction('fixture:restAtHub');
     const pending = state().interactionSlice.currentInteraction;
-    expect(pending?.reading.mode).toBe('narrative');
+    expect(reading().mode).toBe('narrative');
     state().ui.goToScreen('strategicMap');
     state().ui.goToScreen('poiView');
     expect(state().interactionSlice.currentInteraction).toBe(pending);
-    expect(state().world.currentTime).toBe(before);
+    expect(state().world.currentTime).toBe(before + 120 * 60000);
     read();
     expect(state().world.currentTime).toBe(before + 120 * 60000);
     expect(state().inventory.containers.protagonist.money).toBe(90);
