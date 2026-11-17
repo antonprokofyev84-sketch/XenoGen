@@ -3,10 +3,10 @@ import { useState } from 'react';
 import { GameTooltip } from '@/components/GameHud/GameTooltip';
 import text from '@/locales/en.json';
 import { useGameState } from '@/state/useGameState';
-import type { NpcOverlay } from '@/systems/interaction/presentation';
-import type { ResolvedInteractionOptions, UiNpcSlot } from '@/systems/interaction/resolveOptions';
-import { POI_TRANSITION_BLOCK_LABELS } from '@/systems/interaction/resolveOptions';
+import type { NpcOverlay, UiNpcSlot } from '@/systems/interaction/presentation';
+import type { ResolvedInteractionOptions } from '@/systems/interaction/resolveOptions';
 import { resolveNpcPortrait, resolveNpcSilhouette } from '@/systems/npc/npcImageResolver';
+import { POI_ENTRY_BLOCK_LABELS } from '@/systems/world/locationPresentation';
 
 import { PoiIcon } from './PoiIcon';
 
@@ -133,7 +133,7 @@ export function PoiNavigation({
         {routes.map((route) => (
           <GameTooltip
             key={route.poiId}
-            label={`${route.label}${route.blockReason ? ' · ' + POI_TRANSITION_BLOCK_LABELS[route.blockReason] : ''}`}
+            label={`${route.label}${route.blockReason ? ' · ' + POI_ENTRY_BLOCK_LABELS[route.blockReason] : ''}`}
           >
             <button
               type="button"
@@ -145,9 +145,7 @@ export function PoiNavigation({
               <PoiIcon name="map" />
               <span>
                 {route.label}
-                {route.blockReason && (
-                  <small>{POI_TRANSITION_BLOCK_LABELS[route.blockReason]}</small>
-                )}
+                {route.blockReason && <small>{POI_ENTRY_BLOCK_LABELS[route.blockReason]}</small>}
               </span>
             </button>
           </GameTooltip>

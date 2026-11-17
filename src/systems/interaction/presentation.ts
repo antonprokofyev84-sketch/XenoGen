@@ -1,100 +1,111 @@
 import { INITIAL_FRAMES } from '@/data/initial/frames';
 import type { StoreState } from '@/state/useGameState';
 import { resolveNpcImage } from '@/systems/npc/npcImageResolver';
-import type { NpcDisplayMode } from '@/types/frame.types';
+import { resolveText } from '@/systems/text/resolveText';
+import { resolvePoiDisplayName } from '@/systems/world/locationPresentation';
 import { DEFAULT_NPC_DISPLAY_MODE } from '@/types/frame.types';
-import type { CharacterId, NpcId } from '@/types/ids.types';
+import type { NpcId, PoiId, SlotId } from '@/types/ids.types';
+import type { NarrativeBlock } from '@/types/narrativeBlock.types';
 import { isDialogueLine } from '@/types/narrativeBlock.types';
 
+import { findSlotDefinition, listSlotDefinitions } from './actionSources';
+import { resolveRootFrameId } from './frameIds';
 import { resolveNpcDisplayName } from './narrativeSnapshots';
 
-/**
- * Производные данные подачи экрана.
- *
- * Отдельным снимком они не сохраняются: фон, визуальный вариант, роль и
- * отображаемое имя вычисляются из текущего состояния, а в логе лежит только
- * уже разрешённый narrative.
- */
+export interface UiNpcSlot {
+  slotId: SlotId;
+  npcId: NpcId;
+  role: string;
+  name: string;
+}
 
 export interface NpcOverlay {
   npcId: NpcId;
   name: string;
   imageUrl?: string;
-  /** Говорит ли этот NPC последнюю реплику лога. */
-  isSpeaking: boolean;
 }
-
 export interface InteractionPresentation {
-  /** Фон текущего Frame либо унаследованный от предыдущего. */
+  reading: { mode: 'actions' } | { mode: 'narrative'; blocks: NarrativeBlock[] };
   background?: string;
-  npcDisplay: NpcDisplayMode;
-  /** NPC текущего slot-контекста; показывается справа. */
-  contextNpc?: NpcOverlay;
-  /** Говорящий, отличный от контекстного NPC; показывается слева. */
-  speakerNpc?: NpcOverlay;
+  title: string;
+  locationTitle: string;
+  name?: string;
+  role?: string;
+  figure?: NpcOverlay;
+  showPortraits: boolean;
+  portraits: UiNpcSlot[];
+  isRoot: boolean;
+}
+const EMPTY: InteractionPresentation = {
+  reading: { mode: 'actions' },
+  title: '',
+  locationTitle: '',
+  showPortraits: false,
+  portraits: [],
+  isRoot: false,
+};
+
+/** Портреты читают текущую occupancy и сохраняются во внутренних Frames. */
+function resolvePoiNpcSlots(state: StoreState, poiId: PoiId): UiNpcSlot[] {
+  const occupants = state.occupancySlice.slotOccupants[poiId] ?? {};
+  return listSlotDefinitions(state, poiId).flatMap((slot) => {
+    const npcId = occupants[slot.id];
+    return npcId === undefined
+      ? []
+      : [{ slotId: slot.id, npcId, role: slot.role, name: resolveNpcDisplayName(state, npcId) }];
+  });
 }
 
-const EMPTY_PRESENTATION: InteractionPresentation = { npcDisplay: 'none' };
-
-/** Последняя прямая речь лога; именно её произносит подсвеченный NPC. */
-function resolveLastSpeakerId(state: StoreState): CharacterId | undefined {
-  const log = state.interactionSlice.currentInteraction?.log ?? [];
-
-  for (let entryIndex = log.length - 1; entryIndex >= 0; entryIndex--) {
-    const blocks = log[entryIndex].blocks;
-
-    for (let blockIndex = blocks.length - 1; blockIndex >= 0; blockIndex--) {
-      const block = blocks[blockIndex];
-      if (isDialogueLine(block)) return block.speakerId;
-    }
-  }
-
-  return undefined;
-}
-
+/** Одна фигура слева; speaker выбирается только из текущей порции текста. */
 export function resolveInteractionPresentation(state: StoreState): InteractionPresentation {
   const interaction = state.interactionSlice.currentInteraction;
-  if (!interaction) return EMPTY_PRESENTATION;
-
-  const npcDisplay =
-    INITIAL_FRAMES[interaction.activeFrameId]?.npcDisplay ?? DEFAULT_NPC_DISPLAY_MODE;
-
-  const presentation: InteractionPresentation = {
-    npcDisplay,
-    ...(interaction.currentBackground !== undefined
-      ? { background: interaction.currentBackground }
-      : {}),
+  if (!interaction) return EMPTY;
+  const poi = state.poiSlice.pois[interaction.poiId];
+  if (!poi || poi.parentId === null) return EMPTY;
+  const frame = INITIAL_FRAMES[interaction.activeFrameId];
+  const locationTitle = resolvePoiDisplayName(poi.templateId);
+  const isRoot = interaction.activeFrameId === resolveRootFrameId(state, interaction);
+  const mode = frame?.npcDisplay ?? DEFAULT_NPC_DISPLAY_MODE;
+  if (mode === 'always' && interaction.npcId === undefined) {
+    throw new Error('npcDisplay: always requires an NPC context: ' + interaction.activeFrameId);
+  }
+  const blocks = interaction.currentEntry?.blocks ?? [];
+  const speaker = [...blocks]
+    .reverse()
+    .find((block) => isDialogueLine(block) && block.speakerId in state.npcSlice.byId);
+  const speakerId = speaker && isDialogueLine(speaker) ? speaker.speakerId : undefined;
+  let figureId: NpcId | undefined;
+  switch (mode) {
+    case 'none':
+      break;
+    case 'always':
+      figureId = speakerId ?? interaction.npcId;
+      break;
+    case 'speaker':
+      figureId = speakerId;
+      break;
+  }
+  const npcId = figureId ?? interaction.npcId;
+  return {
+    reading: blocks.length ? { mode: 'narrative', blocks } : { mode: 'actions' },
+    background: interaction.currentBackground,
+    locationTitle,
+    title: isRoot ? locationTitle : resolveText(frame?.title ?? locationTitle),
+    name: npcId === undefined ? undefined : resolveNpcDisplayName(state, npcId),
+    role:
+      interaction.slotId === undefined
+        ? undefined
+        : findSlotDefinition(state, interaction.poiId, interaction.slotId)?.role,
+    figure:
+      figureId === undefined
+        ? undefined
+        : {
+            npcId: figureId,
+            name: resolveNpcDisplayName(state, figureId),
+            imageUrl: resolveNpcImage(figureId),
+          },
+    showPortraits: true,
+    portraits: resolvePoiNpcSlots(state, interaction.poiId),
+    isRoot,
   };
-
-  if (npcDisplay === 'none') return presentation;
-
-  const speakerId = resolveLastSpeakerId(state);
-  const contextNpcId = interaction.npcId;
-
-  const buildOverlay = (npcId: NpcId): NpcOverlay => {
-    const imageUrl = resolveNpcImage(npcId);
-
-    return {
-      npcId,
-      name: resolveNpcDisplayName(state, npcId),
-      ...(imageUrl !== undefined ? { imageUrl } : {}),
-      isSpeaking: speakerId === npcId,
-    };
-  };
-
-  // `always` держит контекстного NPC на экране независимо от того, кто говорит.
-  if (contextNpcId !== undefined && npcDisplay === 'always') {
-    presentation.contextNpc = buildOverlay(contextNpcId);
-  }
-
-  if (speakerId !== undefined && speakerId !== contextNpcId && speakerId in state.npcSlice.byId) {
-    presentation.speakerNpc = buildOverlay(speakerId);
-  }
-
-  // В режиме `speaker` контекстный NPC виден, только пока говорит сам.
-  if (contextNpcId !== undefined && npcDisplay === 'speaker' && speakerId === contextNpcId) {
-    presentation.contextNpc = buildOverlay(contextNpcId);
-  }
-
-  return presentation;
 }

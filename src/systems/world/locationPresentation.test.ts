@@ -60,7 +60,7 @@ describe('Shared location HUD and occupant presentation', () => {
     state().interactionSlice.actions.enterSlotContext('keeper', 'fixtureKeeper');
     read();
     expect(resolveInteractionPresentation(state()).portraits).toEqual(slots);
-    expect(resolveInteractionOptions(state()).navigation.npcSlots).toEqual(slots);
+    expect(resolveInteractionOptions(state()).navigation.canReturnToPoi).toBe(true);
     state().interactionSlice.actions.performAction('fixture:openKeeperInner');
     const internal = resolveInteractionPresentation(state());
     expect(internal.portraits).toEqual(slots);

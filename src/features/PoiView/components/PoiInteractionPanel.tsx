@@ -1,8 +1,10 @@
 import { useState } from 'react';
 
+import text from '@/locales/en.json';
 import { useGameState } from '@/state/useGameState';
+import type { UiAction } from '@/systems/interaction/actionPresentation';
 import type { InteractionPresentation } from '@/systems/interaction/presentation';
-import type { ResolvedInteractionOptions, UiAction } from '@/systems/interaction/resolveOptions';
+import type { ResolvedInteractionOptions } from '@/systems/interaction/resolveOptions';
 import type { CurrentInteraction } from '@/types/interactionRuntime.types';
 
 import { ActionList } from './ActionList';
@@ -31,27 +33,34 @@ export function PoiInteractionPanel({
   );
   const returnToPoi = useGameState((state) => state.interactionSlice.actions.returnToPoiContext);
   const travel = useGameState((state) => state.world.actions.travelToPoi);
-  const reading = interaction.reading;
+  const reading = presentation.reading;
   const pages = Math.max(1, Math.ceil(actions.length / 6));
   const page = Math.min(requestedPage, pages - 1);
   const parent = navigation.poiTransitions.find((route) => route.direction === 'parent');
   const canExit = navigation.canReturnToPoi || parent !== undefined;
-  const sceneTitle = presentation.name
-    ? `${presentation.name}${presentation.role && presentation.role !== presentation.name ? ' · ' + presentation.role : ''}`
-    : presentation.title !== presentation.locationTitle
-      ? presentation.title
-      : undefined;
+  let sceneTitle: string | undefined;
+  if (presentation.name) {
+    sceneTitle = presentation.name;
+    if (presentation.role && presentation.role !== presentation.name) {
+      sceneTitle += ` · ${presentation.role}`;
+    }
+  } else if (presentation.title !== presentation.locationTitle) {
+    sceneTitle = presentation.title;
+  }
   return (
-    <section className="poiInteractionPanel poiMetalPanel" aria-label="Interaction">
+    <section
+      className="poiInteractionPanel poiMetalPanel"
+      aria-label={text.interactionUi.interaction}
+    >
       <header className="poiInteractionHeader">
         {sceneTitle && <h1>{sceneTitle}</h1>}
         <div className="poiInteractionControls">
           {reading.mode === 'actions' && pages > 1 && (
-            <nav className="poiActionPager" aria-label="Action pages">
+            <nav className="poiActionPager" aria-label={text.interactionUi.actionPages}>
               <button
                 type="button"
                 className="game-button"
-                aria-label="Previous actions"
+                aria-label={text.interactionUi.previousActions}
                 disabled={page === 0}
                 onClick={() => setPage(page - 1)}
               >
@@ -63,7 +72,7 @@ export function PoiInteractionPanel({
               <button
                 type="button"
                 className="game-button"
-                aria-label="Next actions"
+                aria-label={text.interactionUi.nextActions}
                 disabled={page === pages - 1}
                 onClick={() => setPage(page + 1)}
               >
@@ -72,7 +81,7 @@ export function PoiInteractionPanel({
             </nav>
           )}
           <button type="button" className="game-button" onClick={onHistory}>
-            History <PoiIcon name="history" />
+            {text.interactionUi.history} <PoiIcon name="history" />
           </button>
           {canExit && (
             <button
@@ -85,7 +94,7 @@ export function PoiInteractionPanel({
                 else if (parent) travel(parent.poiId);
               }}
             >
-              {navigation.canReturnToPoi ? 'End talk' : 'Leave'}
+              {navigation.canReturnToPoi ? text.interactionUi.endTalk : text.interactionUi.leave}
               <PoiIcon name="back" />
             </button>
           )}
@@ -94,7 +103,7 @@ export function PoiInteractionPanel({
       <div className="poiInteractionBody">
         {reading.mode === 'narrative' ? (
           <NarrativeView
-            key={interaction.log.length}
+            key={`${interaction.log.length}/${reading.blocks.length}`}
             blocks={reading.blocks}
             onContinue={continueInteraction}
             suspended={suspended}

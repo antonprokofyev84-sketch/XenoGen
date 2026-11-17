@@ -1,5 +1,5 @@
 import { GameTooltip } from '@/components/GameHud/GameTooltip';
-import type { UiAction } from '@/systems/interaction/resolveOptions';
+import type { UiAction } from '@/systems/interaction/actionPresentation';
 import { t } from '@/systems/text/i18n';
 
 import { PoiIcon } from './PoiIcon';
