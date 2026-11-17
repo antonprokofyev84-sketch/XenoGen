@@ -1,9 +1,8 @@
 import type { ReactNode } from 'react';
 
 import { START_DATE } from '@/constants';
-import text from '@/locales/en.json';
 import { useGameState } from '@/state/useGameState';
-import { formatText } from '@/systems/text/formatText';
+import { t } from '@/systems/text/i18n';
 import { resolveLocationPresentation } from '@/systems/world/locationPresentation';
 import { diffCalendarDays } from '@/utils/diffCalendarDays';
 import { resolveTimeOfDay } from '@/utils/timeOfDay';
@@ -27,14 +26,14 @@ export function GameHud({ locationId, children }: { locationId: string; children
     <div className="gameHudStack">
       <aside
         className={`gameLocation poiMetalPanel${collapsed ? ' isCollapsed' : ''}`}
-        aria-label={text.gameHud.locationInformation}
+        aria-label={t('gameHud.locationInformation')}
       >
         <header>
           <h2>{location.title}</h2>
           <button
             type="button"
             className="game-button gameLocationToggle"
-            aria-label={collapsed ? text.gameHud.expand : text.gameHud.collapse}
+            aria-label={t(collapsed ? 'gameHud.expand' : 'gameHud.collapse')}
             aria-expanded={!collapsed}
             aria-controls="game-location-details"
             onClick={toggleLocationHud}
@@ -45,16 +44,16 @@ export function GameHud({ locationId, children }: { locationId: string; children
         <div id="game-location-details" hidden={collapsed}>
           {location.parentTitle && <p className="gameLocationParent">{location.parentTitle}</p>}
           <p className="gameLocationStatus">{location.status}</p>
-          <div className="gameRegionStats" aria-label={text.gameHud.regionParameters}>
+          <div className="gameRegionStats" aria-label={t('gameHud.regionParameters')}>
             {PARAMETERS.map((key) => (
               <GameTooltip
                 key={key}
-                label={`${text.gameHud.parameters[key]}: ${location.levels?.[key] ?? text.gameHud.unknown}`}
+                label={`${t(`gameHud.parameters.${key}`)}: ${location.levels?.[key] ?? t('gameHud.unknown')}`}
               >
                 <span
                   className="gameRegionStat"
                   tabIndex={0}
-                  aria-label={`${text.gameHud.parameters[key]}: ${location.levels?.[key] ?? text.gameHud.unknown}`}
+                  aria-label={`${t(`gameHud.parameters.${key}`)}: ${location.levels?.[key] ?? t('gameHud.unknown')}`}
                 >
                   <GameIcon name={key} />
                   <span>{location.levels?.[key] ?? '—'}</span>
@@ -66,19 +65,19 @@ export function GameHud({ locationId, children }: { locationId: string; children
         <div className="gameLocationSummary">
           <div className="gameTime">
             <span>
-              {formatText(text.gameHud.day, { day: diffCalendarDays(START_DATE, time) + 1 })}
+              {t('gameHud.day', { day: diffCalendarDays(START_DATE, time) + 1 })}
               <span className="gameTimeOfDay">
                 {' '}
-                · {text.gameHud.timeOfDay[resolveTimeOfDay(time)]}
+                · {t(`gameHud.timeOfDay.${resolveTimeOfDay(time)}`)}
               </span>
             </span>
             <span>{clock}</span>
           </div>
-          <GameTooltip label={text.gameHud.expeditionUnavailable}>
+          <GameTooltip label={t('gameHud.expeditionUnavailable')}>
             <div className="gameExpedition">
               <span>
                 <GameIcon name="cube" />
-                <span className="gameExpeditionLabel">{text.gameHud.expeditionPoints}</span>
+                <span className="gameExpeditionLabel">{t('gameHud.expeditionPoints')}</span>
               </span>
               <span>—</span>
             </div>
@@ -95,19 +94,16 @@ export function GameSystemMenu() {
   const goToScreen = useGameState((state) => state.ui.goToScreen);
   const screen = useGameState((state) => state.ui.currentScreen);
   return (
-    <nav className="gameSystemMenu poiMetalPanel" aria-label={text.gameHud.systemMenu}>
+    <nav className="gameSystemMenu poiMetalPanel" aria-label={t('gameHud.systemMenu')}>
       {(['bag', 'map', 'party', 'settings'] as const).map((icon, index) => {
         const label = [
-          text.gameHud.inventory,
-          text.gameHud.map,
-          text.gameHud.party,
-          text.gameHud.settings,
+          t('gameHud.inventory'),
+          t('gameHud.map'),
+          t('gameHud.party'),
+          t('gameHud.settings'),
         ][index];
         return (
-          <GameTooltip
-            key={icon}
-            label={index < 2 ? label : formatText(text.gameHud.comingLater, { label })}
-          >
+          <GameTooltip key={icon} label={index < 2 ? label : t('gameHud.comingLater', { label })}>
             <button
               type="button"
               className="game-button"

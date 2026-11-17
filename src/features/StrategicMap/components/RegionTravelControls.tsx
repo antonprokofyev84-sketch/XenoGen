@@ -56,7 +56,7 @@ export const RegionTravelControls = () => {
 
   return (
     <div className="panelFooter">
-      {isFatigued && <div className="fatigueWarning">Party is fatigued!</div>}
+      {isFatigued && <div className="fatigueWarning">{textData.mapUi.fatigued}</div>}
 
       {canScout && (
         <button type="button" className="game-button" onClick={handleScoutClick}>

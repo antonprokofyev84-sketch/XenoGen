@@ -95,7 +95,10 @@ export type CurrentInteraction = InteractionContextIds & {
   pendingEvents: PendingInteractionEvent[];
   /** Разрешённый URL; отсутствие означает «не менять текущий фон». */
   currentBackground?: string;
+  /** Только подтверждённые через Continue порции текста. */
   log: InteractionLogEntry[];
+  /** Текущая порция: разрешённые blocks, без effects, времени и переходов. */
+  currentEntry: InteractionLogEntry | null;
 };
 
 /** Субъект памяти текущего контекста. */

@@ -26,7 +26,7 @@ export interface ResolvedActionCost {
   money: number;
   /** Личная stamina протагониста, а не партийный пул. */
   stamina: number;
-  /** Минуты игрового времени; списываются завершающим мировым действием. */
+  /** Минуты попытки; executor проводит их до показа результата. */
   time: number;
   items: ResolvedItemCost[];
 }
@@ -60,17 +60,22 @@ export function canAffordCost(state: StoreState, cost: ResolvedActionCost): bool
   return resolveCostShortages(state, cost).length === 0;
 }
 
-/** Та же проверка ресурсов даёт объяснения UI, без отдельной формулы доступности. */
-export function resolveCostShortages(state: StoreState, cost: ResolvedActionCost): string[] {
-  const shortages: string[] = [];
+export type CostShortage =
+  | { type: 'money' | 'stamina'; available: number; required: number }
+  | { type: 'item'; itemId: string; available: number; required: number };
+
+/** Domain data only; localized explanations belong to the presentation formatter. */
+export function resolveCostShortages(state: StoreState, cost: ResolvedActionCost): CostShortage[] {
+  const shortages: CostShortage[] = [];
   const money = state.inventory.containers[PROTAGONIST_ID]?.money ?? 0;
   const stamina = characterSelectors.selectCharacterById(PROTAGONIST_ID)(state)?.stamina ?? 0;
-  if (money < cost.money) shortages.push(`Not enough money: ${money} of ${cost.money}`);
+  if (money < cost.money) shortages.push({ type: 'money', available: money, required: cost.money });
   if (cost.stamina > 0 && stamina < cost.stamina)
-    shortages.push(`Not enough stamina: ${stamina} of ${cost.stamina}`);
+    shortages.push({ type: 'stamina', available: stamina, required: cost.stamina });
   for (const item of cost.items) {
     const count = inventorySelectors.selectPlayerItemCount(item.itemId)(state);
-    if (count < item.count) shortages.push(`Not enough ${item.itemId}: ${count} of ${item.count}`);
+    if (count < item.count)
+      shortages.push({ type: 'item', itemId: item.itemId, available: count, required: item.count });
   }
   return shortages;
 }
@@ -78,8 +83,7 @@ export function resolveCostShortages(state: StoreState, cost: ResolvedActionCost
 /**
  * Авансовое списание денег, предметов и личной stamina.
  *
- * `cost.time` здесь не тратится: минуты передаются завершающему мировому
- * действию, чтобы один и тот же расход не списался дважды.
+ * `cost.time` проводит executor в той же попытке после effects, до её результата.
  */
 export function payResolvedCost(state: StoreState, cost: ResolvedActionCost): void {
   if (cost.money > 0) {

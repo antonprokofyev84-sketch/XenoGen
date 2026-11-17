@@ -40,7 +40,7 @@ export const createUISlice: GameSlice<UISlice> = (set) => ({
       state.ui.currentScreen = state.ui.characterDetailsReturnScreen;
       if (
         state.ui.currentScreen === 'poiView' &&
-        state.interactionSlice.currentInteraction?.reading.mode === 'actions'
+        !state.interactionSlice.currentInteraction?.currentEntry
       ) {
         rollVisibleAppearanceChances(state);
       }

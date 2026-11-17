@@ -3,12 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { INITIAL_ACTIONS } from '@/data/initial/actions';
 import { createInitialDataBundle } from '@/data/initial/bundle';
-import { useGameState } from '@/state/useGameState';
+import { interactionSelectors, useGameState } from '@/state/useGameState';
 import { resolveCharacterSilhouette } from '@/systems/characters/characterImageFallback';
 import { validateInitialData } from '@/systems/validation/validateInitialData';
 import type { InitialAction } from '@/types/action.types';
 
-import { continueInteraction, performAction } from './performAction';
+import { performAction } from './performAction';
 import { resolveInteractionPresentation } from './presentation';
 import { resolveInteractionOptions } from './resolveOptions';
 
@@ -53,6 +53,46 @@ describe('Immediate Action costs and deferred transitions', () => {
     expect(reading().mode).toBe('actions');
   });
 
+  it('keeps current text out of history and archives each portion exactly once on Continue', () => {
+    const entry = state().interactionSlice.currentInteraction?.currentEntry;
+    expect(entry?.blocks.length).toBeGreaterThan(0);
+    expect(interactionSelectors.selectInteractionLog(state())).toEqual([]);
+    read();
+    expect(interactionSelectors.selectInteractionLog(state())).toEqual([entry]);
+    expect(state().interactionSlice.currentInteraction?.currentEntry).toBeNull();
+    read();
+    expect(interactionSelectors.selectInteractionLog(state())).toEqual([entry]);
+
+    install({ label: 'Test', result: { narrative: ['A new result.', { thought: 'A thought.' }] } });
+    act();
+    expect(interactionSelectors.selectInteractionLog(state())).toEqual([entry]);
+    expect(state().interactionSlice.currentInteraction?.currentEntry?.blocks).toEqual([
+      'A new result.',
+      { thought: 'A thought.' },
+    ]);
+    read();
+    expect(interactionSelectors.selectInteractionLog(state())).toEqual([
+      entry,
+      { blocks: ['A new result.', { thought: 'A thought.' }] },
+    ]);
+  });
+
+  it('combines the first-meeting Interceptor and root Frame into one current portion', () => {
+    read();
+    state().interactionSlice.actions.enterSlotContext('keeper', 'fixtureKeeper');
+    const entry = state().interactionSlice.currentInteraction?.currentEntry;
+    expect(entry?.blocks).toEqual(
+      expect.arrayContaining([
+        { speakerId: 'fixtureKeeper', text: 'Have not seen you around before.' },
+        { speakerId: 'fixtureKeeper', text: 'Need something?' },
+      ]),
+    );
+    expect(interactionSelectors.selectInteractionLog(state())).toEqual([]);
+    read();
+    expect(interactionSelectors.selectInteractionLog(state())).toEqual([entry]);
+    expect(state().interactionSlice.currentInteraction?.currentEntry).toBeNull();
+  });
+
   it('pays all costs once before reading, then spends transition time on continue', () => {
     read();
     const cost = vi.fn(() => 7);
@@ -92,12 +132,7 @@ describe('Immediate Action costs and deferred transitions', () => {
     expect(state().interactionSlice.currentInteraction?.activeFrameId).toBe('fixtureHub');
     act();
     expect(state().inventory.containers.protagonist.money).toBe(93);
-    useGameState.setState(
-      produce(state(), (draft) => {
-        draft.ui.interactionLogCursor = draft.interactionSlice.currentInteraction!.log.length;
-        continueInteraction(draft, rng);
-      }),
-    );
+    read();
     expect(state().world.currentTime).toBe(before.time + 45 * 60000);
     expect(state().interactionSlice.currentInteraction?.activeFrameId).toBe('fixtureHub:inner');
     read();

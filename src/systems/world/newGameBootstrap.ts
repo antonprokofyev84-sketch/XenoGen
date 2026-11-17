@@ -21,6 +21,9 @@ import type { StoreState } from '@/state/useGameState';
  */
 
 export function bootstrapNewGame(state: StoreState): void {
+  state.interactionSlice.currentInteraction = null;
+  state.interactionSlice.pendingTransition = null;
+  state.interactionSlice.isTrading = false;
   factionsDraft.initializeFactions(state, INITIAL_FACTIONS);
   poiDraft.initializeWorld(state);
   npcDraft.initializeNpcs(state, INITIAL_NPCS);

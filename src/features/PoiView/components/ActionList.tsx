@@ -1,7 +1,6 @@
 import { GameTooltip } from '@/components/GameHud/GameTooltip';
-import text from '@/locales/en.json';
 import type { UiAction } from '@/systems/interaction/resolveOptions';
-import { formatText } from '@/systems/text/formatText';
+import { t } from '@/systems/text/i18n';
 
 import { PoiIcon } from './PoiIcon';
 
@@ -34,7 +33,7 @@ export function ActionButton({
         <span>
           {option.label}
           {option.moneyCost > 0 && (
-            <small> ({formatText(text.interactionUi.coins, { amount: option.moneyCost })})</small>
+            <small> ({t('interactionUi.coins', { count: option.moneyCost })})</small>
           )}
         </span>
       </button>
@@ -49,11 +48,11 @@ export function ActionList({
   onSelect: (id: string) => void;
 }) {
   return (
-    <div className="poiActions" aria-label={text.interactionUi.availableActions}>
+    <div className="poiActions" aria-label={t('interactionUi.availableActions')}>
       {options.map((option) => (
         <ActionButton key={option.actionId} option={option} onSelect={onSelect} />
       ))}
-      {options.length === 0 && <p className="poiEmptyActions">{text.interactionUi.emptyActions}</p>}
+      {options.length === 0 && <p className="poiEmptyActions">{t('interactionUi.emptyActions')}</p>}
     </div>
   );
 }

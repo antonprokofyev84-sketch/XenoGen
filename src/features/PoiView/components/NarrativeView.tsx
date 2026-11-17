@@ -7,16 +7,19 @@ import { isDialogueLine, isThoughtLine } from '@/types/narrativeBlock.types';
 export function NarrativeBlocks({ blocks }: { blocks: readonly NarrativeBlock[] }) {
   return (
     <>
-      {blocks.map((block, index) => (
-        <p
-          key={index}
-          className={
-            isThoughtLine(block) ? 'poiThought' : isDialogueLine(block) ? 'poiDialogue' : ''
-          }
-        >
-          {isDialogueLine(block) ? `«${block.text}»` : isThoughtLine(block) ? block.thought : block}
-        </p>
-      ))}
+      {blocks.map((block, index) => {
+        if (isDialogueLine(block)) {
+          return <p key={index} className="poiDialogue">{`«${block.text}»`}</p>;
+        }
+        if (isThoughtLine(block)) {
+          return (
+            <p key={index} className="poiThought">
+              {block.thought}
+            </p>
+          );
+        }
+        return <p key={index}>{block}</p>;
+      })}
     </>
   );
 }

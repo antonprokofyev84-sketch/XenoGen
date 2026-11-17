@@ -11,7 +11,7 @@ import type { ActionCondition } from '@/types/condition.types';
 import type { InitialFrame, InitialFrameMap } from '@/types/frame.types';
 import type { Effect } from '@/types/gameEffect.types';
 import { isQuestLifecycleEffect } from '@/types/gameEffect.types';
-import type { InitialInterceptorMap } from '@/types/interceptor.types';
+import type { InitialInterceptorMap, InterceptorResult } from '@/types/interceptor.types';
 import type { NarrativeBlock } from '@/types/narrativeBlock.types';
 import { CURRENT_NPC_SPEAKER, isDialogueLine } from '@/types/narrativeBlock.types';
 import type { InitialNpcMap } from '@/types/npcContent.types';
@@ -549,11 +549,12 @@ function validateInterceptors(bundle: InitialDataBundle, issues: ValidationIssue
 
     validateConditions(definition.conditions, `${path}.conditions`, bundle, issues);
 
-    const results = definition.check
-      ? [definition.check.onSuccess, definition.check.onFail]
-      : definition.result === undefined
-        ? []
-        : [definition.result];
+    let results: InterceptorResult[] = [];
+    if (definition.check) {
+      results = [definition.check.onSuccess, definition.check.onFail];
+    } else if (definition.result !== undefined) {
+      results = [definition.result];
+    }
 
     results.forEach((result, index) => {
       const resultPath = definition.check

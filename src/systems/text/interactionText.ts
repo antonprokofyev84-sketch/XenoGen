@@ -1,18 +1,17 @@
-import text from '@/locales/en.json';
 import type { CostShortage } from '@/systems/interaction/actionCosts';
 import type { ActionCondition } from '@/types/condition.types';
 
-import { formatText } from './formatText';
+import { t } from './i18n';
 
 export function describeCostShortage(shortage: CostShortage): string {
   const values = { available: shortage.available, required: shortage.required };
   switch (shortage.type) {
     case 'money':
-      return formatText(text.interactionText.insufficientMoney, values);
+      return t('interactionText.insufficientMoney', values);
     case 'stamina':
-      return formatText(text.interactionText.insufficientStamina, values);
+      return t('interactionText.insufficientStamina', values);
     case 'item':
-      return formatText(text.interactionText.insufficientItem, {
+      return t('interactionText.insufficientItem', {
         ...values,
         item: shortage.itemId,
       });
@@ -24,12 +23,12 @@ export function describeRequirement(condition: ActionCondition): string {
   switch (condition.type) {
     case 'questVar':
     case 'questStatus':
-      return text.interactionText.questRequirement;
+      return t('interactionText.questRequirement');
     case 'stat':
-      key = text.mainStats[condition.statId];
+      key = t(`mainStats.${condition.statId}`);
       break;
     case 'skill':
-      key = text.skills[condition.skillId];
+      key = t(`skills.${condition.skillId}`);
       break;
     case 'item':
       key = condition.itemId;
@@ -38,7 +37,7 @@ export function describeRequirement(condition: ActionCondition): string {
       key = condition.enemyTypeId;
       break;
     case 'regionLevel':
-      key = text.gameHud.parameters[condition.param];
+      key = t(`gameHud.parameters.${condition.param}`);
       break;
   }
   const range =
@@ -50,5 +49,5 @@ export function describeRequirement(condition: ActionCondition): string {
         ]
           .filter(Boolean)
           .join(', ');
-  return `${text.interactionText.requirementLabels[condition.type]} ${key} ${range}`.trim();
+  return `${t(`interactionText.requirementLabels.${condition.type}`)} ${key} ${range}`.trim();
 }

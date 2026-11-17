@@ -8,10 +8,12 @@ import { continueInteraction, performAction } from '@/systems/interaction/perfor
 import { resolveInteractionPresentation } from '@/systems/interaction/presentation';
 import { resolveInteractionOptions } from '@/systems/interaction/resolveOptions';
 import { resolveTradeOffer } from '@/systems/trade/resolveTradeOffer';
+import type { ActionTransition } from '@/types/action.types';
 import type {
   CurrentInteraction,
   DailyInteractionMemoryBySubject,
   ExecutionTotalsBySubject,
+  InteractionContextIds,
   InteractionLogEntry,
 } from '@/types/interactionRuntime.types';
 
@@ -29,6 +31,11 @@ import type { GameSlice } from '../types';
  */
 export interface InteractionSlice {
   currentInteraction: CurrentInteraction | null;
+  /** Обязательный переход живёт независимо от окна текста и замены контекста миром. */
+  pendingTransition: {
+    transition: ActionTransition;
+    context: InteractionContextIds;
+  } | null;
 
   /** Очищается целиком в конце игрового дня. */
   dailyMemoryBySubject: DailyInteractionMemoryBySubject;
@@ -112,6 +119,7 @@ export const interactionSelectors = {
 
 export const createInteractionSlice: GameSlice<InteractionSlice> = (set) => ({
   currentInteraction: null,
+  pendingTransition: null,
   dailyMemoryBySubject: {},
   executionTotalsBySubject: {},
   isTrading: false,
@@ -142,11 +150,17 @@ export const createInteractionSlice: GameSlice<InteractionSlice> = (set) => ({
 
     performAction: (actionId) =>
       set((state) => {
+        const interaction = state.interactionSlice.currentInteraction;
+        if (interaction?.currentEntry) return;
         performAction(state, actionId);
       }),
 
     continueInteraction: () =>
       set((state) => {
+        const interaction = state.interactionSlice.currentInteraction;
+        if (!interaction?.currentEntry) return;
+        interaction.log.push(interaction.currentEntry);
+        interaction.currentEntry = null;
         continueInteraction(state);
       }),
 

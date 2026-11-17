@@ -69,10 +69,15 @@ describe('Transition duration and mandatory continuation', () => {
     });
     const time = state().world.currentTime;
     const background = resolveInteractionPresentation(state()).background;
+    const history = state().interactionSlice.currentInteraction?.log ?? [];
     act();
     expect(state().world.currentTime).toBe(time + 5 * 60000);
     expect(state().interactionSlice.currentInteraction?.activeFrameId).toBe('fixtureHub');
     expect(resolveInteractionPresentation(state()).background).toBe(background);
+    expect(state().interactionSlice.currentInteraction?.log).toEqual(history);
+    expect(state().interactionSlice.currentInteraction?.currentEntry?.blocks).toEqual([
+      'Knocked out.',
+    ]);
     read();
     expect(state().world.currentTime).toBe(time + 245 * 60000);
     expect(state().interactionSlice.currentInteraction?.activeFrameId).toBe(arrivalFrame);
@@ -80,9 +85,19 @@ describe('Transition duration and mandatory continuation', () => {
       background: 'arrival-background',
       reading: { mode: 'narrative', blocks: ['Awake.'] },
     });
+    expect(state().interactionSlice.currentInteraction?.log).toEqual([
+      ...history,
+      { blocks: ['Knocked out.'] },
+    ]);
     read();
     read();
     expect(state().world.currentTime).toBe(time + 245 * 60000);
+    expect(state().interactionSlice.currentInteraction?.currentEntry).toBeNull();
+    expect(state().interactionSlice.currentInteraction?.log).toEqual([
+      ...history,
+      { blocks: ['Knocked out.'] },
+      { blocks: ['Awake.'] },
+    ]);
   });
 
   it('blocks context reset, another Action and public time/travel commands while a transition is owed', () => {
@@ -243,6 +258,11 @@ describe('Transition duration and mandatory continuation', () => {
     expect(state().world.currentTime).toBe(time + 260 * 60000);
     expect(state().party.currentPartyPosition).toBe('fixtureHub');
     expect(state().interactionSlice.pendingTransition).toBeNull();
+    expect(state().interactionSlice.currentInteraction?.log).toEqual([]);
+    expect(state().interactionSlice.currentInteraction?.currentEntry?.blocks[0]).toBe('Leaving.');
+    read();
+    expect(state().interactionSlice.currentInteraction?.log).toHaveLength(1);
+    expect(state().interactionSlice.currentInteraction?.log[0].blocks[0]).toBe('Leaving.');
   });
 
   it.each([-1, NaN, Infinity])(
