@@ -167,7 +167,7 @@ describe('Transition duration and mandatory continuation', () => {
     expect(state().interactionSlice.pendingTransition).toBeNull();
   });
 
-  it('does not open an obsolete NPC Frame when cost.time ends the NPC shift', () => {
+  it('continues the NPC scene when cost.time ends the NPC shift', () => {
     state().interactionSlice.actions.enterSlotContext('keeper', 'fixtureKeeper');
     read();
     install({
@@ -180,7 +180,10 @@ describe('Transition duration and mandatory continuation', () => {
     });
     act();
     read();
-    expect(state().interactionSlice.currentInteraction?.npcId).toBeUndefined();
+    expect(state().interactionSlice.currentInteraction?.npcId).toBe('fixtureKeeper');
+    expect(state().interactionSlice.currentInteraction?.activeFrameId).toBe(
+      'fixtureHub/keeper:inner',
+    );
     expect(state().interactionSlice.currentInteraction?.poiId).toBe('fixtureHub');
     expect(state().interactionSlice.pendingTransition).toBeNull();
   });

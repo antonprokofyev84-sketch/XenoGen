@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { CONTEXT_EXIT_FRAMES } from '@/data/initial/interactionExits';
 import { useGameState } from '@/state/useGameState';
 
 const getState = () => useGameState.getState();
@@ -86,9 +87,15 @@ describe('NPC meetings at interaction boundaries', () => {
     expect(getState().npcSlice.byId.fixtureVisitorA.timesMet).toBe(1);
   });
 
-  it('counts a meeting when a time-slot change invalidates the NPC context', () => {
+  it('counts a meeting on confirmation of the unavailable-context exit', () => {
     enterKeeper();
     getState().world.actions.changeTime(12 * 60);
+    expect(getState().interactionSlice.currentInteraction?.activeFrameId).toBe(
+      CONTEXT_EXIT_FRAMES.npcLeft,
+    );
+    expect(keeper().timesMet).toBe(0);
+    getState().interactionSlice.actions.continueInteraction();
+    getState().interactionSlice.actions.performAction('system:endUnavailableConversation');
     expect(getState().interactionSlice.currentInteraction?.npcId).toBeUndefined();
     expect(keeper().timesMet).toBe(1);
   });

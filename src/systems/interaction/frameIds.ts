@@ -1,8 +1,13 @@
+import { CONTEXT_EXIT_FRAMES } from '@/data/initial/interactionExits';
 import type { StoreState } from '@/state/useGameState';
 import { RESERVED_FRAME_NAMES } from '@/types/frame.types';
 import type { FrameId } from '@/types/ids.types';
 import type { InteractionContextIds } from '@/types/interactionRuntime.types';
 import { isNonCellNode } from '@/types/worldNode.types';
+
+export function isContextExitFrame(frameId: FrameId): boolean {
+  return frameId === CONTEXT_EXIT_FRAMES.poiClosed || frameId === CONTEXT_EXIT_FRAMES.npcLeft;
+}
 
 /**
  * Разрешение ID системных Frames контекста.

@@ -1,6 +1,7 @@
 import type { InitialFrameMap } from '@/types/frame.types';
 
 import { FIXTURE_FRAMES } from './fixtures/frames.fixture';
+import { CONTEXT_EXIT_FRAME_DEFINITIONS } from './interactionExits';
 
 /**
  * Плоский реестр Frame definitions.
@@ -17,4 +18,7 @@ import { FIXTURE_FRAMES } from './fixtures/frames.fixture';
  * другой Frame = contextId:framePath
  * ```
  */
-export const INITIAL_FRAMES: InitialFrameMap = { ...FIXTURE_FRAMES };
+export const INITIAL_FRAMES: InitialFrameMap = {
+  ...FIXTURE_FRAMES,
+  ...CONTEXT_EXIT_FRAME_DEFINITIONS,
+};

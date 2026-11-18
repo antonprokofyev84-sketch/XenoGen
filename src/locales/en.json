@@ -19,7 +19,9 @@
     "characters": "Available characters",
     "previousCharacters": "Previous characters",
     "nextCharacters": "Next characters",
-    "destinations": "Destinations"
+    "destinations": "Destinations",
+    "poiClosed": "This place has closed. It is time to leave.",
+    "npcLeft": "They have already left. The conversation is over."
   },
   "interactionText": {
     "questRequirement": "Quest requirement",
