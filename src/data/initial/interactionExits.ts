@@ -5,10 +5,11 @@ import type { InitialFrameMap } from '@/types/frame.types';
 export const CONTEXT_EXIT_FRAMES = {
   poiClosed: 'system:poiClosed',
   npcLeft: 'system:npcLeft',
+  poiFinished: 'system:poiFinished',
 } as const;
 
 export const CONTEXT_EXIT_ACTIONS: InitialActionMap = {
-  'system:leaveClosedPoi': {
+  'system:leavePoi': {
     label: t('interactionUi.leave'),
     result: { transition: { type: 'parentPoi' } },
   },
@@ -22,11 +23,16 @@ export const CONTEXT_EXIT_FRAME_DEFINITIONS: InitialFrameMap = {
   [CONTEXT_EXIT_FRAMES.poiClosed]: {
     npcDisplay: 'none',
     narrative: [t('interactionUi.poiClosed')],
-    actionIds: ['system:leaveClosedPoi'],
+    actionIds: ['system:leavePoi'],
   },
   [CONTEXT_EXIT_FRAMES.npcLeft]: {
     npcDisplay: 'none',
     narrative: [t('interactionUi.npcLeft')],
     actionIds: ['system:endUnavailableConversation'],
+  },
+  [CONTEXT_EXIT_FRAMES.poiFinished]: {
+    npcDisplay: 'none',
+    narrative: [t('interactionUi.poiFinished')],
+    actionIds: ['system:leavePoi'],
   },
 };

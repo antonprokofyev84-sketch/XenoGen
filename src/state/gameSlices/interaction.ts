@@ -1,4 +1,5 @@
 import type { StoreState } from '@/state/useGameState';
+import { isContextExitFrame } from '@/systems/interaction/frameIds';
 import {
   endInteraction,
   enterPoiContext,
@@ -13,7 +14,6 @@ import type {
   CurrentInteraction,
   DailyInteractionMemoryBySubject,
   ExecutionTotalsBySubject,
-  InteractionContextIds,
   InteractionLogEntry,
 } from '@/types/interactionRuntime.types';
 
@@ -31,11 +31,8 @@ import type { GameSlice } from '../types';
  */
 export interface InteractionSlice {
   currentInteraction: CurrentInteraction | null;
-  /** Обязательный переход живёт независимо от окна текста и замены контекста миром. */
-  pendingTransition: {
-    transition: ActionTransition;
-    context: InteractionContextIds;
-  } | null;
+  /** Обязательный переход после подтверждения текущего текста. */
+  pendingTransition: ActionTransition | null;
 
   /** Очищается целиком в конце игрового дня. */
   dailyMemoryBySubject: DailyInteractionMemoryBySubject;
@@ -127,6 +124,8 @@ export const createInteractionSlice: GameSlice<InteractionSlice> = (set) => ({
   actions: {
     enterPoiContext: (poiId) =>
       set((state) => {
+        const interaction = state.interactionSlice.currentInteraction;
+        if (interaction && isContextExitFrame(interaction.activeFrameId)) return;
         enterPoiContext(state, poiId);
       }),
 
@@ -137,10 +136,10 @@ export const createInteractionSlice: GameSlice<InteractionSlice> = (set) => ({
 
     returnToPoiContext: () =>
       set((state) => {
-        const poiId = state.interactionSlice.currentInteraction?.poiId;
-        if (poiId === undefined) return;
+        const interaction = state.interactionSlice.currentInteraction;
+        if (!interaction || isContextExitFrame(interaction.activeFrameId)) return;
 
-        enterPoiContext(state, poiId);
+        enterPoiContext(state, interaction.poiId);
       }),
 
     endInteraction: () =>

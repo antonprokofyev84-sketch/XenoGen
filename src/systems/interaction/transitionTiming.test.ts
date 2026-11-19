@@ -213,7 +213,7 @@ describe('Transition duration and mandatory continuation', () => {
     expect(state().interactionSlice.currentInteraction?.activeFrameId).toBe('fixtureOpenSite');
   });
 
-  it('uses removal fallback when the destination expires during the transition', () => {
+  it('protects the destination during timed travel and arrives at its mandatory exit', () => {
     nearMidnight();
     useGameState.setState(
       produce(state(), (draft) => {
@@ -225,47 +225,45 @@ describe('Transition duration and mandatory continuation', () => {
       label: 'Move',
       result: {
         narrative: ['Leaving.'],
-        transition: { type: 'poi', poiId: 'fixtureTempSite', time: 240 },
+        transition: { type: 'poi', poiId: 'fixtureTempSite', time: 1440 + 240 },
       },
     });
     const time = state().world.currentTime;
     act();
     read();
-    expect(state().world.currentTime).toBe(time + 240 * 60000);
-    expect(state().poiSlice.pois.fixtureTempSite).toBeUndefined();
-    expect(state().party.currentPartyPosition).toBe('fixtureHub');
-    expect(state().interactionSlice.currentInteraction?.poiId).toBe('fixtureHub');
+    expect(state().world.currentTime).toBe(time + (1440 + 240) * 60000);
+    expect(state().poiSlice.pois.fixtureTempSite).toMatchObject({ pendingRemoval: true });
+    expect(state().party.currentPartyPosition).toBe('fixtureTempSite');
+    expect(state().interactionSlice.currentInteraction?.activeFrameId).toBe('system:poiFinished');
     expect(state().interactionSlice.pendingTransition).toBeNull();
   });
 
-  it('does not lose transition time if cost.time expires the source before its result can be shown', () => {
+  it('keeps the source and its result through cleanup until the pending parent transition', () => {
     state().world.actions.travelToPoi('fixtureTempSite');
     read();
     nearMidnight();
-    useGameState.setState(
-      produce(state(), (draft) => {
-        const poi = draft.poiSlice.pois.fixtureTempSite;
-        if (isNonCellNode(poi)) poi.details.lifetimeDaysLeft = 1;
-      }),
-    );
     install({
       label: 'Move',
       cost: { time: 20 },
       result: {
         narrative: ['Leaving.'],
+        effects: [{ type: 'markCurrentPoiForRemoval' }],
         transition: { type: 'parentPoi', time: 240 },
       },
     });
     const time = state().world.currentTime;
     act();
+    expect(state().world.currentTime).toBe(time + 20 * 60000);
+    expect(state().party.currentPartyPosition).toBe('fixtureTempSite');
+    expect(state().poiSlice.pois.fixtureTempSite).toMatchObject({ pendingRemoval: true });
+    expect(state().interactionSlice.pendingTransition?.type).toBe('parentPoi');
+    expect(state().interactionSlice.currentInteraction?.currentEntry?.blocks).toEqual(['Leaving.']);
+    read();
     expect(state().world.currentTime).toBe(time + 260 * 60000);
     expect(state().party.currentPartyPosition).toBe('fixtureHub');
     expect(state().interactionSlice.pendingTransition).toBeNull();
     expect(state().interactionSlice.currentInteraction?.log).toEqual([]);
-    expect(state().interactionSlice.currentInteraction?.currentEntry?.blocks[0]).toBe('Leaving.');
-    read();
-    expect(state().interactionSlice.currentInteraction?.log).toHaveLength(1);
-    expect(state().interactionSlice.currentInteraction?.log[0].blocks[0]).toBe('Leaving.');
+    expect(state().poiSlice.pois.fixtureTempSite).toMatchObject({ pendingRemoval: true });
   });
 
   it.each([-1, NaN, Infinity])(

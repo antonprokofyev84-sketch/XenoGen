@@ -51,6 +51,51 @@ afterEach(() => {
 });
 
 describe('Interceptors belong to an entry', () => {
+  it('keeps the current Frame and history when the same POI context is requested again', () => {
+    state().interactionSlice.actions.performAction('fixture:openInnerFrame');
+    read();
+    const interaction = state().interactionSlice.currentInteraction;
+    state().interactionSlice.actions.enterPoiContext('fixtureHub');
+    expect(state().interactionSlice.currentInteraction).toBe(interaction);
+    expect(state().interactionSlice.currentInteraction?.activeFrameId).toBe('fixtureHub:inner');
+    expect(money()).toBe(101);
+  });
+
+  it.each([
+    ['work', 'keeper', 'fixtureKeeper'],
+    ['home', 'resident', 'fixtureResident'],
+  ] as const)(
+    'starts the %s NPC entry only when the NPC identity changes',
+    (group, slotId, npcId) => {
+      INITIAL_INTERCEPTORS[tailId] = { result: { effects: [{ type: 'addMoney', amount: 3 }] } };
+      POI_TEMPLATES.fixtureHub = {
+        ...POI_TEMPLATES.fixtureHub,
+        npcSlots: {
+          ...template.npcSlots,
+          [group]: template.npcSlots?.[group]?.map((slot) => ({
+            ...slot,
+            interceptorIds: [...(slot.interceptorIds ?? []), tailId],
+          })),
+        },
+      };
+
+      state().interactionSlice.actions.enterSlotContext(slotId, npcId);
+      expect(money()).toBe(104);
+      const interaction = state().interactionSlice.currentInteraction;
+      state().interactionSlice.actions.enterSlotContext(slotId, npcId);
+      expect(state().interactionSlice.currentInteraction).toBe(interaction);
+      expect(money()).toBe(104);
+      read();
+
+      state().interactionSlice.actions.returnToPoiContext();
+      read();
+      expect(money()).toBe(104);
+      expect(state().npcSlice.byId[npcId].timesMet).toBe(1);
+      state().interactionSlice.actions.enterSlotContext(slotId, npcId);
+      expect(money()).toBe(107);
+    },
+  );
+
   it.each([300, 1440, 2880])(
     'does not repeat entry events after %i minutes inside a POI',
     (minutes) => {

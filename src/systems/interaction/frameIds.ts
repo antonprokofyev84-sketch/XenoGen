@@ -6,7 +6,11 @@ import type { InteractionContextIds } from '@/types/interactionRuntime.types';
 import { isNonCellNode } from '@/types/worldNode.types';
 
 export function isContextExitFrame(frameId: FrameId): boolean {
-  return frameId === CONTEXT_EXIT_FRAMES.poiClosed || frameId === CONTEXT_EXIT_FRAMES.npcLeft;
+  return (
+    frameId === CONTEXT_EXIT_FRAMES.poiClosed ||
+    frameId === CONTEXT_EXIT_FRAMES.npcLeft ||
+    frameId === CONTEXT_EXIT_FRAMES.poiFinished
+  );
 }
 
 /**

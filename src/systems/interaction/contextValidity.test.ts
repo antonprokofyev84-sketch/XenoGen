@@ -55,6 +55,26 @@ afterEach(() => {
 });
 
 describe('Context validity at the root boundary', () => {
+  it('restores daily tension before continuing NPC actions in an internal scene', () => {
+    enterKeeper();
+    state().interactionSlice.actions.performAction('fixture:openKeeperInner');
+    read();
+    useGameState.setState(
+      produce(state(), (draft) => {
+        draft.npcSlice.byId.fixtureKeeper.affection = -50;
+      }),
+    );
+    state().world.actions.changeTime(24 * 60);
+    const baseline = state().interactionSlice.dailyMemoryBySubject['npc:fixtureKeeper']?.tension;
+    expect(baseline).toBeGreaterThanOrEqual(30);
+    expect(baseline).toBeLessThanOrEqual(70);
+    act({ label: 'Calm down', result: { effects: [{ type: 'modifyTension', delta: -5 }] } });
+    expect(state().interactionSlice.dailyMemoryBySubject['npc:fixtureKeeper']?.tension).toBe(
+      baseline! - 5,
+    );
+    expect(interaction()?.activeFrameId).toBe('fixtureHub/keeper:inner');
+  });
+
   it('preserves the scene within a POI and clears its background when travelling to another POI', () => {
     const background = interaction()?.currentBackground;
     expect(background).toBeDefined();
@@ -137,7 +157,7 @@ describe('Context validity at the root boundary', () => {
       expect(interaction()?.currentEntry?.blocks).toEqual([t('interactionUi.poiClosed')]);
       read();
       expect(Object.values(resolveInteractionOptions(state()).actions).flat()).toHaveLength(1);
-      state().interactionSlice.actions.performAction('system:leaveClosedPoi');
+      state().interactionSlice.actions.performAction('system:leavePoi');
       expect(state().party.currentPartyPosition).toBe('0-0');
       expect(interaction()).toBeNull();
       expect(state().ui.currentScreen).toBe('strategicMap');
@@ -179,7 +199,7 @@ describe('Context validity at the root boundary', () => {
     expect(interaction()?.activeFrameId).toBe(CONTEXT_EXIT_FRAMES.poiClosed);
     expect(interaction()?.currentEntry?.blocks).toEqual([t('interactionUi.poiClosed')]);
     read();
-    state().interactionSlice.actions.performAction('system:leaveClosedPoi');
+    state().interactionSlice.actions.performAction('system:leavePoi');
     expect(state().npcSlice.byId.fixtureKeeper.timesMet).toBe(1);
     expect(interaction()).toBeNull();
   });
@@ -241,16 +261,16 @@ describe('Context validity at the root boundary', () => {
     expect(state().inventory.containers.protagonist.money).toBe(100);
   });
 
-  it('allows a marked POI scene until day cleanup, then evacuates immediately', () => {
+  it('restricts a marked internal scene to leaving and keeps it occupied through day cleanup', () => {
     state().interactionSlice.actions.performAction('fixture:openInnerFrame');
     read();
     state().poiSlice.actions.markPoiForRemoval('fixtureHub');
     state().world.actions.changeTime(5);
-    expect(interaction()?.activeFrameId).toBe('fixtureHub:inner');
+    expect(interaction()?.activeFrameId).toBe(CONTEXT_EXIT_FRAMES.poiFinished);
     state().world.actions.changeTime(24 * 60);
-    expect(state().poiSlice.pois.fixtureHub).toBeUndefined();
-    expect(state().party.currentPartyPosition).toBe('0-0');
-    expect(interaction()).toBeNull();
-    expect(state().ui.currentScreen).toBe('strategicMap');
+    expect(state().poiSlice.pois.fixtureHub).toBeDefined();
+    expect(state().party.currentPartyPosition).toBe('fixtureHub');
+    expect(interaction()?.activeFrameId).toBe(CONTEXT_EXIT_FRAMES.poiFinished);
+    expect(state().ui.currentScreen).toBe('poiView');
   });
 });

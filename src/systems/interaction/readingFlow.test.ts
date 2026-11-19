@@ -320,18 +320,20 @@ describe('Immediate Action costs and deferred transitions', () => {
     expect(drink).not.toHaveProperty('chance');
   });
 
-  it('evicts the party to its first surviving parent during end-of-day cleanup', () => {
+  it('keeps the occupied marked POI until the player confirms its exit', () => {
     read();
     state().world.actions.travelToPoi('fixtureTempSite');
+    read();
     state().poiSlice.actions.markPoiForRemoval('fixtureTempSite');
     state().world.actions.endDay();
+    expect(state().party.currentPartyPosition).toBe('fixtureTempSite');
+    expect(state().poiSlice.pois.fixtureTempSite).toBeDefined();
+    read();
+    state().interactionSlice.actions.performAction('system:leavePoi');
     expect(state().party.currentPartyPosition).toBe('fixtureHub');
     expect(state().interactionSlice.currentInteraction?.poiId).toBe('fixtureHub');
-    expect(state().poiSlice.pois.fixtureTempSite).toBeUndefined();
-    state().poiSlice.actions.markPoiForRemoval('fixtureHub');
     state().world.actions.endDay();
-    expect(state().party.currentPartyPosition).toBe('0-0');
-    expect(state().ui.currentScreen).toBe('strategicMap');
+    expect(state().poiSlice.pois.fixtureTempSite).toBeUndefined();
   });
 
   it('keeps authored content valid', () => {

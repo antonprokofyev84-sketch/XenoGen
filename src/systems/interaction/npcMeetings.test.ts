@@ -100,12 +100,16 @@ describe('NPC meetings at interaction boundaries', () => {
     expect(keeper().timesMet).toBe(1);
   });
 
-  it('counts a meeting when the current POI is removed at the cleanup boundary', () => {
+  it('counts the meeting on leaving a marked POI, not while day cleanup protects it', () => {
     enterKeeper();
     getState().poiSlice.actions.markPoiForRemoval('fixtureHub');
     expect(keeper().timesMet).toBe(0);
 
-    getState().poiSlice.actions.sweepPendingRemovals();
+    getState().world.actions.endDay();
+    expect(getState().interactionSlice.currentInteraction?.npcId).toBe('fixtureKeeper');
+    expect(keeper().timesMet).toBe(0);
+    getState().interactionSlice.actions.continueInteraction();
+    getState().interactionSlice.actions.performAction('system:leavePoi');
     expect(getState().interactionSlice.currentInteraction).toBeNull();
     expect(keeper().timesMet).toBe(1);
   });
