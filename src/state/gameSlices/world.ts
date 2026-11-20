@@ -2,10 +2,11 @@ import { DEFAULT_EXPLORATION_DURATION, STAMINA_RECOVERY_PER_HOUR, START_DATE } f
 import { applyEffects } from '@/systems/effects/applyEffects';
 import { TraitEffectManager } from '@/systems/effects/traitEffectManager';
 import { clearDailyInteractionMemory } from '@/systems/interaction/dailyMemory';
+import { isContextExitFrame } from '@/systems/interaction/frameIds';
 import {
   endInteraction,
   enterPoiContext,
-  refreshInteractionForTimeSlot,
+  finishInteractionStep,
 } from '@/systems/interaction/interactionState';
 import { TravelManager } from '@/systems/travel/travelManager';
 import { bootstrapNewGame } from '@/systems/world/newGameBootstrap';
@@ -71,10 +72,9 @@ function scoutCellDraft(
  *
  * 1. дневные эффекты POI и сроки жизни;
  * 2. квестовые таймеры и собранные ими effects;
- * 3. единый проход удаления помеченных POI;
+ * 3. удаление помеченных POI, кроме занятого пути партии;
  * 4. очистка дневной памяти Actions и Interceptors.
  *
- * Удаление идёт после таймеров намеренно: их effects ещё могут пометить POI.
  * Вложенных `set` здесь нет — весь тик остаётся одной транзакцией.
  */
 function runDayTickDraft(state: StoreState) {
@@ -83,8 +83,6 @@ function runDayTickDraft(state: StoreState) {
 
   poiDraft.runDayPass(state);
 
-  // Собранные таймерами effects исполняются после обоих проходов сразу целиком
-  // и до прохода удаления: они ещё могут пометить POI.
   applyEffects(state, questDraft.collectTimerEffects(state));
 
   poiDraft.sweepPendingRemovals(state);
@@ -98,7 +96,6 @@ function runDayTickDraft(state: StoreState) {
  * and running one day tick per crossed day boundary. Fully atomic.
  */
 function advanceTimeDraft(state: StoreState, minutes: number) {
-  const previousPosition = state.party.currentPartyPosition;
   const { newTime, daysPassed, oldTimeSlotIndex, newTimeSlotIndex } = advanceWorldTime(
     state.world.currentTime,
     minutes,
@@ -113,23 +110,7 @@ function advanceTimeDraft(state: StoreState, minutes: number) {
   // Occupancy разрешается однократно и только для конечного time slot: промежуточные
   // раскладки игрок не видит, а дневные тики до этого момента могли удалить POI.
   if (oldTimeSlotIndex !== newTimeSlotIndex || daysPassed > 0) {
-    refreshWorldContext(state, state.party.currentPartyPosition !== previousPosition);
-  }
-}
-
-function refreshWorldContext(state: StoreState, restoreAfterRemoval = false) {
-  occupancyDraft.refreshOccupancy(state);
-  const position = state.poiSlice.pois[state.party.currentPartyPosition];
-  if (
-    restoreAfterRemoval &&
-    state.ui.currentScreen === 'poiView' &&
-    !state.interactionSlice.currentInteraction &&
-    position?.parentId !== null &&
-    position
-  ) {
-    enterPoiContext(state, position.id);
-  } else {
-    refreshInteractionForTimeSlot(state);
+    occupancyDraft.refreshOccupancy(state);
   }
 }
 
@@ -137,10 +118,11 @@ function refreshWorldContext(state: StoreState, restoreAfterRemoval = false) {
  * Перемещение партии как единая транзакция: выход → движение → время
  * (возможны дневные тики и удаление POI) → прибытие.
  *
- * `extraMinutes` — отложенное время Action, инициировавшего переход: оно
- * уходит в то же изменение времени, чтобы один расход не списался дважды.
+ * `timeOverride` — полная длительность особого перехода вместо обычного пути.
+ * Стоимость времени Action к этому моменту уже оплачена отдельно.
  */
-function travelToPoiDraft(state: StoreState, targetPoiId: string, extraMinutes = 0): void {
+function travelToPoiDraft(state: StoreState, targetPoiId: string, timeOverride?: number): void {
+  if (state.interactionSlice.pendingTransition) return;
   const currentPoiId = state.party.currentPartyPosition;
   const targetPoi = state.poiSlice.pois[targetPoiId];
 
@@ -149,7 +131,6 @@ function travelToPoiDraft(state: StoreState, targetPoiId: string, extraMinutes =
     return;
   }
 
-  const fallbackCellId = targetPoi.parentId !== null ? targetPoi.rootCellId : null;
   const travel = TravelManager.computeTravel(currentPoiId, targetPoiId, state);
 
   if (!travel.canTravel) {
@@ -163,29 +144,12 @@ function travelToPoiDraft(state: StoreState, targetPoiId: string, extraMinutes =
   // Позиция партии меняется до изменения времени: refreshOccupancy использует её как якорь.
   partyDraft.moveToPoi(state, targetPoiId, travel.staminaCost);
 
-  advanceTimeDraft(state, travel.timeCost + extraMinutes);
-
-  // Цель перечитывается: последствия времени могли её удалить.
-  const arrivedPoi = state.poiSlice.pois[targetPoiId];
-
-  if (!arrivedPoi) {
-    const survivingParent = state.poiSlice.pois[state.party.currentPartyPosition];
-    if (survivingParent && survivingParent.id !== targetPoiId) {
-      state.ui.currentScreen = survivingParent.parentId === null ? 'strategicMap' : 'poiView';
-      return;
-    }
-    if (fallbackCellId && state.poiSlice.pois[fallbackCellId]) {
-      state.party.currentPartyPosition = fallbackCellId;
-    }
-    console.error(`Travel target POI was removed during travel: ${targetPoiId}`);
-    state.ui.currentScreen = 'strategicMap';
-    return;
-  }
+  advanceTimeDraft(state, timeOverride ?? travel.timeCost);
 
   const daysPassed = getDaysSinceLastVisit(state, targetPoiId);
   poiDraft.processPoiEnter();
 
-  const isCellTarget = arrivedPoi.parentId === null;
+  const isCellTarget = targetPoi.parentId === null;
 
   //TODO potentially we should scout any poi.
   if (isCellTarget && daysPassed > 0) {
@@ -245,34 +209,44 @@ export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
     },
     endDay: () => {
       set((state) => {
+        if (state.interactionSlice.pendingTransition) return;
         runDayTickDraft(state);
-        refreshWorldContext(state, true);
+        occupancyDraft.refreshOccupancy(state);
+        finishInteractionStep(state);
       });
     },
 
     changeTime: (minutes: number) => {
       set((state) => {
+        if (state.interactionSlice.pendingTransition) return;
         advanceTimeDraft(state, minutes);
+        finishInteractionStep(state);
       });
     },
 
     scoutCell: (cellId, maxRollValue, bonus, duration) => {
       set((state) => {
+        if (state.interactionSlice.pendingTransition) return;
         scoutCellDraft(state, cellId, maxRollValue, bonus, duration);
       });
     },
 
     travelToPoi: (targetPoiId) => {
       set((state) => {
+        const interaction = state.interactionSlice.currentInteraction;
+        if (interaction && isContextExitFrame(interaction.activeFrameId)) return;
         travelToPoiDraft(state, targetPoiId);
       });
     },
 
     restForMinutes: (minutes) => {
-      get().world.actions.changeTime(minutes);
-
-      const staminaRestored = Math.floor((minutes / 60) * STAMINA_RECOVERY_PER_HOUR);
-      get().party.actions.changeStamina(staminaRestored);
+      set((state) => {
+        if (state.interactionSlice.pendingTransition) return;
+        advanceTimeDraft(state, minutes);
+        const staminaRestored = Math.floor((minutes / 60) * STAMINA_RECOVERY_PER_HOUR);
+        partyDraft.changeStamina(state, staminaRestored);
+        finishInteractionStep(state);
+      });
     },
 
     restUntilMorning: () => {

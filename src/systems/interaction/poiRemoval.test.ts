@@ -43,6 +43,19 @@ afterEach(() => {
 });
 
 describe('Marked POI interaction and daily cleanup', () => {
+  it('removes an unoccupied POI that expires during the current daily cycle', () => {
+    useGameState.setState(
+      produce(state(), (draft) => {
+        const poi = draft.poiSlice.pois.fixtureTempSite;
+        if (isNonCellNode(poi)) poi.details.lifetimeDaysLeft = 1;
+      }),
+    );
+    state().world.actions.endDay();
+    expect(state().poiSlice.pois.fixtureTempSite).toBeUndefined();
+    expect(state().poiSlice.pois.fixtureHub.childPoiIds).not.toContain('fixtureTempSite');
+    expect(state().party.currentPartyPosition).toBe('fixtureHub');
+  });
+
   it('shows the destination background when arriving after its content expires', () => {
     state().world.actions.travelToPoi('fixtureOpenSite');
     read();
