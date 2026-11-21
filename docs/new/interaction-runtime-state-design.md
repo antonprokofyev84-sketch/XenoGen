@@ -88,7 +88,8 @@ narrative blocks. Поступающий текст Actions, Interceptors и Fra
 
 ## Исполнение Action
 
-Исполнитель: [performAction.ts](../../src/systems/interaction/performAction.ts).
+Исполнение попытки: [performAction.ts](../../src/systems/interaction/performAction.ts).
+Исполнение переходов: [executeTransition.ts](../../src/systems/interaction/executeTransition.ts).
 
 1. Публичная команда проверяет, что предыдущая порция подтверждена.
 2. Executor один раз разрешает cost, проверяет оплату, списывает деньги,
