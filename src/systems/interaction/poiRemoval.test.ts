@@ -69,7 +69,7 @@ describe('Marked POI interaction and daily cleanup', () => {
       label: 'Return',
       result: { transition: { type: 'parentPoi', time: 2 * 24 * 60 } },
     });
-    expect(interaction()?.activeFrameId).toBe(CONTEXT_EXIT_FRAMES.poiFinished);
+    expect(interaction()?.activeFrameId).toBe(CONTEXT_EXIT_FRAMES.poiPendingRemoval);
     expect(resolveInteractionPresentation(state()).background).toBe(
       INITIAL_FRAMES.fixtureHub.background,
     );
@@ -79,7 +79,7 @@ describe('Marked POI interaction and daily cleanup', () => {
     'replaces an internal %s scene with one exit without deleting the POI',
     (context) => {
       if (context === 'npc') {
-        state().interactionSlice.actions.enterSlotContext('keeper', 'fixtureKeeper');
+        state().interactionSlice.actions.startNpcConversation('keeper', 'fixtureKeeper');
         read();
         state().interactionSlice.actions.performAction('fixture:openKeeperInner');
       } else {
@@ -91,10 +91,10 @@ describe('Marked POI interaction and daily cleanup', () => {
       state().poiSlice.actions.markPoiForRemoval('fixtureHub');
       expect(state().poiSlice.pois.fixtureHub).toMatchObject({ pendingRemoval: true });
       expect(state().party.currentPartyPosition).toBe('fixtureHub');
-      expect(interaction()?.activeFrameId).toBe(CONTEXT_EXIT_FRAMES.poiFinished);
+      expect(interaction()?.activeFrameId).toBe(CONTEXT_EXIT_FRAMES.poiPendingRemoval);
       expect(interaction()?.currentBackground).toBe(background);
       expect(interaction()?.log).toEqual(history);
-      expect(interaction()?.currentEntry?.blocks).toEqual([t('interactionUi.poiFinished')]);
+      expect(interaction()?.currentEntry?.blocks).toEqual([t('interactionUi.poiPendingRemoval')]);
       read();
       const options = resolveInteractionOptions(state());
       expect(
@@ -104,10 +104,8 @@ describe('Marked POI interaction and daily cleanup', () => {
       ).toEqual(['system:leavePoi']);
       expect(options.navigation).toEqual({ canReturnToPoi: false, poiTransitions: [] });
 
-      state().interactionSlice.actions.performAction('fixture:lookAround');
-      state().interactionSlice.actions.enterSlotContext('resident', 'fixtureResident');
-      state().interactionSlice.actions.returnToPoiContext();
-      expect(interaction()?.activeFrameId).toBe(CONTEXT_EXIT_FRAMES.poiFinished);
+      state().interactionSlice.actions.endNpcConversation();
+      expect(interaction()?.activeFrameId).toBe(CONTEXT_EXIT_FRAMES.poiPendingRemoval);
       expect(state().inventory.containers.protagonist.money).toBe(100);
       state().interactionSlice.actions.performAction('system:leavePoi');
       expect(state().party.currentPartyPosition).toBe('0-0');
@@ -131,7 +129,7 @@ describe('Marked POI interaction and daily cleanup', () => {
     expect(state().inventory.containers.protagonist.money).toBe(107);
     expect(state().world.currentTime).toBe(before + 5 * 60000);
     read();
-    expect(interaction()?.activeFrameId).toBe(CONTEXT_EXIT_FRAMES.poiFinished);
+    expect(interaction()?.activeFrameId).toBe(CONTEXT_EXIT_FRAMES.poiPendingRemoval);
     expect(interaction()?.log.at(-1)?.blocks).toEqual(['The task is complete.']);
     read();
     expect(interaction()?.currentEntry).toBeNull();
@@ -150,10 +148,38 @@ describe('Marked POI interaction and daily cleanup', () => {
       },
     });
     read();
-    expect(interaction()?.activeFrameId).toBe(CONTEXT_EXIT_FRAMES.poiFinished);
+    expect(interaction()?.activeFrameId).toBe(CONTEXT_EXIT_FRAMES.poiPendingRemoval);
     expect(state().interactionSlice.pendingTransition).toBeNull();
     expect(state().world.currentTime).toBe(before);
     expect(state().poiSlice.pois.fixtureHub).toBeDefined();
+  });
+
+  it('opens the only exit when the POI expires during a local transition', () => {
+    state().world.actions.travelToPoi('fixtureTempSite');
+    read();
+    useGameState.setState(
+      produce(state(), (draft) => {
+        const poi = draft.poiSlice.pois.fixtureTempSite;
+        if (isNonCellNode(poi)) poi.details.lifetimeDaysLeft = 1;
+      }),
+    );
+    const before = state().world.currentTime;
+    act({
+      label: 'Wait',
+      result: {
+        narrative: ['You settle down to wait.'],
+        transition: { type: 'root', time: 2 * 1440 },
+      },
+    });
+    expect(state().world.currentTime).toBe(before);
+
+    read();
+    expect(state().world.currentTime).toBe(before + 2 * 1440 * 60000);
+    expect(state().party.currentPartyPosition).toBe('fixtureTempSite');
+    expect(state().poiSlice.pois.fixtureTempSite).toMatchObject({ pendingRemoval: true });
+    expect(interaction()?.activeFrameId).toBe(CONTEXT_EXIT_FRAMES.poiPendingRemoval);
+    expect(interaction()?.currentEntry?.blocks).toEqual([t('interactionUi.poiPendingRemoval')]);
+    expect(state().interactionSlice.pendingTransition).toBeNull();
   });
 
   it('keeps an occupied expired POI across cycles and removes it after leaving', () => {
@@ -168,7 +194,7 @@ describe('Marked POI interaction and daily cleanup', () => {
     state().world.actions.endDay();
     expect(state().poiSlice.pois.fixtureTempSite).toMatchObject({ pendingRemoval: true });
     expect(state().party.currentPartyPosition).toBe('fixtureTempSite');
-    expect(interaction()?.activeFrameId).toBe(CONTEXT_EXIT_FRAMES.poiFinished);
+    expect(interaction()?.activeFrameId).toBe(CONTEXT_EXIT_FRAMES.poiPendingRemoval);
     state().world.actions.endDay();
     expect(state().poiSlice.pois.fixtureTempSite).toMatchObject({ pendingRemoval: true });
     expect(state().party.currentPartyPosition).toBe('fixtureTempSite');
@@ -189,7 +215,7 @@ describe('Marked POI interaction and daily cleanup', () => {
     state().poiSlice.actions.markPoiForRemoval('fixtureHub');
     expect(state().poiSlice.pois.fixtureHub).toMatchObject({ pendingRemoval: true });
     expect(state().poiSlice.pois.fixtureTempSite).toMatchObject({ pendingRemoval: true });
-    expect(interaction()?.activeFrameId).toBe(CONTEXT_EXIT_FRAMES.poiFinished);
+    expect(interaction()?.activeFrameId).toBe(CONTEXT_EXIT_FRAMES.poiPendingRemoval);
     state().world.actions.endDay();
     expect(state().poiSlice.pois.fixtureTempSite).toBeDefined();
     expect(state().poiSlice.pois.fixtureHub).toBeDefined();
@@ -231,7 +257,7 @@ describe('Marked POI interaction and daily cleanup', () => {
     state().world.actions.travelToPoi('fixtureOpenSite');
     read();
     state().world.actions.travelToPoi('fixtureHub');
-    expect(interaction()?.activeFrameId).toBe(CONTEXT_EXIT_FRAMES.poiFinished);
+    expect(interaction()?.activeFrameId).toBe(CONTEXT_EXIT_FRAMES.poiPendingRemoval);
     expect(state().inventory.containers.protagonist.money).toBe(100);
     read();
     expect(state().inventory.containers.protagonist.money).toBe(100);

@@ -85,11 +85,12 @@ export interface InteractionLogEntry {
   blocks: NarrativeBlock[];
 }
 
-export type InteractionContextIds =
-  | { poiId: PoiId; slotId?: never; npcId?: never }
-  | { poiId: PoiId; slotId: SlotId; npcId: NpcId };
-
-export type CurrentInteraction = InteractionContextIds & {
+export interface CurrentInteraction {
+  poiId: PoiId;
+  /** Присутствует вместе с `npcId`, когда игрок разговаривает с occupant этого slot. */
+  slotId?: SlotId;
+  /** Наличие NPC отличает разговор от обычного POI-контекста. */
+  npcId?: NpcId;
   /** Всегда настоящий ID Frame: `undefined` не означает root. */
   activeFrameId: FrameId;
   pendingEvents: PendingInteractionEvent[];
@@ -99,13 +100,17 @@ export type CurrentInteraction = InteractionContextIds & {
   log: InteractionLogEntry[];
   /** Текущая порция: разрешённые blocks, без effects, времени и переходов. */
   currentEntry: InteractionLogEntry | null;
-};
+}
 
-/** Субъект памяти текущего контекста. */
-export const resolveSubjectKey = (context: InteractionContextIds): InteractionSubjectKey =>
-  context.npcId === undefined ? toPoiSubjectKey(context.poiId) : toNpcSubjectKey(context.npcId);
+/** Субъект памяти interaction или собранного для него ActionContext. */
+export const resolveSubjectKey = (subject: {
+  readonly poiId: PoiId;
+  readonly npcId?: NpcId;
+}): InteractionSubjectKey =>
+  subject.npcId === undefined ? toPoiSubjectKey(subject.poiId) : toNpcSubjectKey(subject.npcId);
 
 /** Контекст конкретного NPC; только он имеет дневной tension и force exit. */
 export const isNpcContext = (
-  context: InteractionContextIds,
-): context is { poiId: PoiId; slotId: SlotId; npcId: NpcId } => context.npcId !== undefined;
+  interaction: CurrentInteraction,
+): interaction is CurrentInteraction & { slotId: SlotId; npcId: NpcId } =>
+  interaction.npcId !== undefined;

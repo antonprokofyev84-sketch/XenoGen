@@ -5,8 +5,8 @@ import { clearDailyInteractionMemory } from '@/systems/interaction/dailyMemory';
 import { isContextExitFrame } from '@/systems/interaction/frameIds';
 import {
   endInteraction,
-  enterPoiContext,
   finishInteractionStep,
+  startPoiInteraction,
 } from '@/systems/interaction/interactionState';
 import { TravelManager } from '@/systems/travel/travelManager';
 import { bootstrapNewGame } from '@/systems/world/newGameBootstrap';
@@ -122,7 +122,6 @@ function advanceTimeDraft(state: StoreState, minutes: number) {
  * Стоимость времени Action к этому моменту уже оплачена отдельно.
  */
 function travelToPoiDraft(state: StoreState, targetPoiId: string, timeOverride?: number): void {
-  if (state.interactionSlice.pendingTransition) return;
   const currentPoiId = state.party.currentPartyPosition;
   const targetPoi = state.poiSlice.pois[targetPoiId];
 
@@ -159,7 +158,7 @@ function travelToPoiDraft(state: StoreState, targetPoiId: string, timeOverride?:
   occupancyDraft.ensurePoiOccupancy(state, targetPoiId);
 
   if (!isCellTarget) {
-    enterPoiContext(state, targetPoiId);
+    startPoiInteraction(state, targetPoiId);
   }
 
   state.ui.currentScreen = isCellTarget ? 'strategicMap' : 'poiView';
@@ -233,6 +232,7 @@ export const createWorldSlice: GameSlice<WorldSlice> = (set, get) => ({
 
     travelToPoi: (targetPoiId) => {
       set((state) => {
+        if (state.interactionSlice.pendingTransition) return;
         const interaction = state.interactionSlice.currentInteraction;
         if (interaction && isContextExitFrame(interaction.activeFrameId)) return;
         travelToPoiDraft(state, targetPoiId);

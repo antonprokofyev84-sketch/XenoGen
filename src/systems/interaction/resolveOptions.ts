@@ -9,13 +9,12 @@ import type { PoiEntryBlockReason } from '@/systems/world/poiEntry';
 import { resolvePoiEntryBlock } from '@/systems/world/poiEntry';
 import type { ActionCategory, ActionContext } from '@/types/action.types';
 import type { ActionId, PoiId } from '@/types/ids.types';
-import type { CurrentInteraction } from '@/types/interactionRuntime.types';
-import { isNpcContext, resolveSubjectKey } from '@/types/interactionRuntime.types';
+import { isNpcContext } from '@/types/interactionRuntime.types';
 import { isNonCellNode } from '@/types/worldNode.types';
 
 import { buildActionContext } from './actionContext';
-import { listActionSources } from './actionSources';
-import { resolveRootFrameId } from './frameIds';
+import { listCurrentActionSources } from './actionSources';
+import { resolveCurrentRootFrameId } from './frameIds';
 
 /**
  * Сборка вариантов экрана.
@@ -58,20 +57,18 @@ const emptyOptions = (): ResolvedInteractionOptions => ({
 function buildGroup(
   state: StoreState,
   actionIds: readonly ActionId[] | undefined,
-  context: ActionContext,
-  interaction: CurrentInteraction,
+  actionContext: ActionContext,
   categoryOverride?: ActionCategory,
 ): UiAction[] {
   if (!actionIds || actionIds.length === 0) return [];
 
-  const subjectKey = resolveSubjectKey(interaction);
   const options: UiAction[] = [];
 
   for (const actionId of actionIds) {
     const action = INITIAL_ACTIONS[actionId];
     if (!action) continue;
 
-    const availability = resolveActionAvailability(state, actionId, action, context, subjectKey);
+    const availability = resolveActionAvailability(state, actionId, action, actionContext);
     if (!availability) continue;
 
     options.push(resolveActionPresentation(actionId, action, availability, categoryOverride));
@@ -81,10 +78,9 @@ function buildGroup(
 }
 
 /** Навигация выводится из состояния мира, а не из авторских Actions. */
-function buildNavigation(
-  state: StoreState,
-  interaction: CurrentInteraction,
-): ResolvedInteractionOptions['navigation'] {
+function buildNavigation(state: StoreState): ResolvedInteractionOptions['navigation'] {
+  // Navigation строится только для существующего interaction текущего экрана.
+  const interaction = state.interactionSlice.currentInteraction!;
   const poi = state.poiSlice.pois[interaction.poiId];
   if (!poi || !isNonCellNode(poi)) return emptyOptions().navigation;
 
@@ -131,19 +127,19 @@ export function resolveInteractionOptions(state: StoreState): ResolvedInteractio
   const poi = state.poiSlice.pois[interaction.poiId];
   if (!poi || !isNonCellNode(poi)) return emptyOptions();
 
-  const context = buildActionContext(state, interaction, interaction.activeFrameId);
-  const sources = listActionSources(state, interaction);
+  const actionContext = buildActionContext(state);
+  const sources = listCurrentActionSources(state);
   const options = emptyOptions();
 
-  options.actions.frame = buildGroup(state, sources.frame, context, interaction);
-  options.actions.poi = buildGroup(state, sources.poi, context, interaction);
-  options.actions.slot = buildGroup(state, sources.slot, context, interaction);
-  options.actions.personal = buildGroup(state, sources.personal, context, interaction);
-  options.actions.quest = buildGroup(state, sources.quest, context, interaction, 'quest');
+  options.actions.frame = buildGroup(state, sources.frame, actionContext);
+  options.actions.poi = buildGroup(state, sources.poi, actionContext);
+  options.actions.slot = buildGroup(state, sources.slot, actionContext);
+  options.actions.personal = buildGroup(state, sources.personal, actionContext);
+  options.actions.quest = buildGroup(state, sources.quest, actionContext, 'quest');
 
   // Навигацию даёт только root: выход из внутреннего Frame — авторский Action.
-  if (interaction.activeFrameId === resolveRootFrameId(state, interaction)) {
-    options.navigation = buildNavigation(state, interaction);
+  if (interaction.activeFrameId === resolveCurrentRootFrameId(state)) {
+    options.navigation = buildNavigation(state);
   }
 
   return options;

@@ -23,11 +23,11 @@ Frame ID адресует definition; конкретные `poiId`, `slotId`, `n
 задаются runtime-контекстом. Открытие `bob:question` само по себе не выбирает Боба собеседником.
 Ограничение текущего validator на имена NPC-Frames описано в
 [фактическом покрытии валидации](validation-contract.md#фактическое-покрытие-и-runtime).
-Имена `closed` и `forceExit` зарезервированы для системных Frames;
-[force exit](tension-force-exit-and-poi-entry.md#force-exit) использует slot-контекст.
-Формы IDs — `templateId:closed` и `templateId/slotId:forceExit`.
-Проверку закрытого входа задаёт [доступность POI](tension-force-exit-and-poi-entry.md#вход-в-poi),
-а будущий closed-flow остаётся в [backlog](ideas.md#poi-и-локализация-контента).
+Имя `forceExit` зарезервировано для системного Frame конкретного slot в форме
+`templateId/slotId:forceExit`; правила описаны в
+[force exit](tension-force-exit-and-poi-entry.md#force-exit). Общие Frames выхода
+`system:poiClosed`, `system:npcLeft` и `system:poiPendingRemoval` принадлежат
+[interaction runtime](interaction-runtime-state-design.md#актуальность-текущего-interaction).
 
 ## Поля Frame
 

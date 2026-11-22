@@ -30,7 +30,7 @@ describe('Shared location HUD and occupant presentation', () => {
     state().occupancySlice.actions.assignNpcToSlot('fixtureHub', slotId, npcId);
     state().world.actions.travelToPoi('fixtureHub');
     read();
-    state().interactionSlice.actions.enterSlotContext(slotId, npcId);
+    state().interactionSlice.actions.startNpcConversation(slotId, npcId);
     read();
     const ids = Object.values(resolveInteractionOptions(state()).actions)
       .flat()
@@ -57,7 +57,7 @@ describe('Shared location HUD and occupant presentation', () => {
     read();
     const slots = resolveInteractionPresentation(state()).portraits;
     expect(slots.some((slot) => slot.npcId === 'fixtureKeeper')).toBe(true);
-    state().interactionSlice.actions.enterSlotContext('keeper', 'fixtureKeeper');
+    state().interactionSlice.actions.startNpcConversation('keeper', 'fixtureKeeper');
     read();
     expect(resolveInteractionPresentation(state()).portraits).toEqual(slots);
     expect(resolveInteractionOptions(state()).navigation.canReturnToPoi).toBe(true);
@@ -71,9 +71,9 @@ describe('Shared location HUD and occupant presentation', () => {
   it('switches root NPCs through the existing meeting-registration pipeline', () => {
     state().world.actions.travelToPoi('fixtureHub');
     read();
-    state().interactionSlice.actions.enterSlotContext('keeper', 'fixtureKeeper');
+    state().interactionSlice.actions.startNpcConversation('keeper', 'fixtureKeeper');
     read();
-    state().interactionSlice.actions.enterSlotContext('resident', 'fixtureResident');
+    state().interactionSlice.actions.startNpcConversation('resident', 'fixtureResident');
     expect(state().npcSlice.byId.fixtureKeeper.timesMet).toBe(1);
     expect(state().interactionSlice.currentInteraction?.npcId).toBe('fixtureResident');
     expect(

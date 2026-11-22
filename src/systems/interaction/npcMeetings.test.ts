@@ -6,7 +6,7 @@ import { useGameState } from '@/state/useGameState';
 const getState = () => useGameState.getState();
 const keeper = () => getState().npcSlice.byId.fixtureKeeper;
 const enterKeeper = () => {
-  getState().interactionSlice.actions.enterSlotContext('keeper', 'fixtureKeeper');
+  getState().interactionSlice.actions.startNpcConversation('keeper', 'fixtureKeeper');
   getState().interactionSlice.actions.continueInteraction();
 };
 
@@ -29,7 +29,7 @@ describe('NPC meetings at interaction boundaries', () => {
     getState().interactionSlice.actions.performAction('fixture:backToRoot');
     expect(keeper().timesMet).toBe(0);
 
-    getState().interactionSlice.actions.returnToPoiContext();
+    getState().interactionSlice.actions.endNpcConversation();
     expect(keeper().timesMet).toBe(1);
     expect(keeper().lastDateMet).toBe(getState().world.currentTime);
   });
@@ -43,17 +43,17 @@ describe('NPC meetings at interaction boundaries', () => {
 
   it('counts at most once per calendar day and updates the last meeting time', () => {
     enterKeeper();
-    getState().interactionSlice.actions.returnToPoiContext();
+    getState().interactionSlice.actions.endNpcConversation();
     getState().world.actions.changeTime(1);
     enterKeeper();
-    getState().interactionSlice.actions.returnToPoiContext();
+    getState().interactionSlice.actions.endNpcConversation();
 
     expect(keeper().timesMet).toBe(1);
     expect(keeper().lastDateMet).toBe(getState().world.currentTime);
 
     getState().world.actions.changeTime(24 * 60);
     enterKeeper();
-    getState().interactionSlice.actions.returnToPoiContext();
+    getState().interactionSlice.actions.endNpcConversation();
     expect(keeper().timesMet).toBe(2);
   });
 
@@ -64,22 +64,15 @@ describe('NPC meetings at interaction boundaries', () => {
     expect(getState().interactionSlice.currentInteraction).toBeNull();
   });
 
-  it('counts a meeting on explicit interaction end only once', () => {
-    enterKeeper();
-    getState().interactionSlice.actions.endInteraction();
-    getState().interactionSlice.actions.endInteraction();
-    expect(keeper().timesMet).toBe(1);
-  });
-
   it('counts the NPC being left when switching directly to another occupied slot', () => {
     enterKeeper();
-    getState().interactionSlice.actions.enterSlotContext('visitor', 'fixtureVisitorA');
+    getState().interactionSlice.actions.startNpcConversation('visitor', 'fixtureVisitorA');
     expect(keeper().timesMet).toBe(1);
     expect(getState().npcSlice.byId.fixtureVisitorA.timesMet).toBe(0);
   });
 
   it('counts a meeting when force exit returns the visitor to the POI', () => {
-    getState().interactionSlice.actions.enterSlotContext('visitor', 'fixtureVisitorA');
+    getState().interactionSlice.actions.startNpcConversation('visitor', 'fixtureVisitorA');
     getState().interactionSlice.actions.continueInteraction();
     getState().interactionSlice.actions.performAction('fixture:provokeVisitor');
     getState().interactionSlice.actions.continueInteraction();

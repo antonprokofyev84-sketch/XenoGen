@@ -2,7 +2,7 @@ import { INITIAL_NPCS } from '@/data/initial/npcs';
 import type { StoreState } from '@/state/useGameState';
 import { resolveText } from '@/systems/text/resolveText';
 import type { NpcId } from '@/types/ids.types';
-import type { InteractionContextIds } from '@/types/interactionRuntime.types';
+import type { CurrentInteraction } from '@/types/interactionRuntime.types';
 import type { DialogueLine, NarrativeBlock, ThoughtLine } from '@/types/narrativeBlock.types';
 import {
   CURRENT_NPC_NAME_PLACEHOLDER,
@@ -47,15 +47,15 @@ const substituteName = (text: string, displayName: string | undefined): string =
 
 function resolveBlock(
   block: NarrativeBlock,
-  context: InteractionContextIds,
+  interaction: CurrentInteraction,
   displayName: string | undefined,
 ): NarrativeBlock {
   if (isDialogueLine(block)) {
     const resolved: DialogueLine = {
       // Говорящий фиксируется конкретным ID: `$npc` в снимке не остаётся.
       speakerId:
-        block.speakerId === CURRENT_NPC_SPEAKER && context.npcId !== undefined
-          ? context.npcId
+        block.speakerId === CURRENT_NPC_SPEAKER && interaction.npcId !== undefined
+          ? interaction.npcId
           : block.speakerId,
       text: substituteName(resolveText(block.text), displayName),
     };
@@ -73,11 +73,12 @@ function resolveBlock(
 export function resolveNarrativeSnapshot(
   state: StoreState,
   blocks: readonly NarrativeBlock[],
-  context: InteractionContextIds,
 ): NarrativeBlock[] {
+  // Narrative поступает только в уже созданный текущий interaction.
+  const interaction = state.interactionSlice.currentInteraction!;
   // `${npc}` адресуется именно NPC текущего контекста.
   const displayName =
-    context.npcId === undefined ? undefined : resolveNpcDisplayName(state, context.npcId);
+    interaction.npcId === undefined ? undefined : resolveNpcDisplayName(state, interaction.npcId);
 
-  return blocks.map((block) => resolveBlock(block, context, displayName));
+  return blocks.map((block) => resolveBlock(block, interaction, displayName));
 }

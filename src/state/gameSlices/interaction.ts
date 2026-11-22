@@ -1,10 +1,6 @@
 import type { StoreState } from '@/state/useGameState';
 import { isContextExitFrame } from '@/systems/interaction/frameIds';
-import {
-  endInteraction,
-  enterPoiContext,
-  enterSlotContext,
-} from '@/systems/interaction/interactionState';
+import { endNpcConversation, startNpcConversation } from '@/systems/interaction/interactionState';
 import { continueInteraction, performAction } from '@/systems/interaction/performAction';
 import { resolveInteractionPresentation } from '@/systems/interaction/presentation';
 import { resolveInteractionOptions } from '@/systems/interaction/resolveOptions';
@@ -44,10 +40,8 @@ export interface InteractionSlice {
   isTrading: boolean;
 
   actions: {
-    enterPoiContext: (poiId: string) => void;
-    enterSlotContext: (slotId: string, npcId: string) => void;
-    returnToPoiContext: () => void;
-    endInteraction: () => void;
+    startNpcConversation: (slotId: string, npcId: string) => void;
+    endNpcConversation: () => void;
     performAction: (actionId: string) => void;
     continueInteraction: () => void;
     setTrading: (isTrading: boolean) => void;
@@ -122,35 +116,22 @@ export const createInteractionSlice: GameSlice<InteractionSlice> = (set) => ({
   isTrading: false,
 
   actions: {
-    enterPoiContext: (poiId) =>
+    startNpcConversation: (slotId, npcId) =>
       set((state) => {
         const interaction = state.interactionSlice.currentInteraction;
         if (interaction && isContextExitFrame(interaction.activeFrameId)) return;
-        enterPoiContext(state, poiId);
+        startNpcConversation(state, slotId, npcId);
       }),
 
-    enterSlotContext: (slotId, npcId) =>
-      set((state) => {
-        enterSlotContext(state, slotId, npcId);
-      }),
-
-    returnToPoiContext: () =>
+    endNpcConversation: () =>
       set((state) => {
         const interaction = state.interactionSlice.currentInteraction;
-        if (!interaction || isContextExitFrame(interaction.activeFrameId)) return;
-
-        enterPoiContext(state, interaction.poiId);
-      }),
-
-    endInteraction: () =>
-      set((state) => {
-        endInteraction(state);
+        if (interaction && isContextExitFrame(interaction.activeFrameId)) return;
+        endNpcConversation(state);
       }),
 
     performAction: (actionId) =>
       set((state) => {
-        const interaction = state.interactionSlice.currentInteraction;
-        if (interaction?.currentEntry) return;
         performAction(state, actionId);
       }),
 

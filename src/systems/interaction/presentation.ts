@@ -4,12 +4,12 @@ import { resolveNpcImage } from '@/systems/npc/npcImageResolver';
 import { resolveText } from '@/systems/text/resolveText';
 import { resolvePoiDisplayName } from '@/systems/world/locationPresentation';
 import { DEFAULT_NPC_DISPLAY_MODE } from '@/types/frame.types';
-import type { NpcId, PoiId, SlotId } from '@/types/ids.types';
+import type { NpcId, SlotId } from '@/types/ids.types';
 import type { NarrativeBlock } from '@/types/narrativeBlock.types';
 import { isDialogueLine } from '@/types/narrativeBlock.types';
 
 import { findSlotDefinition, listSlotDefinitions } from './actionSources';
-import { resolveRootFrameId } from './frameIds';
+import { resolveCurrentRootFrameId } from './frameIds';
 import { resolveNpcDisplayName } from './narrativeSnapshots';
 
 export interface UiNpcSlot {
@@ -46,9 +46,11 @@ const EMPTY: InteractionPresentation = {
 };
 
 /** Портреты читают текущую occupancy и сохраняются во внутренних Frames. */
-function resolvePoiNpcSlots(state: StoreState, poiId: PoiId): UiNpcSlot[] {
-  const occupants = state.occupancySlice.slotOccupants[poiId] ?? {};
-  return listSlotDefinitions(state, poiId).flatMap((slot) => {
+function resolveCurrentPoiNpcSlots(state: StoreState): UiNpcSlot[] {
+  // Портреты принадлежат POI текущего interaction.
+  const interaction = state.interactionSlice.currentInteraction!;
+  const occupants = state.occupancySlice.slotOccupants[interaction.poiId] ?? {};
+  return listSlotDefinitions(state, interaction.poiId).flatMap((slot) => {
     const npcId = occupants[slot.id];
     return npcId === undefined
       ? []
@@ -64,7 +66,7 @@ export function resolveInteractionPresentation(state: StoreState): InteractionPr
   if (!poi || poi.parentId === null) return EMPTY;
   const frame = INITIAL_FRAMES[interaction.activeFrameId];
   const locationTitle = resolvePoiDisplayName(poi.templateId);
-  const isRoot = interaction.activeFrameId === resolveRootFrameId(state, interaction);
+  const isRoot = interaction.activeFrameId === resolveCurrentRootFrameId(state);
   const mode = frame?.npcDisplay ?? DEFAULT_NPC_DISPLAY_MODE;
   if (mode === 'always' && interaction.npcId === undefined) {
     throw new Error('npcDisplay: always requires an NPC context: ' + interaction.activeFrameId);
@@ -105,7 +107,7 @@ export function resolveInteractionPresentation(state: StoreState): InteractionPr
             imageUrl: resolveNpcImage(figureId),
           },
     showPortraits: true,
-    portraits: resolvePoiNpcSlots(state, interaction.poiId),
+    portraits: resolveCurrentPoiNpcSlots(state),
     isRoot,
   };
 }

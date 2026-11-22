@@ -16,7 +16,7 @@ export const PoiView = () => {
   const interaction = useGameState(interactionSelectors.selectCurrentInteraction);
   const presentation = useGameState(interactionSelectors.selectPresentation);
   const options = useGameState(interactionSelectors.selectInteractionOptions);
-  const enterSlot = useGameState((state) => state.interactionSlice.actions.enterSlotContext);
+  const enterSlot = useGameState((state) => state.interactionSlice.actions.startNpcConversation);
   const isTradeOpen = useGameState((state) => state.interactionSlice.isTrading);
   const isReading = presentation.reading.mode === 'narrative';
   const actions = [

@@ -1,18 +1,15 @@
 import { INITIAL_ACTIONS } from '@/data/initial/actions';
-import { INITIAL_FRAMES } from '@/data/initial/frames';
 import { worldDraft } from '@/state/gameSlices/world';
 import type { StoreState } from '@/state/useGameState';
 import { applyEffects } from '@/systems/effects/applyEffects';
 import type { Rng } from '@/systems/rolls/rng';
 import { defaultRng } from '@/systems/rolls/rng';
 import type { ActionOutcome, ActionResult } from '@/types/action.types';
-import { resolveSubjectKey } from '@/types/interactionRuntime.types';
 
 import { buildActionContext } from './actionContext';
 import { canAffordCost, payResolvedCost, resolveActionCost } from './actionCosts';
 import { countExecution } from './dailyMemory';
 import { executePendingTransition } from './executeTransition';
-import { isContextExitFrame } from './frameIds';
 import {
   appendNarrative,
   finishInteractionStep,
@@ -39,28 +36,16 @@ import { runCheck, selectOutcome } from './outcomes';
  */
 
 export function performAction(state: StoreState, actionId: string, rng: Rng = defaultRng): void {
-  const interaction = state.interactionSlice.currentInteraction;
-  if (!interaction || state.interactionSlice.pendingTransition) return;
-  if (
-    isContextExitFrame(interaction.activeFrameId) &&
-    !INITIAL_FRAMES[interaction.activeFrameId]?.actionIds?.includes(actionId)
-  ) {
-    return;
-  }
-
+  // ActionList отправляет команду из Actions текущего interaction; без него экран не показан.
+  const interaction = state.interactionSlice.currentInteraction!;
   const action = INITIAL_ACTIONS[actionId];
   if (!action) {
     console.warn(`performAction: неизвестный Action "${actionId}"`);
     return;
   }
 
-  const subjectKey = resolveSubjectKey(interaction);
-
   // 1. Стоимость разрешается один раз и дальше используется как есть.
-  const cost = resolveActionCost(
-    action.cost,
-    buildActionContext(state, interaction, interaction.activeFrameId),
-  );
+  const cost = resolveActionCost(action.cost, buildActionContext(state));
 
   if (!canAffordCost(state, cost)) {
     console.warn(`performAction: недостаточно ресурсов для "${actionId}"`);
@@ -68,21 +53,21 @@ export function performAction(state: StoreState, actionId: string, rng: Rng = de
   }
 
   payResolvedCost(state, cost);
-  countExecution(state, subjectKey, 'actions', actionId, action.executionLimit);
+  countExecution(state, 'actions', actionId, action.executionLimit);
 
   // Функции check, весов и effects читают состояние уже после аванса.
-  const context = buildActionContext(state, interaction, interaction.activeFrameId);
+  const actionContext = buildActionContext(state);
 
   // 2. Проверка и выбор результата.
   let outcome: ActionOutcome;
   if (action.check) {
-    const succeeded = runCheck(state, action.check, context, rng);
+    const succeeded = runCheck(state, action.check, actionContext, rng);
     outcome = succeeded ? action.check.onSuccess : action.check.onFail;
   } else {
     outcome = action.result;
   }
 
-  const result: ActionResult | undefined = selectOutcome(outcome, context, rng);
+  const result: ActionResult | undefined = selectOutcome(outcome, actionContext, rng);
 
   if (!result) {
     console.warn(`performAction: Action "${actionId}" не выбрал результат`);
@@ -108,6 +93,10 @@ export function performAction(state: StoreState, actionId: string, rng: Rng = de
 
 /** The public command archives currentEntry first. Runtime only advances the scenario. */
 export function continueInteraction(state: StoreState, rng: Rng = defaultRng): void {
-  if (state.interactionSlice.pendingTransition) executePendingTransition(state, rng);
-  else finishInteractionStep(state, rng);
+  const transition = state.interactionSlice.pendingTransition;
+  if (transition) {
+    executePendingTransition(state, rng);
+  } else {
+    finishInteractionStep(state, rng);
+  }
 }

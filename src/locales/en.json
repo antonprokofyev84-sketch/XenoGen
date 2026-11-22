@@ -22,7 +22,7 @@
     "destinations": "Destinations",
     "poiClosed": "This place has closed. It is time to leave.",
     "npcLeft": "They have already left. The conversation is over.",
-    "poiFinished": "There is nothing else of interest here."
+    "poiPendingRemoval": "There is nothing else of interest here."
   },
   "interactionText": {
     "questRequirement": "Quest requirement",

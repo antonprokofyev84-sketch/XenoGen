@@ -5,7 +5,7 @@ import type { InitialFrameMap } from '@/types/frame.types';
 export const CONTEXT_EXIT_FRAMES = {
   poiClosed: 'system:poiClosed',
   npcLeft: 'system:npcLeft',
-  poiFinished: 'system:poiFinished',
+  poiPendingRemoval: 'system:poiPendingRemoval',
 } as const;
 
 export const CONTEXT_EXIT_ACTIONS: InitialActionMap = {
@@ -30,9 +30,9 @@ export const CONTEXT_EXIT_FRAME_DEFINITIONS: InitialFrameMap = {
     narrative: [t('interactionUi.npcLeft')],
     actionIds: ['system:endUnavailableConversation'],
   },
-  [CONTEXT_EXIT_FRAMES.poiFinished]: {
+  [CONTEXT_EXIT_FRAMES.poiPendingRemoval]: {
     npcDisplay: 'none',
-    narrative: [t('interactionUi.poiFinished')],
+    narrative: [t('interactionUi.poiPendingRemoval')],
     actionIds: ['system:leavePoi'],
   },
 };

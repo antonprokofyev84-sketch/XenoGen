@@ -6,15 +6,14 @@ import type { StoreState } from '@/state/useGameState';
 import type { Rng } from '@/systems/rolls/rng';
 import { defaultRng } from '@/systems/rolls/rng';
 import type { ActionId } from '@/types/ids.types';
-import type { CurrentInteraction } from '@/types/interactionRuntime.types';
-import { isNpcContext, resolveSubjectKey } from '@/types/interactionRuntime.types';
+import { isNpcContext } from '@/types/interactionRuntime.types';
 import type { InitialNpcSlot } from '@/types/poiContent.types';
 import { isNonCellNode } from '@/types/worldNode.types';
 
 import { buildActionContext } from './actionContext';
 import { evaluateConditions } from './conditions';
 import { resolveAppearance } from './dailyMemory';
-import { resolveRootFrameId } from './frameIds';
+import { resolveCurrentRootFrameId } from './frameIds';
 
 /**
  * Источники Actions текущего экрана.
@@ -49,17 +48,16 @@ export function findSlotDefinition(
   return listSlotDefinitions(state, poiId).find((slot) => slot.id === slotId);
 }
 
-export function listActionSources(
-  state: StoreState,
-  interaction: CurrentInteraction,
-): ActionSources {
+export function listCurrentActionSources(state: StoreState): ActionSources {
+  // Источники собираются только для экрана текущего interaction.
+  const interaction = state.interactionSlice.currentInteraction!;
   const poi = state.poiSlice.pois[interaction.poiId];
   if (!poi || !isNonCellNode(poi)) return EMPTY_SOURCES;
 
   const frame = INITIAL_FRAMES[interaction.activeFrameId]?.actionIds ?? [];
 
   // Внутренний Frame показывает только собственные Actions.
-  if (interaction.activeFrameId !== resolveRootFrameId(state, interaction)) {
+  if (interaction.activeFrameId !== resolveCurrentRootFrameId(state)) {
     return { ...EMPTY_SOURCES, frame };
   }
 
@@ -92,24 +90,15 @@ export function listActionSources(
 export function rollVisibleAppearanceChances(state: StoreState, rng: Rng = defaultRng): void {
   const interaction = state.interactionSlice.currentInteraction;
   if (!interaction) return;
-  const subjectKey = resolveSubjectKey(interaction);
-  const context = buildActionContext(state, interaction, interaction.activeFrameId);
-  const sources = listActionSources(state, interaction);
+  const actionContext = buildActionContext(state);
+  const sources = listCurrentActionSources(state);
   for (const actionId of Object.values(sources).flat()) {
     const action = INITIAL_ACTIONS[actionId];
     if (!action || action.appearanceChance === undefined) continue;
 
     // Пока условия не выполнены, броска нет.
-    if (!evaluateConditions(state, action.conditions, context)) continue;
+    if (!evaluateConditions(state, action.conditions, actionContext)) continue;
 
-    resolveAppearance(
-      state,
-      subjectKey,
-      'actions',
-      actionId,
-      action.appearanceChance,
-      context,
-      rng,
-    );
+    resolveAppearance(state, 'actions', actionId, action.appearanceChance, actionContext, rng);
   }
 }

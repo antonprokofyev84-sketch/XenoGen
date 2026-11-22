@@ -44,9 +44,9 @@ describe('Immediate Action costs and deferred transitions', () => {
     delete INITIAL_ACTIONS[testId];
   });
 
-  it('does not allow an Action until the entry text is read', () => {
+  it('presents entry text before the Actions mode', () => {
     const time = state().world.currentTime;
-    state().interactionSlice.actions.performAction('fixture:restAtHub');
+    expect(reading().mode).toBe('narrative');
     expect(state().inventory.containers.protagonist.money).toBe(100);
     expect(state().world.currentTime).toBe(time);
     read();
@@ -79,7 +79,8 @@ describe('Immediate Action costs and deferred transitions', () => {
 
   it('combines the first-meeting Interceptor and root Frame into one current portion', () => {
     read();
-    state().interactionSlice.actions.enterSlotContext('keeper', 'fixtureKeeper');
+    const poiHistory = interactionSelectors.selectInteractionLog(state());
+    state().interactionSlice.actions.startNpcConversation('keeper', 'fixtureKeeper');
     const entry = state().interactionSlice.currentInteraction?.currentEntry;
     expect(entry?.blocks).toEqual(
       expect.arrayContaining([
@@ -87,9 +88,10 @@ describe('Immediate Action costs and deferred transitions', () => {
         { speakerId: 'fixtureKeeper', text: 'Need something?' },
       ]),
     );
-    expect(interactionSelectors.selectInteractionLog(state())).toEqual([]);
+    expect(interactionSelectors.selectInteractionLog(state())).toEqual(poiHistory);
     read();
-    expect(interactionSelectors.selectInteractionLog(state())).toEqual([entry]);
+    expect(interactionSelectors.selectInteractionLog(state())).toHaveLength(poiHistory.length + 1);
+    expect(interactionSelectors.selectInteractionLog(state()).at(-1)).toEqual(entry);
     expect(state().interactionSlice.currentInteraction?.currentEntry).toBeNull();
   });
 
@@ -130,8 +132,7 @@ describe('Immediate Action costs and deferred transitions', () => {
     expect(state().characters.byId.protagonist.stamina).toBe(before.stamina - 2);
     expect(state().world.currentTime).toBe(before.time + 15 * 60000);
     expect(state().interactionSlice.currentInteraction?.activeFrameId).toBe('fixtureHub');
-    act();
-    expect(state().inventory.containers.protagonist.money).toBe(93);
+    expect(reading().mode).toBe('narrative');
     read();
     expect(state().world.currentTime).toBe(before.time + 45 * 60000);
     expect(state().interactionSlice.currentInteraction?.activeFrameId).toBe('fixtureHub:inner');
@@ -204,7 +205,7 @@ describe('Immediate Action costs and deferred transitions', () => {
 
   it('remembers forceExit immediately and waits through internal Frames', () => {
     read();
-    state().interactionSlice.actions.enterSlotContext('keeper', 'fixtureKeeper');
+    state().interactionSlice.actions.startNpcConversation('keeper', 'fixtureKeeper');
     read();
     install({
       label: 'Test',
@@ -260,21 +261,11 @@ describe('Immediate Action costs and deferred transitions', () => {
     expect(state().world.currentTime).toBe(time + 120 * 60000);
   });
 
-  it('cannot avoid a paid time cost by ending the interaction before reading', () => {
-    read();
-    const time = state().world.currentTime;
-    state().interactionSlice.actions.performAction('fixture:restAtHub');
-    state().interactionSlice.actions.endInteraction();
-    state().interactionSlice.actions.enterPoiContext('fixtureOpenSite');
-    read();
-    expect(state().world.currentTime).toBe(time + 120 * 60000);
-  });
-
   it('uses current reading for the speaker and removes speaker-only figures in actions mode', () => {
     read();
     state().occupancySlice.actions.assignNpcToSlot('fixtureHub', 'visitor', 'fixtureVisitorA');
     state().occupancySlice.actions.refreshOccupancy();
-    state().interactionSlice.actions.enterSlotContext('visitor', 'fixtureVisitorA');
+    state().interactionSlice.actions.startNpcConversation('visitor', 'fixtureVisitorA');
     expect(resolveInteractionPresentation(state()).figure?.npcId).toBe('fixtureVisitorA');
     read();
     expect(resolveInteractionPresentation(state()).figure).toBeUndefined();
@@ -282,7 +273,7 @@ describe('Immediate Action costs and deferred transitions', () => {
 
   it('keeps the resident female silhouette visible during narration and Actions', () => {
     read();
-    state().interactionSlice.actions.enterSlotContext('resident', 'fixtureResident');
+    state().interactionSlice.actions.startNpcConversation('resident', 'fixtureResident');
     expect(state().interactionSlice.currentInteraction?.npcId).toBe('fixtureResident');
     const presentation = resolveInteractionPresentation(state());
     expect(presentation.figure?.imageUrl).toBe(resolveCharacterSilhouette('female'));
@@ -310,7 +301,7 @@ describe('Immediate Action costs and deferred transitions', () => {
 
   it('resolves button money and explanations without exposing hidden Actions', () => {
     read();
-    state().interactionSlice.actions.enterSlotContext('keeper', 'fixtureKeeper');
+    state().interactionSlice.actions.startNpcConversation('keeper', 'fixtureKeeper');
     read();
     const options = resolveInteractionOptions(state());
     const drink = options.actions.slot.find((option) => option.actionId === 'fixture:buyDrink');

@@ -48,7 +48,7 @@ export interface ActionContext {
  * Функция читает переданный контекст, возвращает число, не мутирует store и
  * не бросает случайность самостоятельно: бросок выполняет executor.
  */
-export type ActionNumber = number | ((context: ActionContext) => number);
+export type ActionNumber = number | ((actionContext: ActionContext) => number);
 
 export const ACTION_CATEGORIES = ['dialogue', 'quest', 'trade', 'rest', 'interaction'] as const;
 export type ActionCategory = (typeof ACTION_CATEGORIES)[number];

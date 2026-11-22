@@ -34,19 +34,22 @@ function matchesComparison(value: number, comparison: NumericComparison): boolea
  *
  * У NPC фракция есть всегда, у POI может отсутствовать.
  */
-function resolveSubjectFactionId(state: StoreState, context: ActionContext): string | undefined {
-  if (context.npcId !== undefined) {
-    return INITIAL_NPCS[context.npcId]?.faction;
+function resolveSubjectFactionId(
+  state: StoreState,
+  actionContext: ActionContext,
+): string | undefined {
+  if (actionContext.npcId !== undefined) {
+    return INITIAL_NPCS[actionContext.npcId]?.faction;
   }
 
-  const poi = state.poiSlice.pois[context.poiId];
+  const poi = state.poiSlice.pois[actionContext.poiId];
   return poi && isNonCellNode(poi) ? poi.details.faction : undefined;
 }
 
 export function evaluateCondition(
   state: StoreState,
   condition: ActionCondition,
-  context: ActionContext,
+  actionContext: ActionContext,
 ): boolean {
   switch (condition.type) {
     case 'stat': {
@@ -79,7 +82,7 @@ export function evaluateCondition(
     }
 
     case 'affection': {
-      const npcId = condition.npcId ?? context.npcId;
+      const npcId = condition.npcId ?? actionContext.npcId;
 
       // Неразрешимый субъект — ошибка данных, а не обычный `false`.
       if (npcId === undefined) {
@@ -91,7 +94,7 @@ export function evaluateCondition(
     }
 
     case 'reputation': {
-      const factionId = condition.factionId ?? resolveSubjectFactionId(state, context);
+      const factionId = condition.factionId ?? resolveSubjectFactionId(state, actionContext);
 
       if (factionId === undefined) return false;
 
@@ -102,7 +105,7 @@ export function evaluateCondition(
       return matchesComparison(state.npcSlice.byId[condition.npcId]?.timesMet ?? 0, condition);
 
     case 'regionLevel':
-      return matchesComparison(context.regionLevels[condition.param] ?? 0, condition);
+      return matchesComparison(actionContext.regionLevels[condition.param] ?? 0, condition);
 
     case 'questVar': {
       // Отсутствующая переменная остаётся `undefined` и не превращается в `false`.
@@ -127,9 +130,9 @@ export function evaluateCondition(
 export function evaluateConditions(
   state: StoreState,
   conditions: readonly ActionCondition[] | undefined,
-  context: ActionContext,
+  actionContext: ActionContext,
 ): boolean {
   if (!conditions || conditions.length === 0) return true;
 
-  return conditions.every((condition) => evaluateCondition(state, condition, context));
+  return conditions.every((condition) => evaluateCondition(state, condition, actionContext));
 }

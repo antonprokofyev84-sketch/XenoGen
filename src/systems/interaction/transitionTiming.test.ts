@@ -100,7 +100,7 @@ describe('Transition duration and mandatory continuation', () => {
     ]);
   });
 
-  it('blocks context reset, another Action and public time/travel commands while a transition is owed', () => {
+  it('preserves a pending transition through inventory and blocks public reset/time/travel commands', () => {
     install({
       label: 'Wait',
       result: {
@@ -112,11 +112,6 @@ describe('Transition duration and mandatory continuation', () => {
     const pending = state().interactionSlice.pendingTransition;
     const interaction = state().interactionSlice.currentInteraction;
     const time = state().world.currentTime;
-    state().interactionSlice.actions.endInteraction();
-    state().interactionSlice.actions.returnToPoiContext();
-    state().interactionSlice.actions.enterPoiContext('fixtureOpenSite');
-    state().interactionSlice.actions.enterSlotContext('keeper', 'fixtureKeeper');
-    state().interactionSlice.actions.performAction('fixture:restAtHub');
     state().world.actions.travelToPoi('0-0');
     state().world.actions.changeTime(60);
     state().world.actions.restForMinutes(60);
@@ -168,7 +163,7 @@ describe('Transition duration and mandatory continuation', () => {
   });
 
   it('continues the NPC scene when cost.time ends the NPC shift', () => {
-    state().interactionSlice.actions.enterSlotContext('keeper', 'fixtureKeeper');
+    state().interactionSlice.actions.startNpcConversation('keeper', 'fixtureKeeper');
     read();
     install({
       label: 'Wait',
@@ -234,7 +229,9 @@ describe('Transition duration and mandatory continuation', () => {
     expect(state().world.currentTime).toBe(time + (1440 + 240) * 60000);
     expect(state().poiSlice.pois.fixtureTempSite).toMatchObject({ pendingRemoval: true });
     expect(state().party.currentPartyPosition).toBe('fixtureTempSite');
-    expect(state().interactionSlice.currentInteraction?.activeFrameId).toBe('system:poiFinished');
+    expect(state().interactionSlice.currentInteraction?.activeFrameId).toBe(
+      'system:poiPendingRemoval',
+    );
     expect(state().interactionSlice.pendingTransition).toBeNull();
   });
 

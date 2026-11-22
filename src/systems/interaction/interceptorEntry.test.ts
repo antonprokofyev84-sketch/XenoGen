@@ -51,13 +51,20 @@ afterEach(() => {
 });
 
 describe('Interceptors belong to an entry', () => {
-  it('keeps the current Frame and history when the same POI context is requested again', () => {
-    state().interactionSlice.actions.performAction('fixture:openInnerFrame');
+  it('keeps one history while entering and leaving an NPC conversation', () => {
+    const poiHistory = state().interactionSlice.currentInteraction?.log;
+    state().interactionSlice.actions.startNpcConversation('keeper', 'fixtureKeeper');
+    expect(state().interactionSlice.currentInteraction?.log).toEqual(poiHistory);
     read();
-    const interaction = state().interactionSlice.currentInteraction;
-    state().interactionSlice.actions.enterPoiContext('fixtureHub');
-    expect(state().interactionSlice.currentInteraction).toBe(interaction);
-    expect(state().interactionSlice.currentInteraction?.activeFrameId).toBe('fixtureHub:inner');
+    const conversationHistory = state().interactionSlice.currentInteraction?.log;
+    state().interactionSlice.actions.endNpcConversation();
+    expect(state().interactionSlice.currentInteraction?.log).toEqual(conversationHistory);
+    expect(state().interactionSlice.currentInteraction).toMatchObject({
+      poiId: 'fixtureHub',
+      activeFrameId: 'fixtureHub',
+    });
+    expect(state().interactionSlice.currentInteraction?.npcId).toBeUndefined();
+    expect(state().interactionSlice.currentInteraction?.slotId).toBeUndefined();
     expect(money()).toBe(101);
   });
 
@@ -79,19 +86,19 @@ describe('Interceptors belong to an entry', () => {
         },
       };
 
-      state().interactionSlice.actions.enterSlotContext(slotId, npcId);
+      state().interactionSlice.actions.startNpcConversation(slotId, npcId);
       expect(money()).toBe(104);
       const interaction = state().interactionSlice.currentInteraction;
-      state().interactionSlice.actions.enterSlotContext(slotId, npcId);
+      state().interactionSlice.actions.startNpcConversation(slotId, npcId);
       expect(state().interactionSlice.currentInteraction).toBe(interaction);
       expect(money()).toBe(104);
       read();
 
-      state().interactionSlice.actions.returnToPoiContext();
+      state().interactionSlice.actions.endNpcConversation();
       read();
       expect(money()).toBe(104);
       expect(state().npcSlice.byId[npcId].timesMet).toBe(1);
-      state().interactionSlice.actions.enterSlotContext(slotId, npcId);
+      state().interactionSlice.actions.startNpcConversation(slotId, npcId);
       expect(money()).toBe(107);
     },
   );
@@ -179,11 +186,11 @@ describe('Interceptors belong to an entry', () => {
       reason === 'departure' || reason === 'actionCost' || reason === 'timedTransition';
     const slotId = keeperLeaves ? 'keeper' : 'visitor';
     const npcId = keeperLeaves ? 'fixtureKeeper' : 'fixtureVisitorA';
-    state().interactionSlice.actions.enterSlotContext(slotId, npcId);
+    state().interactionSlice.actions.startNpcConversation(slotId, npcId);
     read();
     switch (reason) {
       case 'command':
-        state().interactionSlice.actions.returnToPoiContext();
+        state().interactionSlice.actions.endNpcConversation();
         break;
       case 'transition':
         state().interactionSlice.actions.performAction('fixture:leaveSlot');
@@ -202,7 +209,6 @@ describe('Interceptors belong to an entry', () => {
         });
         read();
         read();
-        state().interactionSlice.actions.performAction('fixture:backToRoot');
         break;
       case 'timedTransition':
         act({
@@ -214,7 +220,6 @@ describe('Interceptors belong to an entry', () => {
         });
         read();
         read();
-        state().interactionSlice.actions.performAction('fixture:backToRoot');
         break;
       case 'forceExit':
         act({ label: 'Conflict', result: { effects: [{ type: 'modifyTension', delta: 100 }] } });
@@ -247,7 +252,7 @@ describe('Interceptors belong to an entry', () => {
   });
 
   it('retains a scheduled forceExit through a new day and executes it on return to root', () => {
-    state().interactionSlice.actions.enterSlotContext('keeper', 'fixtureKeeper');
+    state().interactionSlice.actions.startNpcConversation('keeper', 'fixtureKeeper');
     read();
     act({
       label: 'Conflict',

@@ -8,7 +8,7 @@ import type {
   SubjectDailyInteractionMemory,
   SubjectExecutionTotals,
 } from '@/types/interactionRuntime.types';
-import { toNpcSubjectKey } from '@/types/interactionRuntime.types';
+import { resolveSubjectKey, toNpcSubjectKey } from '@/types/interactionRuntime.types';
 
 import { resolveNpcEffectiveRelation } from './effectiveRelation';
 import { resolveActionNumber } from './outcomes';
@@ -80,12 +80,14 @@ const readTotal = (
  */
 export function isExecutionLimitReached(
   state: StoreState,
-  subjectKey: InteractionSubjectKey,
   kind: ExecutableKind,
   executableId: string,
   limit: ExecutionLimit | undefined,
 ): boolean {
   if (!limit) return false;
+  // Actions и Interceptors проверяются только для текущего interaction.
+  const interaction = state.interactionSlice.currentInteraction!;
+  const subjectKey = resolveSubjectKey(interaction);
 
   if (limit.perDay !== undefined) {
     const executions = readDailyEntry(state, subjectKey, kind, executableId)?.executions ?? 0;
@@ -102,12 +104,14 @@ export function isExecutionLimitReached(
 /** Отмечает начатую попытку в обеих картах, если соответствующий лимит задан. */
 export function countExecution(
   state: StoreState,
-  subjectKey: InteractionSubjectKey,
   kind: ExecutableKind,
   executableId: string,
   limit: ExecutionLimit | undefined,
 ): void {
   if (!limit) return;
+  // Исполнитель учитывает попытку только внутри текущего interaction.
+  const interaction = state.interactionSlice.currentInteraction!;
+  const subjectKey = resolveSubjectKey(interaction);
 
   if (limit.perDay !== undefined) {
     const memory = ensureSubjectMemory(state, subjectKey);
@@ -133,19 +137,19 @@ export function countExecution(
  */
 export function resolveAppearance(
   state: StoreState,
-  subjectKey: InteractionSubjectKey,
   kind: ExecutableKind,
   executableId: string,
   chance: ActionNumber | undefined,
-  context: ActionContext,
+  actionContext: ActionContext,
   rng: Rng = defaultRng,
 ): boolean {
   if (chance === undefined) return true;
 
+  const subjectKey = resolveSubjectKey(actionContext);
   const stored = readDailyEntry(state, subjectKey, kind, executableId)?.appeared;
   if (stored !== undefined) return stored;
 
-  const appeared = rollChance(rng, resolveActionNumber(chance, context));
+  const appeared = rollChance(rng, resolveActionNumber(chance, actionContext));
 
   const memory = ensureSubjectMemory(state, subjectKey);
   const entry = memory[kind][executableId] ?? {};

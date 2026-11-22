@@ -25,7 +25,7 @@ const act = (action: InitialAction) => {
   state().interactionSlice.actions.performAction(actionId);
 };
 const enterKeeper = () => {
-  state().interactionSlice.actions.enterSlotContext('keeper', 'fixtureKeeper');
+  state().interactionSlice.actions.startNpcConversation('keeper', 'fixtureKeeper');
   read();
 };
 const closeAfter = (minutes: number) => {
@@ -94,7 +94,7 @@ describe('Context validity at the root boundary', () => {
     ['cost', 2400],
     ['transition', 2400],
   ] as const)(
-    'keeps the NPC scene after %s of %i minutes and reports departure only on return to root',
+    'finishes the current text after %s of %i minutes, then reports the NPC departure',
     (timeSource, duration) => {
       enterKeeper();
       const before = state().world.currentTime;
@@ -116,13 +116,6 @@ describe('Context validity at the root boundary', () => {
       expect(interaction()?.npcId).toBe('fixtureKeeper');
       expect(interaction()?.activeFrameId).toBe('fixtureHub/keeper:inner');
       read();
-      act({
-        label: 'Continue talking',
-        result: { effects: [{ type: 'modifyTension', delta: 100 }] },
-      });
-      expect(interaction()?.pendingEvents).toEqual([{ type: 'forceExit' }]);
-      expect(interaction()?.activeFrameId).toBe('fixtureHub/keeper:inner');
-      state().interactionSlice.actions.performAction('fixture:backToRoot');
       expect(interaction()?.activeFrameId).toBe(CONTEXT_EXIT_FRAMES.npcLeft);
       expect(interaction()?.currentEntry?.blocks).toEqual([t('interactionUi.npcLeft')]);
       expect(state().npcSlice.byId.fixtureKeeper.timesMet).toBe(0);
@@ -145,14 +138,12 @@ describe('Context validity at the root boundary', () => {
   );
 
   it.each(['changeTime', 'restForMinutes'] as const)(
-    'preserves an internal POI Frame through closure via %s',
+    'opens the POI exit when %s closes it during an internal Frame',
     (command) => {
       state().interactionSlice.actions.performAction('fixture:openInnerFrame');
       read();
       closeAfter(12 * 60);
       state().world.actions[command](12 * 60);
-      expect(interaction()?.activeFrameId).toBe('fixtureHub:inner');
-      state().interactionSlice.actions.performAction('fixture:backToRoot');
       expect(interaction()?.activeFrameId).toBe(CONTEXT_EXIT_FRAMES.poiClosed);
       expect(interaction()?.currentEntry?.blocks).toEqual([t('interactionUi.poiClosed')]);
       read();
@@ -184,6 +175,32 @@ describe('Context validity at the root boundary', () => {
     expect(interaction()?.activeFrameId).toBe(CONTEXT_EXIT_FRAMES.poiClosed);
   });
 
+  it.each(['npcLeft', 'poiClosed'] as const)(
+    'checks %s after a timed Frame transition to the dialogue root',
+    (exitReason) => {
+      enterKeeper();
+      state().interactionSlice.actions.performAction('fixture:openKeeperInner');
+      read();
+      if (exitReason === 'poiClosed') closeAfter(12 * 60);
+      const before = state().world.currentTime;
+      act({
+        label: 'Finish talking',
+        result: {
+          narrative: ['The conversation draws to a close.'],
+          transition: { type: 'frame', frameId: 'fixtureHub/keeper', time: 12 * 60 },
+        },
+      });
+      expect(state().world.currentTime).toBe(before);
+      expect(interaction()?.activeFrameId).toBe('fixtureHub/keeper:inner');
+
+      read();
+      expect(state().world.currentTime).toBe(before + 12 * 60 * 60000);
+      expect(interaction()?.activeFrameId).toBe(CONTEXT_EXIT_FRAMES[exitReason]);
+      expect(interaction()?.currentEntry?.blocks).toEqual([t(`interactionUi.${exitReason}`)]);
+      expect(interaction()?.log.at(-1)?.blocks).toEqual(['The conversation draws to a close.']);
+    },
+  );
+
   it('prioritizes POI closure over NPC departure and the pending force exit', () => {
     enterKeeper();
     state().interactionSlice.actions.performAction('fixture:openKeeperInner');
@@ -194,8 +211,6 @@ describe('Context validity at the root boundary', () => {
       cost: { time: 12 * 60 },
       result: { effects: [{ type: 'modifyTension', delta: 100 }] },
     });
-    expect(interaction()?.activeFrameId).toBe('fixtureHub/keeper:inner');
-    state().interactionSlice.actions.performAction('fixture:backToRoot');
     expect(interaction()?.activeFrameId).toBe(CONTEXT_EXIT_FRAMES.poiClosed);
     expect(interaction()?.currentEntry?.blocks).toEqual([t('interactionUi.poiClosed')]);
     read();
@@ -215,17 +230,21 @@ describe('Context validity at the root boundary', () => {
     expect(interaction()?.currentEntry?.blocks).toEqual([t('interactionUi.poiClosed')]);
   });
 
-  it('does not offer or execute ordinary actions and NPC switches on an exit Frame', () => {
+  it('offers only End talk and no navigation on an unavailable NPC root', () => {
     enterKeeper();
     state().world.actions.changeTime(12 * 60);
     read();
     const before = interaction();
     const money = state().inventory.containers.protagonist.money;
-    state().interactionSlice.actions.performAction('fixture:restAtHub');
-    state().interactionSlice.actions.performAction('fixture:backToRoot');
-    state().interactionSlice.actions.enterSlotContext('resident', 'fixtureResident');
-    state().interactionSlice.actions.enterPoiContext('fixtureHub');
-    state().interactionSlice.actions.returnToPoiContext();
+    const options = resolveInteractionOptions(state());
+    expect(
+      Object.values(options.actions)
+        .flat()
+        .map((action) => action.actionId),
+    ).toEqual(['system:endUnavailableConversation']);
+    expect(options.navigation).toEqual({ canReturnToPoi: false, poiTransitions: [] });
+    expect(resolveInteractionPresentation(state()).isRoot).toBe(false);
+    state().interactionSlice.actions.endNpcConversation();
     state().world.actions.travelToPoi('fixtureOpenSite');
     expect(interaction()).toBe(before);
     expect(state().party.currentPartyPosition).toBe('fixtureHub');
@@ -266,11 +285,11 @@ describe('Context validity at the root boundary', () => {
     read();
     state().poiSlice.actions.markPoiForRemoval('fixtureHub');
     state().world.actions.changeTime(5);
-    expect(interaction()?.activeFrameId).toBe(CONTEXT_EXIT_FRAMES.poiFinished);
+    expect(interaction()?.activeFrameId).toBe(CONTEXT_EXIT_FRAMES.poiPendingRemoval);
     state().world.actions.changeTime(24 * 60);
     expect(state().poiSlice.pois.fixtureHub).toBeDefined();
     expect(state().party.currentPartyPosition).toBe('fixtureHub');
-    expect(interaction()?.activeFrameId).toBe(CONTEXT_EXIT_FRAMES.poiFinished);
+    expect(interaction()?.activeFrameId).toBe(CONTEXT_EXIT_FRAMES.poiPendingRemoval);
     expect(state().ui.currentScreen).toBe('poiView');
   });
 });

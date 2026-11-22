@@ -40,17 +40,17 @@ export const EMPTY_RESOLVED_COST: ResolvedActionCost = {
 
 export function resolveActionCost(
   cost: ActionCost | undefined,
-  context: ActionContext,
+  actionContext: ActionContext,
 ): ResolvedActionCost {
   if (!cost) return { ...EMPTY_RESOLVED_COST, items: [] };
 
   return {
-    money: cost.money === undefined ? 0 : resolveActionNumber(cost.money, context),
-    stamina: cost.stamina === undefined ? 0 : resolveActionNumber(cost.stamina, context),
-    time: cost.time === undefined ? 0 : resolveActionNumber(cost.time, context),
+    money: cost.money === undefined ? 0 : resolveActionNumber(cost.money, actionContext),
+    stamina: cost.stamina === undefined ? 0 : resolveActionNumber(cost.stamina, actionContext),
+    time: cost.time === undefined ? 0 : resolveActionNumber(cost.time, actionContext),
     items: (cost.items ?? []).map((item) => ({
       itemId: item.itemId,
-      count: resolveActionNumber(item.count, context),
+      count: resolveActionNumber(item.count, actionContext),
     })),
   };
 }

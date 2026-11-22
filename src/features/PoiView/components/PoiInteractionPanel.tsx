@@ -31,7 +31,7 @@ export function PoiInteractionPanel({
   const continueInteraction = useGameState(
     (state) => state.interactionSlice.actions.continueInteraction,
   );
-  const returnToPoi = useGameState((state) => state.interactionSlice.actions.returnToPoiContext);
+  const returnToPoi = useGameState((state) => state.interactionSlice.actions.endNpcConversation);
   const travel = useGameState((state) => state.world.actions.travelToPoi);
   const reading = presentation.reading;
   const pages = Math.max(1, Math.ceil(actions.length / 6));

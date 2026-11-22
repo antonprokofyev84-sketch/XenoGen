@@ -6,7 +6,7 @@ import { isExecutionLimitReached } from '@/systems/interaction/dailyMemory';
 import type { ActionContext, InitialAction } from '@/types/action.types';
 import type { ActionCondition } from '@/types/condition.types';
 import type { ActionId } from '@/types/ids.types';
-import type { InteractionSubjectKey } from '@/types/interactionRuntime.types';
+import { resolveSubjectKey } from '@/types/interactionRuntime.types';
 
 export interface ActionAvailability {
   requirements: { condition: ActionCondition; isMet: boolean }[];
@@ -23,26 +23,20 @@ export function resolveActionAvailability(
   state: StoreState,
   actionId: ActionId,
   action: InitialAction,
-  context: ActionContext,
-  subjectKey: InteractionSubjectKey,
+  actionContext: ActionContext,
 ): ActionAvailability | null {
-  if (!evaluateConditions(state, action.conditions, context)) return null;
+  if (!evaluateConditions(state, action.conditions, actionContext)) return null;
 
+  const subjectKey = resolveSubjectKey(actionContext);
   const memory = state.interactionSlice.dailyMemoryBySubject[subjectKey]?.actions[actionId];
   if (memory?.appeared === false) return null;
 
-  const isLimitReached = isExecutionLimitReached(
-    state,
-    subjectKey,
-    'actions',
-    actionId,
-    action.executionLimit,
-  );
+  const isLimitReached = isExecutionLimitReached(state, 'actions', actionId, action.executionLimit);
   const requirements = (action.requirements ?? []).map((condition) => ({
     condition,
-    isMet: evaluateCondition(state, condition, context),
+    isMet: evaluateCondition(state, condition, actionContext),
   }));
-  const cost = resolveActionCost(action.cost, context);
+  const cost = resolveActionCost(action.cost, actionContext);
   const shortages = resolveCostShortages(state, cost);
   const total = state.interactionSlice.executionTotalsBySubject[subjectKey]?.actions[actionId] ?? 0;
 

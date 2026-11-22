@@ -14,11 +14,11 @@ import type {
 /**
  * Разрешение числовых функций контента, проверок и взвешенных исходов.
  *
- * Авторская функция читает переданный context, возвращает число и
+ * Авторская функция читает переданный ActionContext, возвращает число и
  * случайность сама не бросает: бросок выполняет executor.
  */
-export function resolveActionNumber(value: ActionNumber, context: ActionContext): number {
-  return typeof value === 'function' ? value(context) : value;
+export function resolveActionNumber(value: ActionNumber, actionContext: ActionContext): number {
+  return typeof value === 'function' ? value(actionContext) : value;
 }
 
 /**
@@ -30,11 +30,11 @@ export function resolveActionNumber(value: ActionNumber, context: ActionContext)
 export function runCheck(
   state: StoreState,
   rule: ActionCheckRule,
-  context: ActionContext,
+  actionContext: ActionContext,
   rng: Rng = defaultRng,
 ): boolean {
   if (rule.type === 'chance') {
-    return rollChance(rng, resolveActionNumber(rule.chance, context));
+    return rollChance(rng, resolveActionNumber(rule.chance, actionContext));
   }
 
   const stat = rule.type === 'stat' ? rule.statId : rule.skillId;
@@ -44,7 +44,7 @@ export function runCheck(
     {
       characterId: PROTAGONIST_ID,
       stat,
-      difficulty: resolveActionNumber(rule.difficulty, context),
+      difficulty: resolveActionNumber(rule.difficulty, actionContext),
     },
     rng,
   ).success;
@@ -58,7 +58,7 @@ export function runCheck(
  */
 export function selectOutcome(
   outcome: ActionOutcome,
-  context: ActionContext,
+  actionContext: ActionContext,
   rng: Rng = defaultRng,
 ): ActionResult | undefined {
   if (!Array.isArray(outcome)) return outcome;
@@ -66,7 +66,7 @@ export function selectOutcome(
   return pickWeighted(
     rng,
     outcome.map((entry) => ({
-      weight: resolveActionNumber(entry.weight, context),
+      weight: resolveActionNumber(entry.weight, actionContext),
       value: entry.result,
     })),
   );
