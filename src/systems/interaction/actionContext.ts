@@ -28,6 +28,7 @@ function resolveCurrentRegionLevels(state: StoreState): ResolvedRegionLevels {
   // ActionContext строится только внутри существующего interaction.
   const interaction = state.interactionSlice.currentInteraction!;
   const poi = state.poiSlice.pois[interaction.poiId];
+  // возможно эти проверки избыточны
   if (!poi || !isNonCellNode(poi)) return EMPTY_REGION_LEVELS;
 
   const rootCell = state.poiSlice.pois[poi.rootCellId];
