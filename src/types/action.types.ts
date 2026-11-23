@@ -4,7 +4,7 @@ import type { ActionCondition, QuestVarValue } from './condition.types';
 import type { Effect } from './gameEffect.types';
 import type { FrameId, ItemId, NpcId, PoiId, QuestId, SlotId } from './ids.types';
 import type { NarrativeBlock } from './narrativeBlock.types';
-import type { RegionLevels } from './region.types';
+import type { ResolvedRegionLevels } from './region.types';
 
 /**
  * Контракт авторских Actions.
@@ -33,7 +33,7 @@ export interface ActionContext {
   readonly frameId: FrameId;
 
   /** Итоговые уровни `0..9` текущего POI. */
-  readonly regionLevels: Readonly<RegionLevels>;
+  readonly regionLevels: Readonly<ResolvedRegionLevels>;
 
   readonly currentNpcAffection?: number;
   readonly effectiveRelation?: number;

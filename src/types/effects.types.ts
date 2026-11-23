@@ -1,11 +1,5 @@
 import type { MainStatKey, SkillKey } from './character.types';
 
-export type InteractionContext = {
-  initiatorId: string;
-  targetCharacterId?: string;
-  targetFactionId?: string;
-};
-
 // export type TriggerRule = { when?: Condition[]; then: Effect[] };
 
 export type CharacterTriggerRule = { when?: CharacterCondition[]; then: CharacterEffect[] };

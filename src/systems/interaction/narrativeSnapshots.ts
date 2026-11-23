@@ -31,15 +31,16 @@ import { findSlotDefinition } from './actionSources';
  * и показывается именем.
  */
 export function resolveNpcDisplayName(state: StoreState, npcId: NpcId): string {
-  const authoredName = INITIAL_NPCS[npcId]?.name ?? npcId;
-  const isKnown = (state.npcSlice.byId[npcId]?.timesMet ?? 0) > 0;
+  const authoredName = INITIAL_NPCS[npcId].name;
+  const isKnown = state.npcSlice.byId[npcId].timesMet > 0;
 
   if (isKnown) return authoredName;
 
   const placement = state.occupancySlice.npcPlacements[npcId];
   if (!placement) return authoredName;
 
-  return findSlotDefinition(state, placement.poiId, placement.slotId)?.role ?? authoredName;
+  // Occupancy создаёт placement только для существующего slot его POI.
+  return findSlotDefinition(state, placement.poiId, placement.slotId)!.role;
 }
 
 const substituteName = (text: string, displayName: string | undefined): string =>

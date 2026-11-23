@@ -49,19 +49,13 @@ function removeBindings(index: BindingMap, bindings: BindingMap | undefined): vo
     }
   }
 }
-export function addStageBindings(
-  indexes: QuestIndexes,
-  stage: InitialQuestStage | undefined,
-): void {
-  addBindings(indexes.actionIdsByTarget, stage?.actionIdsByTarget);
-  addBindings(indexes.interceptorIdsByTarget, stage?.interceptorIdsByTarget);
+export function addStageBindings(indexes: QuestIndexes, stage: InitialQuestStage): void {
+  addBindings(indexes.actionIdsByTarget, stage.actionIdsByTarget);
+  addBindings(indexes.interceptorIdsByTarget, stage.interceptorIdsByTarget);
 }
-export function removeStageBindings(
-  indexes: QuestIndexes,
-  stage: InitialQuestStage | undefined,
-): void {
-  removeBindings(indexes.actionIdsByTarget, stage?.actionIdsByTarget);
-  removeBindings(indexes.interceptorIdsByTarget, stage?.interceptorIdsByTarget);
+export function removeStageBindings(indexes: QuestIndexes, stage: InitialQuestStage): void {
+  removeBindings(indexes.actionIdsByTarget, stage.actionIdsByTarget);
+  removeBindings(indexes.interceptorIdsByTarget, stage.interceptorIdsByTarget);
 }
 export function buildQuestIndexes(
   definitions: InitialQuestMap,
@@ -72,7 +66,7 @@ export function buildQuestIndexes(
   for (const [questId, quest] of Object.entries(questsById)) {
     if (!isRunningQuest(quest)) continue;
 
-    addStageBindings(indexes, definitions[questId]?.stages[quest.stageId]);
+    addStageBindings(indexes, definitions[questId].stages[quest.stageId]);
   }
 
   return indexes;

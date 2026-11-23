@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-import text from '@/locales/en.json';
+import text from '@/locales/en';
 import type { NarrativeBlock } from '@/types/narrativeBlock.types';
 import { isDialogueLine, isThoughtLine } from '@/types/narrativeBlock.types';
 

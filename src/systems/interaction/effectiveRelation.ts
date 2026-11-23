@@ -1,7 +1,7 @@
 import { getLoyaltyProfile } from '@/data/factionsLoyalty.rules';
 import { INITIAL_NPCS } from '@/data/initial/npcs';
 import type { StoreState } from '@/state/useGameState';
-import type { FactionId, NpcId } from '@/types/ids.types';
+import type { FactionId } from '@/types/ids.types';
 
 /**
  * Эффективное отношение NPC к игроку.
@@ -21,16 +21,13 @@ export function resolveEffectiveRelation(params: {
 }
 
 /**
- * То же самое для конкретного NPC.
- *
- * `undefined` означает, что NPC нет в мире либо у него нет авторской записи:
- * это разные состояния и не сводятся к нулю на этом уровне.
+ * То же самое для NPC текущего interaction. В POI-контексте NPC отсутствует.
  */
-export function resolveNpcEffectiveRelation(state: StoreState, npcId: NpcId): number | undefined {
+export function resolveCurrentNpcEffectiveRelation(state: StoreState): number | undefined {
+  const npcId = state.interactionSlice.currentInteraction?.npcId;
+  if (npcId === undefined) return undefined;
   const npc = state.npcSlice.byId[npcId];
-  const factionId = INITIAL_NPCS[npcId]?.faction;
-
-  if (!npc || factionId === undefined) return undefined;
+  const factionId = INITIAL_NPCS[npcId].faction;
 
   return resolveEffectiveRelation({
     factionId,

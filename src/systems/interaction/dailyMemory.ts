@@ -10,7 +10,7 @@ import type {
 } from '@/types/interactionRuntime.types';
 import { resolveSubjectKey, toNpcSubjectKey } from '@/types/interactionRuntime.types';
 
-import { resolveNpcEffectiveRelation } from './effectiveRelation';
+import { resolveCurrentNpcEffectiveRelation } from './effectiveRelation';
 import { resolveActionNumber } from './outcomes';
 
 /**
@@ -30,6 +30,13 @@ const TENSION_RANDOM_OFFSET = 20;
 
 /** Порог, при достижении которого планируется system `ForceExit`. */
 export const FORCE_EXIT_TENSION_THRESHOLD = 80;
+
+export function readCurrentInteractionTension(state: StoreState): number | undefined {
+  const interaction = state.interactionSlice.currentInteraction;
+  if (!interaction) return undefined;
+
+  return state.interactionSlice.dailyMemoryBySubject[resolveSubjectKey(interaction)]?.tension;
+}
 
 const ensureSubjectMemory = (
   state: StoreState,
@@ -171,18 +178,16 @@ export function resolveAppearance(
  * randomOffset — целое из [-20, 20]
  * ```
  */
-export function ensureNpcDailyTension(
-  state: StoreState,
-  npcId: string,
-  rng: Rng = defaultRng,
-): number {
+export function ensureCurrentNpcDailyTension(state: StoreState, rng: Rng = defaultRng): number {
+  // Tension разрешается только после входа в текущий NPC-разговор.
+  const npcId = state.interactionSlice.currentInteraction!.npcId!;
   const subjectKey = toNpcSubjectKey(npcId);
   const memory = ensureSubjectMemory(state, subjectKey);
 
   if (memory.tension !== undefined) return memory.tension;
 
-  // Неразрешимое отношение считается нейтральным: tension всё равно нужен.
-  const effectiveRelation = resolveNpcEffectiveRelation(state, npcId) ?? 0;
+  // Текущий interaction уже содержит NPC, поэтому отношение разрешимо.
+  const effectiveRelation = resolveCurrentNpcEffectiveRelation(state)!;
 
   const randomOffset = randomInt(rng, -TENSION_RANDOM_OFFSET, TENSION_RANDOM_OFFSET);
   const tension = Math.min(

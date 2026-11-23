@@ -1,7 +1,7 @@
 import { INITIAL_ACTIONS } from '@/data/initial/actions';
 import { worldDraft } from '@/state/gameSlices/world';
 import type { StoreState } from '@/state/useGameState';
-import { applyEffects } from '@/systems/effects/applyEffects';
+import { applyCurrentInteractionEffects } from '@/systems/effects/applyEffects';
 import type { Rng } from '@/systems/rolls/rng';
 import { defaultRng } from '@/systems/rolls/rng';
 import type { ActionOutcome, ActionResult } from '@/types/action.types';
@@ -39,10 +39,6 @@ export function performAction(state: StoreState, actionId: string, rng: Rng = de
   // ActionList отправляет команду из Actions текущего interaction; без него экран не показан.
   const interaction = state.interactionSlice.currentInteraction!;
   const action = INITIAL_ACTIONS[actionId];
-  if (!action) {
-    console.warn(`performAction: неизвестный Action "${actionId}"`);
-    return;
-  }
 
   // 1. Стоимость разрешается один раз и дальше используется как есть.
   const cost = resolveActionCost(action.cost, buildActionContext(state));
@@ -75,7 +71,7 @@ export function performAction(state: StoreState, actionId: string, rng: Rng = de
   }
 
   // 3. Effects и narrative исходного контекста.
-  applyEffects(state, result.effects, { poiId: interaction.poiId, npcId: interaction.npcId });
+  applyCurrentInteractionEffects(state, result.effects);
   appendNarrative(state, result.narrative);
   if (result.effects?.some((effect) => effect.type === 'modifyTension')) {
     scheduleForceExitIfTense(state, rng);

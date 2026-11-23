@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { CONTEXT_EXIT_FRAMES } from '@/data/initial/interactionExits';
 import { useGameState } from '@/state/useGameState';
 
+import { resolveCurrentNpcEffectiveRelation } from './effectiveRelation';
+
 const getState = () => useGameState.getState();
 const keeper = () => getState().npcSlice.byId.fixtureKeeper;
 const enterKeeper = () => {
@@ -39,6 +41,13 @@ describe('NPC meetings at interaction boundaries', () => {
     enterKeeper();
     expect(keeper().timesMet).toBe(0);
     expect(keeper().lastDateMet).toBeNull();
+  });
+
+  it('resolves relation for the NPC stored in the current interaction', () => {
+    enterKeeper();
+    getState().npcSlice.actions.setNpcAffection('fixtureKeeper', 37);
+
+    expect(resolveCurrentNpcEffectiveRelation(getState())).toBe(37);
   });
 
   it('counts at most once per calendar day and updates the last meeting time', () => {

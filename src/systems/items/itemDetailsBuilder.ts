@@ -1,5 +1,5 @@
 import { ITEMS_TEMPLATES_DB } from '@/data/items.templates';
-import textData from '@/locales/en.json';
+import textData from '@/locales/en';
 import { equipmentFactory } from '@/systems/equipment/equipmentFactory';
 import type { ArmorInstance, ArmorTemplate } from '@/types/armor.types';
 import type { InventoryItem } from '@/types/inventory.types';

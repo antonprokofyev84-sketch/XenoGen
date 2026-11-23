@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import text from '@/locales/en.json';
+import text from '@/locales/en';
 import { useGameState } from '@/state/useGameState';
 import type { UiAction } from '@/systems/interaction/actionPresentation';
 import type { InteractionPresentation } from '@/systems/interaction/presentation';

@@ -4,7 +4,7 @@ import { GameHud, GameSystemMenu } from '@/components/GameHud/GameHud';
 import { GameScene } from '@/components/GameHud/GameScene';
 import { GameTooltip } from '@/components/GameHud/GameTooltip';
 import { INITIAL_FRAMES } from '@/data/initial/frames';
-import text from '@/locales/en.json';
+import text from '@/locales/en';
 import { poiSelectors, useGameState } from '@/state/useGameState';
 import { useMapInteractionStore } from '@/state/useMapInteractionStore';
 import {

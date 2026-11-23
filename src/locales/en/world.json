@@ -1,0 +1,128 @@
+{
+  "gameHud": {
+    "locationInformation": "Current location and region information",
+    "expand": "Expand location details",
+    "collapse": "Collapse location details",
+    "regionParameters": "Region parameters",
+    "unknown": "Unknown",
+    "day": "Day {{day}}",
+    "expeditionPoints": "Expedition points",
+    "expeditionUnavailable": "Expedition points are not implemented yet",
+    "systemMenu": "System menu",
+    "inventory": "Inventory",
+    "map": "Map",
+    "party": "Party",
+    "settings": "Settings",
+    "comingLater": "{{label}} · coming later",
+    "parameters": {
+      "prosperity": "Prosperity",
+      "techLevel": "Technology",
+      "contamination": "Contamination",
+      "threat": "Threat"
+    },
+    "timeOfDay": {
+      "late_night": "Late night",
+      "early_morning": "Early morning",
+      "morning": "Morning",
+      "afternoon": "Afternoon",
+      "evening": "Evening",
+      "night": "Night"
+    }
+  },
+  "worldUi": {
+    "unknownLocation": "Unknown location",
+    "noInformation": "No information available",
+    "region": "Region",
+    "pendingRemoval": "Pending removal",
+    "open": "Open",
+    "entryBlocks": {
+      "closed": "Closed",
+      "entryDisabled": "Entry unavailable",
+      "entryRefused": "Entry refused"
+    }
+  },
+  "mapUi": {
+    "pointsOfInterest": "Points of interest",
+    "emptyPois": "No points of interest discovered.",
+    "regionCommands": "Region commands",
+    "returnToLocation": "Return to location",
+    "restHour": "Rest (1 hour)",
+    "restMorning": "Rest until morning",
+    "fatigued": "Party is fatigued!"
+  },
+  "strategicMap": {
+    "sectorInfo": "Sector Info",
+    "selectSector": "Select a sector on the map to see details.",
+    "travelTo": "Travel to",
+    "scout": "Scout",
+    "moveHere": "Move Here",
+    "scoutSector": "Scout Sector",
+    "statusUnexplored": "Unexplored",
+    "statusPermanent": "Explored (Permanent)",
+    "statusActive": "Scouted ({{days}} days)",
+    "statusOutdated": "Scout Data Outdated",
+    "scoutScoreLabel": "Scout Score"
+  },
+  "travelModes": {
+    "normal": "Normal",
+    "fast": "Fast",
+    "stealth": "Stealth"
+  },
+  "mapCellTypes": {
+    "forest": "Forest",
+    "mountain": "Mountain",
+    "plain": "Plains",
+    "desert": "Desert",
+    "water": "Water",
+    "ruins": "Ruins"
+  },
+  "poi": {
+    "scavenger_base": {
+      "name": "Scavenger Base",
+      "desc": "A well-established outpost for a group of scavengers."
+    },
+    "scavenger_camp": {
+      "name": "Scavenger Camp",
+      "desc": "A small camp. They might not be here for long, aren't they?"
+    },
+    "scavenger_group": {
+      "name": "Scavenger Group",
+      "desc": "A group of scavengers. Did they find something valuable?"
+    },
+    "scavenger_patrol": {
+      "name": "Scavenger Patrol",
+      "desc": "A small, mobile group of scavengers."
+    },
+    "test_tavern": {
+      "name": "Test Tavern",
+      "desc": "A rough roadside tavern used for interaction testing."
+    },
+    "tavern_bartender_spot": {
+      "name": "Bartender",
+      "desc": "Talk to the bartender."
+    },
+    "tavern_waitress_spot": {
+      "name": "Waitress",
+      "desc": "Talk to the waitress."
+    },
+    "tavern_free_table": {
+      "name": "Free Table",
+      "desc": "Sit down at an empty table."
+    },
+    "abandoned_car": {
+      "name": "Abandoned Car",
+      "desc": "A rusted-out husk of a vehicle. Might be something inside."
+    },
+    "crashed_drone": {
+      "name": "Crashed Drone",
+      "desc": "A military-grade drone, half-buried in the dirt. Its cargo might still be intact."
+    },
+    "makeshift_cache": {
+      "name": "Makeshift Cache",
+      "desc": "A cleverly hidden stash of supplies."
+    }
+  },
+  "poiDetails": {
+    "attackButton": "Attack"
+  }
+}

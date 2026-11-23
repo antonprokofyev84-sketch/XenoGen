@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
 
-import textData from '@/locales/en.json';
+import textData from '@/locales/en';
 import { initialMainStatValue, mainStatKeys } from '@/state/constants';
 import { characterSelectors, useGameState } from '@/state/useGameState';
 import type { MainStatKey } from '@/types/character.types';

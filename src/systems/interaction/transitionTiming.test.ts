@@ -130,7 +130,7 @@ describe('Transition duration and mandatory continuation', () => {
   it.each([undefined, 0, 240])(
     'uses %s as a POI duration override, preserving default travel when absent',
     (duration) => {
-      const normal = TravelManager.computeTravel('fixtureHub', 'fixtureOpenSite', state()).timeCost;
+      const normal = TravelManager.computeTravel(state(), 'fixtureOpenSite').timeCost;
       install({
         label: 'Move',
         cost: { time: 3 },

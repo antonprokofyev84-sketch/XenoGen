@@ -59,8 +59,8 @@ export function collectExpiredTimerEffects(
   for (const [questId, quest] of Object.entries(questsById)) {
     if (!isRunningQuest(quest) || quest.stageDaysLeft === undefined) continue;
 
-    const stage = definitions[questId]?.stages[quest.stageId];
-    decreaseQuestCounter(quest, 'stageDaysLeft', stage?.timeLimit, effects);
+    const stage = definitions[questId].stages[quest.stageId];
+    decreaseQuestCounter(quest, 'stageDaysLeft', stage.timeLimit, effects);
   }
 
   // Общий срок идёт только у принятого квеста.
@@ -68,7 +68,7 @@ export function collectExpiredTimerEffects(
     if (!isRunningQuest(quest) || quest.status !== 'active') continue;
     if (quest.questDaysLeft === undefined) continue;
 
-    decreaseQuestCounter(quest, 'questDaysLeft', definitions[questId]?.timeLimit, effects);
+    decreaseQuestCounter(quest, 'questDaysLeft', definitions[questId].timeLimit, effects);
   }
 
   return effects;

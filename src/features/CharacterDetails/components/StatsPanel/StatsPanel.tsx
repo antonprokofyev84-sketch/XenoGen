@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
 
-import textData from '@/locales/en.json';
+import textData from '@/locales/en';
 import { characterSelectors } from '@/state/gameSlices/characters';
 import { useGameState } from '@/state/useGameState';
 

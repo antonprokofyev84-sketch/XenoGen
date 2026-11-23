@@ -78,7 +78,8 @@
   Выбор по discriminator оформляй через `switch`, остальные ветвления — `if/else`.
 - Форматирование задаёт `.prettierrc`: 2 пробела, single quotes, semicolons,
   trailing commas, ширина 100. Форматируй затронутые файлы.
-- UI-тексты и параметры переводов — `src/locales/en.json` и `t` из
+- UI-тексты и параметры переводов — доменные файлы в `src/locales/en/`, собранные
+  через `src/locales/en.ts`, и `t` из
   `src/systems/text/i18n.ts`. Художественный текст — inline `LocalizedText`
   через `resolveText()` и существующие narrative helpers.
 - Для UI используй общие `GameScene`, `GameHud`, `GameSystemMenu`, `GameTooltip`

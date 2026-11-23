@@ -1,6 +1,6 @@
 import { INITIAL_FRAMES } from '@/data/initial/frames';
 import { POI_TEMPLATES } from '@/data/initial/poiTemplates';
-import textData from '@/locales/en.json';
+import textData from '@/locales/en';
 import type { StoreState } from '@/state/useGameState';
 import { resolveText } from '@/systems/text/resolveText';
 import type { ResolvedRegionLevels } from '@/types/region.types';

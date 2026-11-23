@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 import { Button } from '@/components/Button/Button';
-import textData from '@/locales/en.json';
+import textData from '@/locales/en';
 import { useGameState } from '@/state/useGameState';
 import type { MainStatKey, SkillKey } from '@/types/character.types';
 

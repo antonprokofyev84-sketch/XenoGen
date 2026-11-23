@@ -6,7 +6,7 @@ import type { StoreState } from '@/state/useGameState';
 import type { ActionContext } from '@/types/action.types';
 import type { NumericComparison } from '@/types/common.types';
 import type { ActionCondition } from '@/types/condition.types';
-import { isNonCellNode } from '@/types/worldNode.types';
+import type { NonCellPoiNode } from '@/types/worldNode.types';
 
 import { getQuestVar } from './actionContext';
 
@@ -39,11 +39,11 @@ function resolveSubjectFactionId(
   actionContext: ActionContext,
 ): string | undefined {
   if (actionContext.npcId !== undefined) {
-    return INITIAL_NPCS[actionContext.npcId]?.faction;
+    return INITIAL_NPCS[actionContext.npcId].faction;
   }
 
-  const poi = state.poiSlice.pois[actionContext.poiId];
-  return poi && isNonCellNode(poi) ? poi.details.faction : undefined;
+  const poi = state.poiSlice.pois[actionContext.poiId] as NonCellPoiNode;
+  return poi.details.faction;
 }
 
 export function evaluateCondition(
@@ -86,11 +86,10 @@ export function evaluateCondition(
 
       // Неразрешимый субъект — ошибка данных, а не обычный `false`.
       if (npcId === undefined) {
-        console.warn('affection: условие без npcId вне slot/NPC-контекста');
-        return false;
+        throw new Error('affection: условие без npcId вне slot/NPC-контекста');
       }
 
-      return matchesComparison(state.npcSlice.byId[npcId]?.affection ?? 0, condition);
+      return matchesComparison(state.npcSlice.byId[npcId].affection, condition);
     }
 
     case 'reputation': {
@@ -102,10 +101,10 @@ export function evaluateCondition(
     }
 
     case 'timesMet':
-      return matchesComparison(state.npcSlice.byId[condition.npcId]?.timesMet ?? 0, condition);
+      return matchesComparison(state.npcSlice.byId[condition.npcId].timesMet, condition);
 
     case 'regionLevel':
-      return matchesComparison(actionContext.regionLevels[condition.param] ?? 0, condition);
+      return matchesComparison(actionContext.regionLevels[condition.param], condition);
 
     case 'questVar': {
       // Отсутствующая переменная остаётся `undefined` и не превращается в `false`.
@@ -118,7 +117,7 @@ export function evaluateCondition(
 
     case 'questStatus': {
       const quest = state.questSlice.questsById[condition.questId];
-      return quest?.status === condition.status;
+      return quest.status === condition.status;
     }
 
     default:

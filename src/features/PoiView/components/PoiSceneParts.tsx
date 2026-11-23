@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 import { GameTooltip } from '@/components/GameHud/GameTooltip';
-import text from '@/locales/en.json';
+import text from '@/locales/en';
 import { useGameState } from '@/state/useGameState';
 import type { NpcOverlay, UiNpcSlot } from '@/systems/interaction/presentation';
 import type { ResolvedInteractionOptions } from '@/systems/interaction/resolveOptions';

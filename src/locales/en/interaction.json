@@ -1,0 +1,55 @@
+{
+  "interactionUi": {
+    "interaction": "Interaction",
+    "actionPages": "Action pages",
+    "previousActions": "Previous actions",
+    "nextActions": "Next actions",
+    "history": "History",
+    "historyTitle": "Interaction history",
+    "close": "Close",
+    "emptyHistory": "No history yet.",
+    "endTalk": "End talk",
+    "leave": "Leave",
+    "availableActions": "Available actions",
+    "emptyActions": "No actions available here right now.",
+    "interactionText": "Interaction text",
+    "continueHint": "CLICK / SPACE",
+    "coins_one": "{{count}} coin",
+    "coins_other": "{{count}} coins",
+    "characters": "Available characters",
+    "previousCharacters": "Previous characters",
+    "nextCharacters": "Next characters",
+    "destinations": "Destinations",
+    "poiClosed": "This place has closed. It is time to leave.",
+    "npcLeft": "They have already left. The conversation is over.",
+    "poiPendingRemoval": "There is nothing else of interest here."
+  },
+  "interactionText": {
+    "questRequirement": "Quest requirement",
+    "required": "Required: {{requirement}}",
+    "items": "Items: {{items}}",
+    "stamina": "Personal stamina: {{amount}}",
+    "limitReached": "Attempt limit reached",
+    "dailyAttempts": "Attempts left today: {{amount}}",
+    "totalAttempts": "Total attempts left: {{amount}}",
+    "insufficientMoney": "Not enough money: {{available}} of {{required}}",
+    "insufficientStamina": "Not enough stamina: {{available}} of {{required}}",
+    "insufficientItem": "Not enough {{item}}: {{available}} of {{required}}",
+    "requirementLabels": {
+      "stat": "Stat",
+      "skill": "Skill",
+      "item": "Item",
+      "defeated": "Victories",
+      "affection": "Relation",
+      "reputation": "Reputation",
+      "timesMet": "Meetings",
+      "regionLevel": "Region level"
+    }
+  },
+  "interactionLog": {
+    "reputation": "Reputation",
+    "check": "Check",
+    "success": "SUCCESS",
+    "fail": "FAIL"
+  }
+}

@@ -5,11 +5,11 @@ import { INITIAL_NPCS } from '@/data/initial/npcs';
 import { POI_TEMPLATES } from '@/data/initial/poiTemplates';
 import { npcDraft } from '@/state/gameSlices/npc';
 import type { StoreState } from '@/state/useGameState';
-import { applyEffects } from '@/systems/effects/applyEffects';
+import { applyCurrentInteractionEffects } from '@/systems/effects/applyEffects';
 import type { Rng } from '@/systems/rolls/rng';
 import { defaultRng } from '@/systems/rolls/rng';
 import { isPoiOpenAt } from '@/systems/world/poiSchedule';
-import type { FrameId, InterceptorId, NpcId, PoiId, SlotId } from '@/types/ids.types';
+import type { FrameId, InterceptorId, NpcId, SlotId } from '@/types/ids.types';
 import type { CurrentInteraction } from '@/types/interactionRuntime.types';
 import { isNpcContext } from '@/types/interactionRuntime.types';
 import type { InitialInterceptor, InterceptorResult } from '@/types/interceptor.types';
@@ -20,12 +20,12 @@ import { isNonCellNode } from '@/types/worldNode.types';
 import { resolveTimeOfDay } from '@/utils/timeOfDay';
 
 import { buildActionContext } from './actionContext';
-import { findSlotDefinition, rollVisibleAppearanceChances } from './actionSources';
+import { findCurrentSlotDefinition, rollVisibleAppearanceChances } from './actionSources';
 import { evaluateConditions } from './conditions';
 import {
   FORCE_EXIT_TENSION_THRESHOLD,
   countExecution,
-  ensureNpcDailyTension,
+  ensureCurrentNpcDailyTension,
   isExecutionLimitReached,
   resolveAppearance,
 } from './dailyMemory';
@@ -75,10 +75,6 @@ export function openFrame(
   // Arrival создал interaction; все последующие Frames открываются внутри него.
   const interaction = state.interactionSlice.currentInteraction!;
   const frame = INITIAL_FRAMES[frameId];
-  if (!frame) {
-    console.warn(`openFrame: неизвестный Frame "${frameId}"`);
-    return;
-  }
 
   interaction.activeFrameId = frameId;
 
@@ -100,10 +96,7 @@ function isAtRoot(state: StoreState): boolean {
 function resolveInteractionExitFrame(state: StoreState): FrameId | undefined {
   // Вызывающие сценарии работают только внутри существующего interaction.
   const interaction = state.interactionSlice.currentInteraction!;
-  const poi = state.poiSlice.pois[interaction.poiId];
-  if (!poi || !isNonCellNode(poi)) {
-    throw new Error(`Current interaction POI "${interaction.poiId}" is missing`);
-  }
+  const poi = state.poiSlice.pois[interaction.poiId] as NonCellPoiNode;
 
   if (poi.pendingRemoval) return CONTEXT_EXIT_FRAMES.poiPendingRemoval;
 
@@ -134,7 +127,7 @@ export function openRootFrame(state: StoreState, options: { readNarrative?: bool
   }
 
   if (options.readNarrative !== false) {
-    appendNarrative(state, INITIAL_FRAMES[rootFrameId]?.narrative);
+    appendNarrative(state, INITIAL_FRAMES[rootFrameId].narrative);
   }
 }
 
@@ -145,21 +138,20 @@ export function openRootFrame(state: StoreState, options: { readNarrative?: bool
 function listInterceptorIds(state: StoreState): InterceptorId[] {
   // Очередь собирается для текущего interaction сразу после входа в его root.
   const interaction = state.interactionSlice.currentInteraction!;
-  const poi = state.poiSlice.pois[interaction.poiId];
-  if (!poi || !isNonCellNode(poi)) return [];
+  const poi = state.poiSlice.pois[interaction.poiId] as NonCellPoiNode;
 
   if (!isNpcContext(interaction)) {
     return [
-      ...(POI_TEMPLATES[poi.templateId]?.interceptorIds ?? []),
+      ...(POI_TEMPLATES[poi.templateId].interceptorIds ?? []),
       ...(state.questSlice.questInterceptorIdsByTarget[interaction.poiId] ?? []),
     ];
   }
 
-  const slot = findSlotDefinition(state, interaction.poiId, interaction.slotId);
+  const slot = findCurrentSlotDefinition(state);
 
   return [
-    ...(slot?.interceptorIds ?? []),
-    ...(INITIAL_NPCS[interaction.npcId]?.interceptorIds ?? []),
+    ...(slot.interceptorIds ?? []),
+    ...(INITIAL_NPCS[interaction.npcId].interceptorIds ?? []),
     ...(state.questSlice.questInterceptorIdsByTarget[interaction.npcId] ?? []),
   ];
 }
@@ -186,7 +178,6 @@ function collectInterceptorQueue(state: StoreState, rng: Rng): void {
 
   for (const interceptorId of listInterceptorIds(state)) {
     const interceptor = INITIAL_INTERCEPTORS[interceptorId];
-    if (!interceptor) continue;
 
     if (isExecutionLimitReached(state, 'interceptors', interceptorId, interceptor.executionLimit)) {
       continue;
@@ -244,7 +235,7 @@ export function scheduleForceExitIfTense(state: StoreState, rng: Rng): void {
   const interaction = state.interactionSlice.currentInteraction!;
   if (!isNpcContext(interaction)) return;
 
-  if (ensureNpcDailyTension(state, interaction.npcId, rng) >= FORCE_EXIT_TENSION_THRESHOLD) {
+  if (ensureCurrentNpcDailyTension(state, rng) >= FORCE_EXIT_TENSION_THRESHOLD) {
     scheduleForceExit(interaction);
   }
 }
@@ -256,7 +247,7 @@ export function scheduleForceExitIfTense(state: StoreState, rng: Rng): void {
 function applyInterceptorResult(state: StoreState, result: InterceptorResult, rng: Rng): boolean {
   // executeInterceptor применяет результат в interaction, чья очередь сейчас исполняется.
   const interaction = state.interactionSlice.currentInteraction!;
-  applyEffects(state, result.effects, { poiId: interaction.poiId, npcId: interaction.npcId });
+  applyCurrentInteractionEffects(state, result.effects);
   appendNarrative(state, result.narrative);
   if (result.effects?.some((effect) => effect.type === 'modifyTension')) {
     scheduleForceExitIfTense(state, rng);
@@ -321,7 +312,6 @@ function processPendingEvents(state: StoreState, rng: Rng): void {
     }
 
     const interceptor = INITIAL_INTERCEPTORS[event.interceptorId];
-    if (!interceptor) continue;
 
     const actionContext = buildActionContext(state);
     if (!evaluateConditions(state, interceptor.conditions, actionContext)) continue;
@@ -354,7 +344,7 @@ function executeForceExit(state: StoreState): void {
 export function endInteraction(state: StoreState): void {
   const interaction = state.interactionSlice.currentInteraction;
   if (interaction && isNpcContext(interaction)) {
-    npcDraft.registerNpcMeeting(state, interaction.npcId);
+    npcDraft.registerCurrentNpcMeeting(state);
   }
 
   state.interactionSlice.currentInteraction = null;
@@ -362,17 +352,19 @@ export function endInteraction(state: StoreState): void {
 }
 
 /** Прибытие в другой POI начинает новое interaction с новой историей. */
-export function startPoiInteraction(state: StoreState, poiId: PoiId, rng: Rng = defaultRng): void {
-  // travelToPoiDraft уже проверил target и установил партию в этот non-cell POI.
+export function startPoiInteraction(state: StoreState, rng: Rng = defaultRng): void {
+  // travelToPoiDraft уже установил партию в существующий non-cell POI.
+  const poiId = state.party.currentPartyPosition;
   const poi = state.poiSlice.pois[poiId] as NonCellPoiNode;
   const rootFrameId = poi.templateId;
-  state.interactionSlice.currentInteraction = {
+  const interaction: CurrentInteraction = {
     poiId,
     activeFrameId: rootFrameId,
     pendingEvents: [],
     log: [],
     currentEntry: null,
   };
+  state.interactionSlice.currentInteraction = interaction;
   state.interactionSlice.isTrading = false;
 
   openRootFrame(state, { readNarrative: false });
@@ -380,8 +372,8 @@ export function startPoiInteraction(state: StoreState, poiId: PoiId, rng: Rng = 
 
   collectInterceptorQueue(state, rng);
   processPendingEvents(state, rng);
-  if (state.interactionSlice.currentInteraction?.activeFrameId === rootFrameId) {
-    appendNarrative(state, INITIAL_FRAMES[rootFrameId]?.narrative);
+  if (interaction.activeFrameId === rootFrameId) {
+    appendNarrative(state, INITIAL_FRAMES[rootFrameId].narrative);
   }
   rollVisibleAppearanceChances(state, rng);
 }
@@ -398,7 +390,7 @@ export function startNpcConversation(
   if (interaction.slotId === slotId && interaction.npcId === npcId) return;
 
   if (isNpcContext(interaction)) {
-    npcDraft.registerNpcMeeting(state, interaction.npcId);
+    npcDraft.registerCurrentNpcMeeting(state);
   }
 
   interaction.slotId = slotId;
@@ -410,12 +402,12 @@ export function startNpcConversation(
   openRootFrame(state, { readNarrative: false });
   if (!isAtRoot(state)) return;
 
-  ensureNpcDailyTension(state, npcId, rng);
+  ensureCurrentNpcDailyTension(state, rng);
   collectInterceptorQueue(state, rng);
   scheduleForceExitIfTense(state, rng);
   processPendingEvents(state, rng);
   if (interaction.activeFrameId === rootFrameId) {
-    appendNarrative(state, INITIAL_FRAMES[rootFrameId]?.narrative);
+    appendNarrative(state, INITIAL_FRAMES[rootFrameId].narrative);
   }
   rollVisibleAppearanceChances(state, rng);
 }
@@ -424,8 +416,7 @@ export function startNpcConversation(
 export function endNpcConversation(state: StoreState, rng: Rng = defaultRng): void {
   // Команда выхода доступна только в NPC-контексте текущего interaction.
   const interaction = state.interactionSlice.currentInteraction!;
-  // Наличие npcId гарантирует startNpcConversation и NPC-вариант UI.
-  npcDraft.registerNpcMeeting(state, interaction.npcId!);
+  npcDraft.registerCurrentNpcMeeting(state);
   delete interaction.slotId;
   delete interaction.npcId;
   interaction.pendingEvents = [];

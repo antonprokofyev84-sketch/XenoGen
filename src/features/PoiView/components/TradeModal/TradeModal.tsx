@@ -2,7 +2,8 @@ import { useCallback, useMemo, useReducer, useState } from 'react';
 
 import { PROTAGONIST_ID } from '@/constants';
 import { characterSelectors, useGameState } from '@/state/useGameState';
-import { resolveNpcEffectiveRelation } from '@/systems/interaction/effectiveRelation';
+import { readCurrentInteractionTension } from '@/systems/interaction/dailyMemory';
+import { resolveCurrentNpcEffectiveRelation } from '@/systems/interaction/effectiveRelation';
 import {
   calculateOfferTotal,
   calculateTradeBaseCost,
@@ -10,7 +11,6 @@ import {
 } from '@/systems/trade/tradeExecution';
 import { evaluateTradeNegotiation } from '@/systems/trade/tradeNegotiation';
 import { getBuyMultiplier, getSellMultiplier } from '@/systems/trade/tradePricing';
-import { toNpcSubjectKey } from '@/types/interactionRuntime.types';
 import type { InventoryItem } from '@/types/inventory.types';
 import type { TradeOffer, TradeOfferItem } from '@/types/trade.types';
 
@@ -108,16 +108,8 @@ export const TradeModal = () => {
   const interaction = useGameState((s) => s.interactionSlice.currentInteraction);
   const setTrading = useGameState((s) => s.interactionSlice.actions.setTrading);
   const resolveTradeOffer = useGameState((s) => s.interactionSlice.actions.resolveTradeOffer);
-  const effectiveRelation = useGameState((s) =>
-    interaction?.npcId === undefined
-      ? 0
-      : (resolveNpcEffectiveRelation(s, toNpcSubjectKey(interaction.npcId)) ?? 0),
-  );
-  const tension = useGameState((s) =>
-    interaction?.npcId === undefined
-      ? 0
-      : (s.interactionSlice.dailyMemoryBySubject[toNpcSubjectKey(interaction.npcId)]?.tension ?? 0),
-  );
+  const effectiveRelation = useGameState((s) => resolveCurrentNpcEffectiveRelation(s) ?? 0);
+  const tension = useGameState((s) => readCurrentInteractionTension(s) ?? 0);
 
   const playerContainer = useGameState((s) => s.inventory.containers[PROTAGONIST_ID]);
   const traderId = interaction?.poiId ?? '';

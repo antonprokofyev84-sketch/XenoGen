@@ -20,7 +20,7 @@ export function createQuestRuntime(definition: InitialQuest): RunningQuestRuntim
     vars: {},
     journalEntries: [resolveText(definition.description)],
     ...(definition.timeLimit ? { questDaysLeft: definition.timeLimit.days } : {}),
-    ...(initialStage?.timeLimit ? { stageDaysLeft: initialStage.timeLimit.days } : {}),
+    ...(initialStage.timeLimit ? { stageDaysLeft: initialStage.timeLimit.days } : {}),
   };
 }
 

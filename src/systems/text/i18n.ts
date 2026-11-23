@@ -1,6 +1,6 @@
 import { createInstance } from 'i18next';
 
-import en from '@/locales/en.json';
+import en from '@/locales/en';
 
 declare module 'i18next' {
   interface CustomTypeOptions {

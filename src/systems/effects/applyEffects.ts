@@ -201,3 +201,13 @@ export function applyEffects(
     applyEffect(state, effect, context);
   }
 }
+
+/** Effects результата текущего Action или Interceptor. */
+export function applyCurrentInteractionEffects(
+  state: StoreState,
+  effects: readonly Effect[] | undefined,
+): void {
+  // Исполнитель результата работает только внутри существующего interaction.
+  const interaction = state.interactionSlice.currentInteraction!;
+  applyEffects(state, effects, { poiId: interaction.poiId, npcId: interaction.npcId });
+}

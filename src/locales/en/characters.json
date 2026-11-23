@@ -1,0 +1,77 @@
+{
+  "characterCreation": {
+    "title": "Character Creation",
+    "mainStatsTitle": "Main Stats",
+    "secondaryStatsTitle": "Secondary Stats",
+    "skillsTitle": "Skills",
+    "traitsTitle": "Traits",
+    "freePoints": "Creation Points",
+    "backButton": "Back",
+    "startButton": "Start Game"
+  },
+  "mainStats": {
+    "str": "Strength",
+    "dex": "Dexterity",
+    "con": "Constitution",
+    "per": "Perception",
+    "int": "Intelligence",
+    "will": "Willpower",
+    "bty": "Beauty"
+  },
+  "skills": {
+    "melee": "Melee",
+    "range": "Ranged",
+    "crafting": "Crafting",
+    "science": "Science",
+    "medicine": "Medicine",
+    "charisma": "Charisma",
+    "survival": "Survival",
+    "trade": "Trade"
+  },
+  "secondaryStats": {
+    "maxHp": "Max HP",
+    "maxStamina": "Max Stamina",
+    "initiative": "Initiative",
+    "armor": "Armor",
+    "critChance": "Crit Chance",
+    "meleeAttackPower": "Melee Attack Power",
+    "evasion": "Evasion"
+  },
+  "traits": {
+    "alcoholic1": {
+      "name": "Alcoholic",
+      "desc": "Starts dependent on alcohol. Suffers withdrawal without it, but gets a bonus when drinking."
+    },
+    "buzzed": {
+      "name": "Buzzed",
+      "desc": "Slightly intoxicated. Willpower is up, but Perception is slightly lowered."
+    },
+    "hangover": {
+      "name": "Hangover",
+      "desc": "The morning after. Willpower and Dexterity are temporarily reduced."
+    },
+    "medic1": {
+      "name": "Field Medic",
+      "desc": "Basic medical training. Provides a significant starting bonus to the Medicine skill."
+    },
+    "hunter1": {
+      "name": "Hunter",
+      "desc": "Skilled in tracking and stalking prey. Provides bonuses to Survival and Ranged skills."
+    },
+    "artificer1": {
+      "name": "Artificer",
+      "desc": "A tinkerer and inventor. Provides bonuses to Crafting and Science skills."
+    }
+  },
+  "characters": {
+    "youngScavenger": {
+      "name": "Young Scavenger"
+    },
+    "scavenger": {
+      "name": "Scavenger"
+    },
+    "veteranScavenger": {
+      "name": "Veteran Scavenger"
+    }
+  }
+}

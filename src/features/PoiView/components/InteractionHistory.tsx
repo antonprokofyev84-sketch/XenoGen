@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
-import text from '@/locales/en.json';
+import text from '@/locales/en';
 import type { InteractionLogEntry } from '@/types/interactionRuntime.types';
 
 import { NarrativeBlocks } from './NarrativeView';

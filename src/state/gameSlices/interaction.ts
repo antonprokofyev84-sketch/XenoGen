@@ -118,15 +118,17 @@ export const createInteractionSlice: GameSlice<InteractionSlice> = (set) => ({
   actions: {
     startNpcConversation: (slotId, npcId) =>
       set((state) => {
-        const interaction = state.interactionSlice.currentInteraction;
-        if (interaction && isContextExitFrame(interaction.activeFrameId)) return;
+        // Команда доступна только из Actions существующего interaction.
+        const interaction = state.interactionSlice.currentInteraction!;
+        if (isContextExitFrame(interaction.activeFrameId)) return;
         startNpcConversation(state, slotId, npcId);
       }),
 
     endNpcConversation: () =>
       set((state) => {
-        const interaction = state.interactionSlice.currentInteraction;
-        if (interaction && isContextExitFrame(interaction.activeFrameId)) return;
+        // Команда доступна только внутри текущего NPC-разговора.
+        const interaction = state.interactionSlice.currentInteraction!;
+        if (isContextExitFrame(interaction.activeFrameId)) return;
         endNpcConversation(state);
       }),
 

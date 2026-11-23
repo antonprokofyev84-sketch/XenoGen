@@ -1,6 +1,6 @@
 import { useShallow } from 'zustand/react/shallow';
 
-import textData from '@/locales/en.json';
+import textData from '@/locales/en';
 import { traitsSelectors, useGameState } from '@/state/useGameState';
 import { traitsManager } from '@/systems/traits/traitsManager';
 import { traitsRegistry } from '@/systems/traits/traitsRegistry';

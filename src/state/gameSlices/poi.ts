@@ -176,10 +176,8 @@ const exploreCellDraft = (
   }
 };
 
-export const getDaysSinceLastVisit = (state: StoreState, poiId: string): number => {
-  const poi = state.poiSlice.pois[poiId];
-  if (!poi) return 0;
-
+export const getCurrentPoiDaysSinceLastVisit = (state: StoreState): number => {
+  const poi = state.poiSlice.pois[state.party.currentPartyPosition];
   const previousVisitTime = poi.details.lastTimeVisited ?? DEFAULT_VISIT_DATE;
   return diffCalendarDays(previousVisitTime, state.world.currentTime);
 };
@@ -188,9 +186,8 @@ export const getDaysSinceLastVisit = (state: StoreState, poiId: string): number 
  * Обновляет счётчики посещения при выходе из POI.
  * `visitedTimes` увеличивается не чаще одного раза за календарный день.
  */
-const processPoiExitDraft = (state: StoreState, currentPoiId: string) => {
-  const currentPoi = state.poiSlice.pois[currentPoiId];
-  if (!currentPoi) return;
+const processCurrentPoiExitDraft = (state: StoreState) => {
+  const currentPoi = state.poiSlice.pois[state.party.currentPartyPosition];
 
   const { lastTimeVisited } = currentPoi.details;
   const isFirstVisitToday =
@@ -284,7 +281,7 @@ export const poiDraft = {
   modifyCellRegionParameter: modifyCellRegionParameterDraft,
   exploreCell: exploreCellDraft,
   processPoiEnter: processPoiEnterDraft,
-  processPoiExit: processPoiExitDraft,
+  processCurrentPoiExit: processCurrentPoiExitDraft,
   runDayPass: runDayPassDraft,
   sweepPendingRemovals: sweepPendingRemovalsDraft,
 };

@@ -1,7 +1,7 @@
 import { forwardRef, useMemo } from 'react';
 
 import MoneyIcon from '@/assets/icons/money.svg?react';
-import textData from '@/locales/en.json';
+import textData from '@/locales/en';
 import { buildItemDetails } from '@/systems/items/itemDetailsBuilder';
 import type { InventoryItem } from '@/types/inventory.types';
 

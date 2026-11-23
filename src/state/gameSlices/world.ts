@@ -23,7 +23,7 @@ import type { StoreState } from '../useGameState';
 import { characterDraft } from './characters';
 import { occupancyDraft } from './occupancy';
 import { partyDraft } from './party';
-import { getDaysSinceLastVisit, poiDraft } from './poi';
+import { getCurrentPoiDaysSinceLastVisit, poiDraft } from './poi';
 import { questDraft } from './quest';
 import { traitsDraft } from './traits';
 
@@ -122,30 +122,24 @@ function advanceTimeDraft(state: StoreState, minutes: number) {
  * Стоимость времени Action к этому моменту уже оплачена отдельно.
  */
 function travelToPoiDraft(state: StoreState, targetPoiId: string, timeOverride?: number): void {
-  const currentPoiId = state.party.currentPartyPosition;
   const targetPoi = state.poiSlice.pois[targetPoiId];
 
-  if (!targetPoi) {
-    console.warn(`travelToPoi: POI ${targetPoiId} не существует`);
-    return;
-  }
-
-  const travel = TravelManager.computeTravel(currentPoiId, targetPoiId, state);
+  const travel = TravelManager.computeTravel(state, targetPoiId);
 
   if (!travel.canTravel) {
-    console.warn(`Can't travel from ${currentPoiId} to ${targetPoiId}`);
+    console.warn(`Can't travel from ${state.party.currentPartyPosition} to ${targetPoiId}`);
     return;
   }
 
   endInteraction(state);
-  poiDraft.processPoiExit(state, currentPoiId);
+  poiDraft.processCurrentPoiExit(state);
 
   // Позиция партии меняется до изменения времени: refreshOccupancy использует её как якорь.
   partyDraft.moveToPoi(state, targetPoiId, travel.staminaCost);
 
   advanceTimeDraft(state, timeOverride ?? travel.timeCost);
 
-  const daysPassed = getDaysSinceLastVisit(state, targetPoiId);
+  const daysPassed = getCurrentPoiDaysSinceLastVisit(state);
   poiDraft.processPoiEnter();
 
   const isCellTarget = targetPoi.parentId === null;
@@ -158,7 +152,7 @@ function travelToPoiDraft(state: StoreState, targetPoiId: string, timeOverride?:
   occupancyDraft.ensurePoiOccupancy(state, targetPoiId);
 
   if (!isCellTarget) {
-    startPoiInteraction(state, targetPoiId);
+    startPoiInteraction(state);
   }
 
   state.ui.currentScreen = isCellTarget ? 'strategicMap' : 'poiView';

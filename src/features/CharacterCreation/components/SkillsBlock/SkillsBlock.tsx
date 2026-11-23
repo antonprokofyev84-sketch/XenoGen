@@ -1,6 +1,6 @@
 import { useShallow } from 'zustand/react/shallow';
 
-import textData from '@/locales/en.json';
+import textData from '@/locales/en';
 import { characterSelectors, useGameState } from '@/state/useGameState';
 import type { SkillKey } from '@/types/character.types';
 

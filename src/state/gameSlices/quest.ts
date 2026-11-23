@@ -75,17 +75,15 @@ const requireRunningQuest = (
   state: StoreState,
   questId: string,
   operation: string,
-): RunningQuestRuntime | undefined => {
+): RunningQuestRuntime => {
   const quest = state.questSlice.questsById[questId];
 
   if (!quest) {
-    console.warn(`${operation}: неизвестный квест "${questId}"`);
-    return undefined;
+    throw new Error(`${operation}: неизвестный квест "${questId}"`);
   }
 
   if (!isRunningQuest(quest)) {
-    console.warn(`${operation}: квест "${questId}" уже в состоянии "${quest.status}"`);
-    return undefined;
+    throw new Error(`${operation}: квест "${questId}" уже в состоянии "${quest.status}"`);
   }
 
   return quest;
@@ -109,15 +107,10 @@ const initializeQuestsDraft = (state: StoreState) => {
  */
 const setQuestStageDraft = (state: StoreState, questId: string, stageId: string) => {
   const quest = requireRunningQuest(state, questId, 'setQuestStage');
-  if (!quest || quest.stageId === stageId) return;
+  if (quest.stageId === stageId) return;
 
   const definition = INITIAL_QUESTS[questId];
-  const nextStage = definition?.stages[stageId];
-
-  if (!definition || !nextStage) {
-    console.warn(`setQuestStage: квест "${questId}" не содержит стадию "${stageId}"`);
-    return;
-  }
+  const nextStage = definition.stages[stageId];
 
   const indexes = getIndexes(state);
   removeStageBindings(indexes, definition.stages[quest.stageId]);
@@ -148,8 +141,6 @@ const setQuestVarDraft = (
   value: QuestVarValue,
 ) => {
   const quest = requireRunningQuest(state, questId, 'setQuestVar');
-  if (!quest) return;
-
   quest.vars[key] = value;
 };
 
@@ -161,16 +152,12 @@ const snapshotDefeatedCountDraft = (
   enemyTypeId: string,
 ) => {
   const quest = requireRunningQuest(state, questId, 'snapshotDefeatedCount');
-  if (!quest) return;
-
   quest.vars[key] = state.statsSlice.combat.defeated[enemyTypeId] ?? 0;
 };
 
 /** Меняет видимость в журнале в любом статусе; квест при этом не активируется. */
 const setQuestJournalVisibilityDraft = (state: StoreState, questId: string, isVisible: boolean) => {
   const quest = state.questSlice.questsById[questId];
-  if (!quest) return;
-
   quest.isHidden = !isVisible;
 };
 
@@ -186,9 +173,7 @@ const finishQuestDraft = (state: StoreState, questId: string, status: 'completed
     questId,
     status === 'completed' ? 'completeQuest' : 'failQuest',
   );
-  if (!quest) return;
-
-  removeStageBindings(getIndexes(state), INITIAL_QUESTS[questId]?.stages[quest.stageId]);
+  removeStageBindings(getIndexes(state), INITIAL_QUESTS[questId].stages[quest.stageId]);
 
   state.questSlice.questsById[questId] = {
     status,

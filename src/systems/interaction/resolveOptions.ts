@@ -10,7 +10,7 @@ import { resolvePoiEntryBlock } from '@/systems/world/poiEntry';
 import type { ActionCategory, ActionContext } from '@/types/action.types';
 import type { ActionId, PoiId } from '@/types/ids.types';
 import { isNpcContext } from '@/types/interactionRuntime.types';
-import { isNonCellNode } from '@/types/worldNode.types';
+import type { NonCellPoiNode } from '@/types/worldNode.types';
 
 import { buildActionContext } from './actionContext';
 import { listCurrentActionSources } from './actionSources';
@@ -66,7 +66,6 @@ function buildGroup(
 
   for (const actionId of actionIds) {
     const action = INITIAL_ACTIONS[actionId];
-    if (!action) continue;
 
     const availability = resolveActionAvailability(state, actionId, action, actionContext);
     if (!availability) continue;
@@ -81,8 +80,7 @@ function buildGroup(
 function buildNavigation(state: StoreState): ResolvedInteractionOptions['navigation'] {
   // Navigation строится только для существующего interaction текущего экрана.
   const interaction = state.interactionSlice.currentInteraction!;
-  const poi = state.poiSlice.pois[interaction.poiId];
-  if (!poi || !isNonCellNode(poi)) return emptyOptions().navigation;
+  const poi = state.poiSlice.pois[interaction.poiId] as NonCellPoiNode;
 
   if (isNpcContext(interaction)) {
     return {
@@ -101,9 +99,9 @@ function buildNavigation(state: StoreState): ResolvedInteractionOptions['navigat
   ];
 
   for (const childId of poi.childPoiIds) {
-    const child = state.poiSlice.pois[childId];
+    const child = state.poiSlice.pois[childId] as NonCellPoiNode;
     // pendingRemoval полностью исключает новый вход, а не показывает disabled.
-    if (!child || !isNonCellNode(child) || child.pendingRemoval || !child.details.isDiscovered) {
+    if (child.pendingRemoval || !child.details.isDiscovered) {
       continue;
     }
 
@@ -123,9 +121,6 @@ function buildNavigation(state: StoreState): ResolvedInteractionOptions['navigat
 export function resolveInteractionOptions(state: StoreState): ResolvedInteractionOptions {
   const interaction = state.interactionSlice.currentInteraction;
   if (!interaction) return emptyOptions();
-
-  const poi = state.poiSlice.pois[interaction.poiId];
-  if (!poi || !isNonCellNode(poi)) return emptyOptions();
 
   const actionContext = buildActionContext(state);
   const sources = listCurrentActionSources(state);

@@ -3,7 +3,7 @@ import type { StoreState } from '@/state/useGameState';
 import type { Rng } from '@/systems/rolls/rng';
 import type { ActionTransition } from '@/types/action.types';
 import { isNpcContext } from '@/types/interactionRuntime.types';
-import { isNonCellNode } from '@/types/worldNode.types';
+import type { NonCellPoiNode } from '@/types/worldNode.types';
 
 import { resolveCurrentRootFrameId } from './frameIds';
 import {
@@ -20,8 +20,8 @@ function resolveTravelTarget(state: StoreState, transition: ActionTransition): s
   if (transition.type === 'parentPoi') {
     // Исполнитель вызван до travel: исходный interaction ещё не завершён.
     const interaction = state.interactionSlice.currentInteraction!;
-    const poi = state.poiSlice.pois[interaction.poiId];
-    return poi && isNonCellNode(poi) ? poi.parentId : undefined;
+    const poi = state.poiSlice.pois[interaction.poiId] as NonCellPoiNode;
+    return poi.parentId;
   }
 
   return undefined;
@@ -79,15 +79,10 @@ export function executePendingTransition(state: StoreState, rng: Rng): void {
   state.interactionSlice.pendingTransition = null;
   const duration = transition.time ?? 0;
   const travelTargetId = resolveTravelTarget(state, transition);
-  const sourcePoi = state.poiSlice.pois[interaction.poiId];
+  const sourcePoi = state.poiSlice.pois[interaction.poiId] as NonCellPoiNode;
 
   // Пометка завершает контент: сохраняется только уже выбранный выход к родителю.
-  if (
-    sourcePoi &&
-    isNonCellNode(sourcePoi) &&
-    sourcePoi.pendingRemoval &&
-    travelTargetId !== sourcePoi.parentId
-  ) {
+  if (sourcePoi.pendingRemoval && travelTargetId !== sourcePoi.parentId) {
     finishInteractionStep(state, rng);
     return;
   }
@@ -99,7 +94,7 @@ export function executePendingTransition(state: StoreState, rng: Rng): void {
 
   if (duration > 0) worldDraft.advanceTime(state, duration);
 
-  if (sourcePoi && isNonCellNode(sourcePoi) && sourcePoi.pendingRemoval) {
+  if (sourcePoi.pendingRemoval) {
     finishInteractionStep(state, rng);
     return;
   }

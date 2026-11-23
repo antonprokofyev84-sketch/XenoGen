@@ -7,8 +7,9 @@ import { DEFAULT_NPC_DISPLAY_MODE } from '@/types/frame.types';
 import type { NpcId, SlotId } from '@/types/ids.types';
 import type { NarrativeBlock } from '@/types/narrativeBlock.types';
 import { isDialogueLine } from '@/types/narrativeBlock.types';
+import type { NonCellPoiNode } from '@/types/worldNode.types';
 
-import { findSlotDefinition, listSlotDefinitions } from './actionSources';
+import { findCurrentSlotDefinition, listCurrentSlotDefinitions } from './actionSources';
 import { resolveCurrentRootFrameId } from './frameIds';
 import { resolveNpcDisplayName } from './narrativeSnapshots';
 
@@ -50,7 +51,7 @@ function resolveCurrentPoiNpcSlots(state: StoreState): UiNpcSlot[] {
   // Портреты принадлежат POI текущего interaction.
   const interaction = state.interactionSlice.currentInteraction!;
   const occupants = state.occupancySlice.slotOccupants[interaction.poiId] ?? {};
-  return listSlotDefinitions(state, interaction.poiId).flatMap((slot) => {
+  return listCurrentSlotDefinitions(state).flatMap((slot) => {
     const npcId = occupants[slot.id];
     return npcId === undefined
       ? []
@@ -62,12 +63,11 @@ function resolveCurrentPoiNpcSlots(state: StoreState): UiNpcSlot[] {
 export function resolveInteractionPresentation(state: StoreState): InteractionPresentation {
   const interaction = state.interactionSlice.currentInteraction;
   if (!interaction) return EMPTY;
-  const poi = state.poiSlice.pois[interaction.poiId];
-  if (!poi || poi.parentId === null) return EMPTY;
+  const poi = state.poiSlice.pois[interaction.poiId] as NonCellPoiNode;
   const frame = INITIAL_FRAMES[interaction.activeFrameId];
   const locationTitle = resolvePoiDisplayName(poi.templateId);
   const isRoot = interaction.activeFrameId === resolveCurrentRootFrameId(state);
-  const mode = frame?.npcDisplay ?? DEFAULT_NPC_DISPLAY_MODE;
+  const mode = frame.npcDisplay ?? DEFAULT_NPC_DISPLAY_MODE;
   if (mode === 'always' && interaction.npcId === undefined) {
     throw new Error('npcDisplay: always requires an NPC context: ' + interaction.activeFrameId);
   }
@@ -92,12 +92,9 @@ export function resolveInteractionPresentation(state: StoreState): InteractionPr
     reading: blocks.length ? { mode: 'narrative', blocks } : { mode: 'actions' },
     background: interaction.currentBackground,
     locationTitle,
-    title: isRoot ? locationTitle : resolveText(frame?.title ?? locationTitle),
+    title: isRoot ? locationTitle : resolveText(frame.title ?? locationTitle),
     name: npcId === undefined ? undefined : resolveNpcDisplayName(state, npcId),
-    role:
-      interaction.slotId === undefined
-        ? undefined
-        : findSlotDefinition(state, interaction.poiId, interaction.slotId)?.role,
+    role: interaction.slotId === undefined ? undefined : findCurrentSlotDefinition(state).role,
     figure:
       figureId === undefined
         ? undefined

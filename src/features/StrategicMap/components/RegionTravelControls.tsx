@@ -1,7 +1,7 @@
 import { useShallow } from 'zustand/react/shallow';
 
 import { DEFAULT_EXPLORATION_DURATION } from '@/constants';
-import textData from '@/locales/en.json';
+import textData from '@/locales/en';
 import { partySelectors, poiSelectors, useGameState } from '@/state/useGameState';
 import { useMapInteractionStore } from '@/state/useMapInteractionStore';
 import { TravelManager } from '@/systems/travel/travelManager';
@@ -30,7 +30,7 @@ export const RegionTravelControls = () => {
         return BLOCKED_TRAVEL_COST;
       }
 
-      return TravelManager.computeTravel(currentPartyPosition, selectedCellId, state);
+      return TravelManager.computeTravel(state, selectedCellId);
     }),
   );
 

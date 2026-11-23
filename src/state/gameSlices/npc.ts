@@ -21,8 +21,6 @@ export interface NpcSlice {
     initializeNpcs: (npcs: InitialNpcMap) => void;
     clearAllNpcs: () => void;
     setNpcAffection: (npcId: string, affection: number) => void;
-    /** Фиксирует состоявшуюся встречу; `timesMet` растёт не чаще раза в день. */
-    registerNpcMeeting: (npcId: string) => void;
   };
 }
 
@@ -63,9 +61,10 @@ const setNpcAffectionDraft = (state: StoreState, npcId: string, affection: numbe
  * календарный день обновляют только `lastDateMet`, поэтому отдельная дневная
  * map не нужна.
  */
-const registerNpcMeetingDraft = (state: StoreState, npcId: string) => {
+const registerCurrentNpcMeetingDraft = (state: StoreState) => {
+  // Runtime вызывает helper только при завершении существующего NPC-разговора.
+  const npcId = state.interactionSlice.currentInteraction!.npcId!;
   const npc = state.npcSlice.byId[npcId];
-  if (!npc) return;
 
   const { currentTime } = state.world;
 
@@ -80,7 +79,7 @@ export const npcDraft = {
   initializeNpcs: initializeNpcsDraft,
   clearAllNpcs: clearAllNpcsDraft,
   setNpcAffection: setNpcAffectionDraft,
-  registerNpcMeeting: registerNpcMeetingDraft,
+  registerCurrentNpcMeeting: registerCurrentNpcMeetingDraft,
 };
 
 export const createNpcSlice: GameSlice<NpcSlice> = (set) => ({
@@ -100,11 +99,6 @@ export const createNpcSlice: GameSlice<NpcSlice> = (set) => ({
     setNpcAffection: (npcId, affection) =>
       set((state) => {
         setNpcAffectionDraft(state, npcId, affection);
-      }),
-
-    registerNpcMeeting: (npcId) =>
-      set((state) => {
-        registerNpcMeetingDraft(state, npcId);
       }),
   },
 });

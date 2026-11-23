@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
 
-import textData from '@/locales/en.json';
+import textData from '@/locales/en';
 import { combatSelectors, useCombatState } from '@/state/useCombatState';
 import type { AttackForecast } from '@/systems/combat/combatHelpers';
 import { calculateAttackForecast } from '@/systems/combat/combatHelpers';

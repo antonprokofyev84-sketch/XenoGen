@@ -94,7 +94,8 @@ function getTreeEdgeTravelResult(
 }
 
 export const TravelManager = {
-  computeTravel(currentPoiId: string, targetPoiId: string, state: StoreState): TravelResult {
+  computeTravel(state: StoreState, targetPoiId: string): TravelResult {
+    const currentPoiId = state.party.currentPartyPosition;
     const currentPoi = getPoiById(state, currentPoiId);
     const targetPoi = getPoiById(state, targetPoiId);
 

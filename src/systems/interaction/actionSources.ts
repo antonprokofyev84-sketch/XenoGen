@@ -5,10 +5,10 @@ import { POI_TEMPLATES } from '@/data/initial/poiTemplates';
 import type { StoreState } from '@/state/useGameState';
 import type { Rng } from '@/systems/rolls/rng';
 import { defaultRng } from '@/systems/rolls/rng';
-import type { ActionId } from '@/types/ids.types';
+import type { ActionId, PoiId, SlotId } from '@/types/ids.types';
 import { isNpcContext } from '@/types/interactionRuntime.types';
 import type { InitialNpcSlot } from '@/types/poiContent.types';
-import { isNonCellNode } from '@/types/worldNode.types';
+import type { NonCellPoiNode } from '@/types/worldNode.types';
 
 import { buildActionContext } from './actionContext';
 import { evaluateConditions } from './conditions';
@@ -33,28 +33,40 @@ export interface ActionSources {
 const EMPTY_SOURCES: ActionSources = { frame: [], poi: [], slot: [], personal: [], quest: [] };
 
 /** Все slots шаблона POI в порядке групп одним списком. */
-export function listSlotDefinitions(state: StoreState, poiId: string): InitialNpcSlot[] {
-  const poi = state.poiSlice.pois[poiId];
-  if (!poi || !isNonCellNode(poi)) return [];
+export function listSlotDefinitions(state: StoreState, poiId: PoiId): InitialNpcSlot[] {
+  // Callers получают poiId из interaction или runtime-placement существующего NPC.
+  const poi = state.poiSlice.pois[poiId] as NonCellPoiNode;
 
-  return Object.values(POI_TEMPLATES[poi.templateId]?.npcSlots ?? {}).flat();
+  return Object.values(POI_TEMPLATES[poi.templateId].npcSlots ?? {}).flat();
+}
+
+export function listCurrentSlotDefinitions(state: StoreState): InitialNpcSlot[] {
+  // Вызывается только при отображении существующего interaction.
+  const interaction = state.interactionSlice.currentInteraction!;
+  return listSlotDefinitions(state, interaction.poiId);
 }
 
 export function findSlotDefinition(
   state: StoreState,
-  poiId: string,
-  slotId: string,
+  poiId: PoiId,
+  slotId: SlotId,
 ): InitialNpcSlot | undefined {
   return listSlotDefinitions(state, poiId).find((slot) => slot.id === slotId);
+}
+
+/** Definition slot текущего NPC-разговора. */
+export function findCurrentSlotDefinition(state: StoreState): InitialNpcSlot {
+  // startNpcConversation устанавливает slotId из портрета существующего slot.
+  const interaction = state.interactionSlice.currentInteraction!;
+  return findSlotDefinition(state, interaction.poiId, interaction.slotId as SlotId)!;
 }
 
 export function listCurrentActionSources(state: StoreState): ActionSources {
   // Источники собираются только для экрана текущего interaction.
   const interaction = state.interactionSlice.currentInteraction!;
-  const poi = state.poiSlice.pois[interaction.poiId];
-  if (!poi || !isNonCellNode(poi)) return EMPTY_SOURCES;
+  const poi = state.poiSlice.pois[interaction.poiId] as NonCellPoiNode;
 
-  const frame = INITIAL_FRAMES[interaction.activeFrameId]?.actionIds ?? [];
+  const frame = INITIAL_FRAMES[interaction.activeFrameId].actionIds ?? [];
 
   // Внутренний Frame показывает только собственные Actions.
   if (interaction.activeFrameId !== resolveCurrentRootFrameId(state)) {
@@ -65,15 +77,15 @@ export function listCurrentActionSources(state: StoreState): ActionSources {
     return {
       frame,
       poi: [],
-      slot: findSlotDefinition(state, interaction.poiId, interaction.slotId)?.actionIds ?? [],
-      personal: INITIAL_NPCS[interaction.npcId]?.actionIds ?? [],
+      slot: findCurrentSlotDefinition(state).actionIds ?? [],
+      personal: INITIAL_NPCS[interaction.npcId].actionIds ?? [],
       quest: state.questSlice.questActionIdsByTarget[interaction.npcId] ?? [],
     };
   }
 
   return {
     frame,
-    poi: POI_TEMPLATES[poi.templateId]?.actionIds ?? [],
+    poi: POI_TEMPLATES[poi.templateId].actionIds ?? [],
     slot: [],
     personal: [],
     quest: state.questSlice.questActionIdsByTarget[interaction.poiId] ?? [],
@@ -94,7 +106,7 @@ export function rollVisibleAppearanceChances(state: StoreState, rng: Rng = defau
   const sources = listCurrentActionSources(state);
   for (const actionId of Object.values(sources).flat()) {
     const action = INITIAL_ACTIONS[actionId];
-    if (!action || action.appearanceChance === undefined) continue;
+    if (action.appearanceChance === undefined) continue;
 
     // Пока условия не выполнены, броска нет.
     if (!evaluateConditions(state, action.conditions, actionContext)) continue;
